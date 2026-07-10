@@ -15,7 +15,7 @@ jobs:
         run: zip -r project-backup.zip . -x "*.git*"
 
       - name: Install Google Drive API client
-        run: pip install --quiet google-api-python-client google-auth
+        run: pip install --quiet google-api-python-client==2.198.0 google-auth==2.55.2
 
       - name: Upload Zip to Google Drive
         run: |
@@ -46,9 +46,10 @@ jobs:
           )
           service = build('drive', 'v3', credentials=creds, cache_discovery=False)
 
-          # Escape single quotes to prevent Drive query injection
-          safe_name = filename.replace("'", "\\'")
-          safe_folder = folder_id.replace("'", "\\'")
+          # Escape backslashes first, then single quotes, to produce a safe
+          # Drive API query string (folder IDs are alphanumeric, but be defensive).
+          safe_name = filename.replace("\\", "\\\\").replace("'", "\\'")
+          safe_folder = folder_id.replace("\\", "\\\\").replace("'", "\\'")
           query = f"name = '{safe_name}' and '{safe_folder}' in parents and trashed = false"
           results = service.files().list(
               q=query,
