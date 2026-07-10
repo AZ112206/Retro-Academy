@@ -19,34 +19,34 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
     }
     
     if (schoolType === 'Middle') {
-      // Dynamic grade-by-grade course names instead of generic subjects
+      // Dynamic grade-by-grade course names with structured identifiers
       if (middleGrade === 6) {
         return [
-          { id: 'mid_reading', name: '📖 Narrative Literacy & Reading Workshop', desc: 'Text comprehension, reading workshop tracks, and vocabulary building.' },
-          { id: 'mid_ela', name: '📝 Introductory Composition & Grammar Mechanics', desc: 'Advanced grammar, sentence building, and essay structures.' },
-          { id: 'mid_math', name: '📐 Foundations of Mathematics VI', desc: 'Focusing on numbers, fractions, structural logic, and introductory arithmetic.' },
-          { id: 'mid_science', name: '🧪 Introductory Earth & Space Science', desc: 'Exploring geological shifts, planetary orbits, and natural structures.' },
-          { id: 'mid_social_studies', name: '📜 Ancient World History & Geography', desc: 'Exploring foundational world history, ancient societies, and maps.' }
+          { id: 'mid_reading_g6', name: '📖 Narrative Literacy & Reading Workshop', desc: 'Text comprehension, reading workshop tracks, and vocabulary building.' },
+          { id: 'mid_ela_g6', name: '📝 Introductory Composition & Grammar Mechanics', desc: 'Advanced grammar, sentence building, and essay structures.' },
+          { id: 'mid_math_g6', name: '📐 Foundations of Mathematics VI', desc: 'Focusing on numbers, fractions, structural logic, and introductory arithmetic.' },
+          { id: 'mid_science_g6', name: '🧪 Introductory Earth & Space Science', desc: 'Exploring geological shifts, planetary orbits, and natural structures.' },
+          { id: 'mid_social_studies_g6', name: '📜 Ancient World History & Geography', desc: 'Exploring foundational world history, ancient societies, and maps.' }
         ];
       }
       
       if (middleGrade === 7) {
         return [
-          { id: 'mid_reading', name: '📖 Critical Reading & Literary Analysis', desc: 'Analyzing textual elements, themes, character arcs, and literary motifs.' },
-          { id: 'mid_ela', name: '📝 Intermediate Writing & Rhetoric', desc: 'Focusing on argumentative essays, structure mechanics, and perspective formatting.' },
-          { id: 'mid_math', name: '📐 Intermediate Mathematical Concepts', desc: 'Stepping up arithmetic skills and logic paths to build bridges toward algebra.' },
-          { id: 'mid_science', name: '🧪 Life Science & Microscopic Worlds', desc: 'Introduction to biology concepts, biological structures, and ecosystem mechanics.' },
-          { id: 'mid_social_studies', name: '📜 Global Cultures & World Geography', desc: 'Exploring cultural landscapes, continental geography, and societal development.' }
+          { id: 'mid_reading_g7', name: '📖 Critical Reading & Literary Analysis', desc: 'Analyzing textual elements, themes, character arcs, and literary motifs.' },
+          { id: 'mid_ela_g7', name: '📝 Intermediate Writing & Rhetoric', desc: 'Focusing on argumentative essays, structure mechanics, and perspective formatting.' },
+          { id: 'mid_math_g7', name: '📐 Intermediate Mathematical Concepts', desc: 'Stepping up arithmetic skills and logic paths to build bridges toward algebra.' },
+          { id: 'mid_science_g7', name: '🧪 Life Science & Microscopic Worlds', desc: 'Introduction to biology concepts, biological structures, and ecosystem mechanics.' },
+          { id: 'mid_social_studies_g7', name: '📜 Global Cultures & World Geography', desc: 'Exploring cultural landscapes, continental geography, and societal development.' }
         ];
       }
       
       if (middleGrade === 8) {
         return [
-          { id: 'mid_spanish', name: '🗣️ Español: Curso Avanzado Roja', desc: 'Introductory conversational phrases, structural vocabulary, and linguistic elements.' },
-          { id: 'mid_ela', name: '📝 Pre-English', desc: 'Advanced analytical composition to bridge and prepare students for High School requirements.' },
-          { id: 'mid_math', name: '📐 Pre-Algebra', desc: 'Core logic, equation formulas, functional calculations, and variables.' },
-          { id: 'mid_science', name: '🧪 Introductory Physical Science & Physics Foundations', desc: 'Formulating physical properties, elemental concepts, and energy physics.' },
-          { id: 'mid_social_studies', name: '📜 Early American History & Civics Foundations', desc: 'Reviewing governing mechanisms, early constitutional models, and historical events.' }
+          { id: 'mid_spanish_g8', name: '🗣️ Español: Curso Avanzado Roja', desc: 'Introductory conversational phrases, structural vocabulary, and linguistic elements.' },
+          { id: 'mid_ela_g8', name: '📝 Pre-English', desc: 'Advanced analytical composition to bridge and prepare students for High School requirements.' },
+          { id: 'mid_math_g8', name: '📐 Pre-Algebra', desc: 'Core logic, equation formulas, functional calculations, and variables.' },
+          { id: 'mid_science_g8', name: '🧪 Introductory Physical Science & Physics Foundations', desc: 'Formulating physical properties, elemental concepts, and energy physics.' },
+          { id: 'mid_social_studies_g8', name: '📜 Early American History & Civics Foundations', desc: 'Reviewing governing mechanisms, early constitutional models, and historical events.' }
         ];
       }
     }
