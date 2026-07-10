@@ -54,7 +54,6 @@ export default function TeacherDashboard({ onExit }) {
       <ElementaryScheduleStep
         elementaryGrade={elementaryGrade}
         onLaunchGame={(config) => {
-          // Captures dynamic configuration from the elementary template layout
           if (config?.lunchWave) setElementaryLunchWave(config.lunchWave.wave);
           setChosenClass({ id: 'elem_class', name: config?.gradeType || 'Elementary Class' });
           setPhase('GAMEPLAY');
@@ -115,25 +114,15 @@ export default function TeacherDashboard({ onExit }) {
       <div style={styles.setupBox}>
         <h2 style={styles.heading}>CLASSROOM READY</h2>
         <p style={styles.subtitle}>Role and track selection is complete.</p>
-        <p style={{ margin: '0 0 8px 0' }}>
-          School Type: <strong>{schoolType}</strong>
+        <p style={{ margin: '0 0 12px 0' }}>
+          School Type: <strong style={{ color: '#fff' }}>{schoolType}</strong>
         </p>
-        <p style={{ margin: '0 0 8px 0' }}>
-          Course/Track: <strong>{chosenClass?.name || 'N/A'}</strong>
+        <p style={{ margin: '0 0 12px 0' }}>
+          Course/Track: <strong style={{ color: '#fff' }}>{chosenClass?.name || 'N/A'}</strong>
         </p>
-        {elementaryLunchWave && (
-          <p style={{ margin: '0 0 20px 0' }}>
-            Lunch Wave Assignment: <strong>{elementaryLunchWave}</strong>
-          </p>
-        )}
-        {middleLunchWave && (
-          <p style={{ margin: '0 0 20px 0' }}>
-            Lunch Wave Assignment: <strong>{middleLunchWave}</strong>
-          </p>
-        )}
-        {highSchoolLunchWave && (
-          <p style={{ margin: '0 0 20px 0' }}>
-            Lunch Wave Assignment: <strong>{highSchoolLunchWave}</strong>
+        {(elementaryLunchWave || middleLunchWave || highSchoolLunchWave) && (
+          <p style={{ margin: '0 0 24px 0' }}>
+            Lunch Wave Assignment: <strong style={{ color: '#ff9f43' }}>{elementaryLunchWave || middleLunchWave || highSchoolLunchWave}</strong>
           </p>
         )}
         <button style={styles.exitButton} onClick={onExit}>RETURN TO MAIN MENU</button>
@@ -163,18 +152,49 @@ const styles = {
     backgroundColor: '#1a1a1a',
     maxWidth: '750px',
     width: '100%',
+    boxSizing: 'border-box',
     boxShadow: '0 0 15px rgba(57, 255, 20, 0.4)'
   },
-  heading: { fontSize: '1.8rem', marginBottom: '10px' },
-  subtitle: { color: '#888', marginBottom: '25px' },
+  heading: { fontSize: '1.8rem', marginBottom: '10px', marginTop: 0 },
+  subtitle: { color: '#888', marginBottom: '25px', fontSize: '1rem' },
+  menuColumn: { display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' },
+  menuButton: {
+    backgroundColor: '#222',
+    color: '#39FF14',
+    border: '2px solid #39FF14',
+    padding: '15px',
+    fontSize: '1.1rem',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    borderRadius: '5px',
+    textAlign: 'left',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'background-color 0.2s',
+    textDecoration: 'none'
+  },
+  subtext: { fontSize: '0.8rem', color: '#888', marginTop: '4px', textAlign: 'left' },
+  actionButton: {
+    width: '100%',
+    backgroundColor: '#39FF14',
+    color: '#000',
+    border: 'none',
+    padding: '14px',
+    fontSize: '1rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    borderRadius: '4px',
+    textTransform: 'uppercase'
+  },
   exitButton: {
     backgroundColor: 'transparent',
     color: '#FF3333',
     border: '2px solid #FF3333',
-    padding: '8px 16px',
+    padding: '10px 20px',
     cursor: 'pointer',
     fontFamily: 'inherit',
     fontWeight: 'bold',
-    marginTop: '20px'
+    borderRadius: '4px'
   }
 };

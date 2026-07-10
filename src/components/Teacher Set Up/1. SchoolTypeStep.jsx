@@ -8,7 +8,7 @@ export default function SchoolTypeStep({ onSelect, onExit, styles }) {
       <div style={styles.menuColumn}>
         <button style={styles.menuButton} onClick={() => onSelect('Elementary')}>
           🎒 ELEMENTARY SCHOOL
-          <span style={styles.subtext}>Grades 1-5 | 3 Classrooms per grade | General & Departmental tracks</span>
+          <span style={styles.subtext}>Grades K-5 | 3 Classrooms per grade | General & Departmental tracks</span>
         </button>
         <button style={styles.menuButton} onClick={() => onSelect('Middle')}>
           🏫 MIDDLE SCHOOL
@@ -16,7 +16,7 @@ export default function SchoolTypeStep({ onSelect, onExit, styles }) {
         </button>
         <button style={styles.menuButton} onClick={() => onSelect('High')}>
           🎓 HIGH SCHOOL
-          <span style={styles.subtext}>Grades 9-12 | 6 classrooms per department | 4-Period Matrix | Long & Short Blocks | 4 Lunch Waves</span>
+          <span style={styles.subtext}>Grades 9-12 | 4-Period Matrix | Long & Short Blocks | 4 Lunch Waves</span>
         </button>
       </div>
       <button style={{ ...styles.exitButton, marginTop: '30px' }} onClick={onExit}>
