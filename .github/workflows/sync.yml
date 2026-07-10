@@ -25,6 +25,7 @@ jobs:
           import sys
           from google.oauth2 import service_account
           from googleapiclient.discovery import build
+          from googleapiclient.errors import HttpError
           from googleapiclient.http import MediaFileUpload
 
           credentials_json = os.environ.get('GDRIVE_CREDENTIALS')
@@ -59,24 +60,36 @@ jobs:
           ).execute()
           existing = results.get('files', [])
 
-          media = MediaFileUpload(filename, mimetype='application/zip', resumable=True)
-          if existing:
-              file_id = existing[0]['id']
-              service.files().update(
-                  fileId=file_id,
-                  media_body=media,
-                  supportsAllDrives=True
-              ).execute()
-              print(f'Updated existing file (id: {file_id})')
-          else:
-              file_metadata = {'name': filename, 'parents': [folder_id]}
-              result = service.files().create(
+          def create_file(svc, fname, parent_id):
+              file_metadata = {'name': fname, 'parents': [parent_id]}
+              media = MediaFileUpload(fname, mimetype='application/zip', resumable=True)
+              result = svc.files().create(
                   body=file_metadata,
                   media_body=media,
                   supportsAllDrives=True,
                   fields='id'
               ).execute()
               print(f'Uploaded new file (id: {result.get("id")})')
+              return result
+
+          if existing:
+              file_id = existing[0]['id']
+              try:
+                  media = MediaFileUpload(filename, mimetype='application/zip', resumable=True)
+                  service.files().update(
+                      fileId=file_id,
+                      media_body=media,
+                      supportsAllDrives=True
+                  ).execute()
+                  print(f'Updated existing file (id: {file_id})')
+              except HttpError as e:
+                  if e.resp.status == 404:
+                      print(f'Warning: file {file_id} not found or cannot be updated (insufficient permissions); creating a new file instead.')
+                      create_file(service, filename, folder_id)
+                  else:
+                      raise
+          else:
+              create_file(service, filename, folder_id)
           EOF
         env:
           GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
