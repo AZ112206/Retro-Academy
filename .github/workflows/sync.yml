@@ -21,6 +21,7 @@ jobs:
         run: |
           python3 - <<'EOF'
           import os
+          import re
           import json
           import sys
           from google.oauth2 import service_account
@@ -29,7 +30,7 @@ jobs:
           from googleapiclient.http import MediaFileUpload
 
           credentials_json = os.environ.get('GDRIVE_CREDENTIALS')
-          folder_id = os.environ.get('GDRIVE_FOLDER_ID')
+          folder_id = os.environ.get('GDRIVE_FOLDER_ID', '').strip()
           filename = 'project-backup.zip'
 
           if not credentials_json:
@@ -39,6 +40,14 @@ jobs:
           if not os.path.exists(filename):
               sys.exit(f'Error: {filename} not found. The archive step may have failed.')
 
+          # If GDRIVE_FOLDER_ID is a full Google Drive URL, extract just the folder ID.
+          # Users sometimes copy the browser URL (e.g. https://drive.google.com/drive/folders/XXXXX)
+          # instead of only the ID portion.
+          url_match = re.search(r'/folders/([a-zA-Z0-9_-]+)', folder_id)
+          if url_match:
+              folder_id = url_match.group(1)
+              print(f'Extracted folder ID from URL: {folder_id[:6]}...')
+
           # Use the full 'drive' scope so the service account can access
           # any folder shared with it, not just files it created itself.
           creds = service_account.Credentials.from_service_account_info(
@@ -46,6 +55,21 @@ jobs:
               scopes=['https://www.googleapis.com/auth/drive']
           )
           service = build('drive', 'v3', credentials=creds, cache_discovery=False)
+
+          # Verify that the target folder is accessible before attempting any upload.
+          # A 404 here means the folder ID is wrong or the service account lacks access.
+          try:
+              service.files().get(
+                  fileId=folder_id,
+                  supportsAllDrives=True,
+                  fields='id,name'
+              ).execute()
+          except HttpError as e:
+              sys.exit(
+                  f'Error: Cannot access Google Drive folder "{folder_id}": {e}\n'
+                  'Check that GDRIVE_FOLDER_ID is the folder ID (not the full URL) '
+                  'and that the service account has been granted access to that folder.'
+              )
 
           # Escape backslashes first, then single quotes, to produce a safe
           # Drive API query string (folder IDs are alphanumeric, but be defensive).
@@ -63,12 +87,21 @@ jobs:
           def create_file(svc, fname, parent_id):
               file_metadata = {'name': fname, 'parents': [parent_id]}
               media = MediaFileUpload(fname, mimetype='application/zip', resumable=True)
-              result = svc.files().create(
-                  body=file_metadata,
-                  media_body=media,
-                  supportsAllDrives=True,
-                  fields='id'
-              ).execute()
+              try:
+                  result = svc.files().create(
+                      body=file_metadata,
+                      media_body=media,
+                      supportsAllDrives=True,
+                      fields='id'
+                  ).execute()
+              except HttpError as e:
+                  if e.resp.status == 404:
+                      sys.exit(
+                          f'Error: Cannot create file in folder "{parent_id}": {e}\n'
+                          'The folder may have been deleted or the service account '
+                          'may not have write access to it.'
+                      )
+                  raise
               print(f'Uploaded new file (id: {result.get("id")})')
               return result
 
