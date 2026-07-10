@@ -66,11 +66,25 @@ jobs:
                   fields='id,name'
               ).execute()
           except HttpError as e:
-              sys.exit(
+              if e.resp.status == 404:
+                  print(
+                      f'Warning: Google Drive folder "{folder_id}" was not found (HTTP 404) — upload skipped.\n'
+                      'To fix this:\n'
+                      '  1. Open Google Drive, right-click the target folder and choose "Share".\n'
+                      '  2. Share it (Editor access) with the service-account email from GDRIVE_CREDENTIALS.\n'
+                      '  3. Copy the folder ID from the URL (the part after /folders/) and update\n'
+                      '     the GDRIVE_FOLDER_ID repository secret with that value.\n'
+                      'If the folder was deleted, create a new one and repeat the steps above.',
+                      file=sys.stderr,
+                  )
+                  sys.exit(0)
+              print(
                   f'Error: Cannot access Google Drive folder "{folder_id}": {e}\n'
                   'Check that GDRIVE_FOLDER_ID is the folder ID (not the full URL) '
-                  'and that the service account has been granted access to that folder.'
+                  'and that the service account has been granted access to that folder.',
+                  file=sys.stderr,
               )
+              sys.exit(1)
 
           # Escape backslashes first, then single quotes, to produce a safe
           # Drive API query string (folder IDs are alphanumeric, but be defensive).
