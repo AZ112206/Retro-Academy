@@ -22,13 +22,21 @@ jobs:
           python3 - <<'EOF'
           import os
           import json
+          import sys
           from google.oauth2 import service_account
           from googleapiclient.discovery import build
           from googleapiclient.http import MediaFileUpload
 
-          credentials_json = os.environ['GDRIVE_CREDENTIALS']
-          folder_id = os.environ['GDRIVE_FOLDER_ID']
+          credentials_json = os.environ.get('GDRIVE_CREDENTIALS')
+          folder_id = os.environ.get('GDRIVE_FOLDER_ID')
           filename = 'project-backup.zip'
+
+          if not credentials_json:
+              sys.exit('Error: GDRIVE_CREDENTIALS secret is not set.')
+          if not folder_id:
+              sys.exit('Error: GDRIVE_FOLDER_ID secret is not set.')
+          if not os.path.exists(filename):
+              sys.exit(f'Error: {filename} not found. The archive step may have failed.')
 
           # Use the full 'drive' scope so the service account can access
           # any folder shared with it, not just files it created itself.
@@ -38,8 +46,10 @@ jobs:
           )
           service = build('drive', 'v3', credentials=creds, cache_discovery=False)
 
-          # Check if a file with the same name already exists in the folder
-          query = f"name = '{filename}' and '{folder_id}' in parents and trashed = false"
+          # Escape single quotes to prevent Drive query injection
+          safe_name = filename.replace("'", "\\'")
+          safe_folder = folder_id.replace("'", "\\'")
+          query = f"name = '{safe_name}' and '{safe_folder}' in parents and trashed = false"
           results = service.files().list(
               q=query,
               supportsAllDrives=True,
