@@ -8,8 +8,8 @@ export default function GradeConfigStep({
   onBack, 
   styles 
 }) {
-  const { elementaryGrade, middleGrade, middleLunchWave, highSchoolSchedule, highSchoolLunchWave } = stateVars;
-  const { setElementaryGrade, setMiddleGrade, setMiddleLunchWave, setHighSchoolSchedule, setHighSchoolLunchWave } = stateSetters;
+  const { middleGrade, middleLunchWave } = stateVars;
+  const { setElementaryGrade, setMiddleGrade, setMiddleLunchWave } = stateSetters;
 
   const getGradeOptions = () => {
     if (schoolType === 'Elementary') return [1, 2, 3, 4, 5];
@@ -110,62 +110,6 @@ export default function GradeConfigStep({
                 NEXT STEP: DESIGN CLASSES ➡️
               </button>
             </div>
-          </div>
-        )}
-
-        {/* HIGH SCHOOL PANEL */}
-        {schoolType === 'High' && (
-          <div style={designStyles.panelContainer}>
-            <p style={styles.subtitle}>Configure your 4-Block Schedule. Assign any class type to any block slot.</p>
-            <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '20px' }}>⚠️ Note: Your designated Lunch Wave will be randomly assigned by administration upon arrival.</p>
-            
-            <div style={{ ...styles.matrixBox, width: '100%', maxWidth: '500px', boxSizing: 'border-box' }}>
-              {highSchoolSchedule.map((p, idx) => (
-                <div key={p.period} style={styles.matrixRow}>
-                  <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.9rem' }}>B-{p.period}:</span>
-                  
-                  <select value={p.grade} onChange={(e) => {
-                    const updated = [...highSchoolSchedule];
-                    updated[idx].grade = e.target.value;
-                    setHighSchoolSchedule(updated);
-                  }} style={styles.selectInput}>
-                    <option value="9th">9th Grade</option>
-                    <option value="10th">10th Grade</option>
-                    <option value="11th">11th Grade</option>
-                    <option value="12th">12th Grade</option>
-                  </select>
-
-                  <select value={p.level} onChange={(e) => {
-                    const updated = [...highSchoolSchedule];
-                    updated[idx].level = e.target.value;
-                    setHighSchoolSchedule(updated);
-                  }} style={styles.selectInput}>
-                    <option value="Standard">Standard</option>
-                    <option value="Honors">Honors</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-
-                  <button style={p.isLongBlock ? styles.toggleOn : styles.toggleOff} onClick={() => {
-                    const updated = [...highSchoolSchedule];
-                    updated[idx].isLongBlock = !updated[idx].isLongBlock;
-                    setHighSchoolSchedule(updated);
-                  }}>
-                    {p.isLongBlock ? '⏱️ Long' : '⚡ Short'}
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button 
-              style={{ ...styles.actionButton, marginTop: '20px', width: '100%', maxWidth: '500px' }}
-              onClick={() => {
-                const randomWave = `Wave ${Math.floor(Math.random() * 4) + 1}`;
-                setHighSchoolLunchWave(randomWave);
-                onNext();
-              }}
-            >
-              🚀 LOCK SCHEDULE MATRIX & START GAME
-            </button>
           </div>
         )}
 

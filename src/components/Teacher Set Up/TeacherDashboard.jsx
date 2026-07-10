@@ -11,12 +11,6 @@ export default function TeacherDashboard({ onExit }) {
   const [elementaryGrade, setElementaryGrade] = useState(null);
   const [middleGrade, setMiddleGrade] = useState(null);
   const [middleLunchWave, setMiddleLunchWave] = useState(null);
-  const [highSchoolSchedule, setHighSchoolSchedule] = useState([
-    { period: 1, grade: '9th', level: 'Standard', isLongBlock: true },
-    { period: 2, grade: '10th', level: 'Standard', isLongBlock: false },
-    { period: 3, grade: '11th', level: 'Honors', isLongBlock: true },
-    { period: 4, grade: '12th', level: 'Advanced', isLongBlock: false },
-  ]);
   const [highSchoolLunchWave, setHighSchoolLunchWave] = useState(null);
   const [chosenClass, setChosenClass] = useState(null);
 
@@ -40,8 +34,8 @@ export default function TeacherDashboard({ onExit }) {
     return renderCentered(
       <GradeConfigStep
         schoolType={schoolType}
-        stateVars={{ elementaryGrade, middleGrade, middleLunchWave, highSchoolSchedule, highSchoolLunchWave }}
-        stateSetters={{ setElementaryGrade, setMiddleGrade, setMiddleLunchWave, setHighSchoolSchedule, setHighSchoolLunchWave }}
+        stateVars={{ elementaryGrade, middleGrade, middleLunchWave }}
+        stateSetters={{ setElementaryGrade, setMiddleGrade, setMiddleLunchWave }}
         onNext={() => setPhase(schoolType === 'Middle' ? 'MIDDLE_SCHEDULE' : 'CLASS_SELECT')}
         onBack={() => setPhase('SCHOOL_TYPE')}
         styles={styles}
