@@ -3,6 +3,7 @@ import SchoolTypeStep from './1. SchoolTypeStep';
 import GradeConfigStep from './2. GradeConfigStep';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep';
 import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep';
+import ElementaryScheduleStep from './3c. ElementarySchoolScheduleStep';
 import ClassSelectionStep from './4. ClassSelectionStep';
 
 export default function TeacherDashboard({ onExit }) {
@@ -11,6 +12,7 @@ export default function TeacherDashboard({ onExit }) {
   const [elementaryGrade, setElementaryGrade] = useState(null);
   const [middleGrade, setMiddleGrade] = useState(null);
   const [middleLunchWave, setMiddleLunchWave] = useState(null);
+  const [elementaryLunchWave, setElementaryLunchWave] = useState(null);
   const [highSchoolLunchWave, setHighSchoolLunchWave] = useState(null);
   const [chosenClass, setChosenClass] = useState(null);
 
@@ -36,8 +38,28 @@ export default function TeacherDashboard({ onExit }) {
         schoolType={schoolType}
         stateVars={{ elementaryGrade, middleGrade, middleLunchWave }}
         stateSetters={{ setElementaryGrade, setMiddleGrade, setMiddleLunchWave }}
-        onNext={() => setPhase(schoolType === 'Middle' ? 'MIDDLE_SCHEDULE' : 'CLASS_SELECT')}
+        onNext={() => {
+          if (schoolType === 'Middle') setPhase('MIDDLE_SCHEDULE');
+          else if (schoolType === 'Elementary') setPhase('ELEM_SCHEDULE');
+          else setPhase('CLASS_SELECT');
+        }}
         onBack={() => setPhase('SCHOOL_TYPE')}
+        styles={styles}
+      />
+    );
+  }
+
+  if (phase === 'ELEM_SCHEDULE') {
+    return renderCentered(
+      <ElementaryScheduleStep
+        elementaryGrade={elementaryGrade}
+        onLaunchGame={(config) => {
+          // Captures dynamic configuration from the elementary template layout
+          if (config?.lunchWave) setElementaryLunchWave(config.lunchWave.wave);
+          setChosenClass({ id: 'elem_class', name: config?.gradeType || 'Elementary Class' });
+          setPhase('GAMEPLAY');
+        }}
+        onBack={() => setPhase('GRADE_CONFIG')}
         styles={styles}
       />
     );
@@ -97,11 +119,21 @@ export default function TeacherDashboard({ onExit }) {
           School Type: <strong>{schoolType}</strong>
         </p>
         <p style={{ margin: '0 0 8px 0' }}>
-          Course: <strong>{chosenClass?.name || 'N/A'}</strong>
+          Course/Track: <strong>{chosenClass?.name || 'N/A'}</strong>
         </p>
+        {elementaryLunchWave && (
+          <p style={{ margin: '0 0 20px 0' }}>
+            Lunch Wave Assignment: <strong>{elementaryLunchWave}</strong>
+          </p>
+        )}
+        {middleLunchWave && (
+          <p style={{ margin: '0 0 20px 0' }}>
+            Lunch Wave Assignment: <strong>{middleLunchWave}</strong>
+          </p>
+        )}
         {highSchoolLunchWave && (
           <p style={{ margin: '0 0 20px 0' }}>
-            Lunch Wave: <strong>{highSchoolLunchWave}</strong>
+            Lunch Wave Assignment: <strong>{highSchoolLunchWave}</strong>
           </p>
         )}
         <button style={styles.exitButton} onClick={onExit}>RETURN TO MAIN MENU</button>
@@ -135,33 +167,6 @@ const styles = {
   },
   heading: { fontSize: '1.8rem', marginBottom: '10px' },
   subtitle: { color: '#888', marginBottom: '25px' },
-  menuColumn: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  menuButton: {
-    backgroundColor: '#222',
-    color: '#39FF14',
-    border: '2px solid #39FF14',
-    padding: '15px',
-    fontSize: '1.1rem',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    borderRadius: '5px',
-    textAlign: 'left',
-    display: 'flex',
-    flexDirection: 'column'
-  },
-  subtext: { fontSize: '0.8rem', color: '#888', marginTop: '4px' },
-  actionButton: {
-    width: '100%',
-    backgroundColor: '#39FF14',
-    color: '#000',
-    border: 'none',
-    padding: '12px',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    borderRadius: '4px'
-  },
   exitButton: {
     backgroundColor: 'transparent',
     color: '#FF3333',
@@ -169,47 +174,7 @@ const styles = {
     padding: '8px 16px',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    fontWeight: 'bold'
-  },
-  matrixBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    border: '1px solid #39FF14',
-    borderRadius: '8px',
-    padding: '12px',
-    backgroundColor: '#111'
-  },
-  matrixRow: {
-    display: 'grid',
-    gridTemplateColumns: '64px 1fr 1fr auto',
-    gap: '8px',
-    alignItems: 'center'
-  },
-  selectInput: {
-    backgroundColor: '#222',
-    color: '#39FF14',
-    border: '1px solid #39FF14',
-    borderRadius: '4px',
-    padding: '8px',
-    fontFamily: 'inherit'
-  },
-  toggleOn: {
-    backgroundColor: '#39FF14',
-    color: '#000',
-    border: '1px solid #39FF14',
-    borderRadius: '4px',
-    padding: '8px 10px',
-    cursor: 'pointer',
-    fontFamily: 'inherit'
-  },
-  toggleOff: {
-    backgroundColor: '#222',
-    color: '#39FF14',
-    border: '1px solid #39FF14',
-    borderRadius: '4px',
-    padding: '8px 10px',
-    cursor: 'pointer',
-    fontFamily: 'inherit'
+    fontWeight: 'bold',
+    marginTop: '20px'
   }
 };
