@@ -70,6 +70,7 @@ jobs:
                   fields='id'
               ).execute()
               print(f'Uploaded new file (id: {result.get("id")})')
+              return result
 
           if existing:
               file_id = existing[0]['id']
@@ -83,7 +84,7 @@ jobs:
                   print(f'Updated existing file (id: {file_id})')
               except HttpError as e:
                   if e.resp.status == 404:
-                      print(f'Warning: file {file_id} not found during update; creating a new file instead.')
+                      print(f'Warning: file {file_id} not found or cannot be updated (insufficient permissions); creating a new file instead.')
                       create_file(service, filename, folder_id)
                   else:
                       raise
