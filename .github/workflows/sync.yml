@@ -43,10 +43,11 @@ jobs:
           # If GDRIVE_FOLDER_ID is a full Google Drive URL, extract just the folder ID.
           # Users sometimes copy the browser URL (e.g. https://drive.google.com/drive/folders/XXXXX)
           # instead of only the ID portion.
-          url_match = re.search(r'/folders/([a-zA-Z0-9_-]+)', folder_id)
+          url_match = re.search(r'/folders/([^/?]+)', folder_id)
           if url_match:
               folder_id = url_match.group(1)
-              print(f'Extracted folder ID from URL: {folder_id[:6]}...')
+              preview = folder_id[:min(6, len(folder_id))]
+              print(f'Extracted folder ID from URL: {preview}...')
 
           # Use the full 'drive' scope so the service account can access
           # any folder shared with it, not just files it created itself.
