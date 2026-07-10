@@ -60,10 +60,10 @@ jobs:
           ).execute()
           existing = results.get('files', [])
 
-          def create_file():
-              file_metadata = {'name': filename, 'parents': [folder_id]}
-              media = MediaFileUpload(filename, mimetype='application/zip', resumable=True)
-              result = service.files().create(
+          def create_file(svc, fname, parent_id):
+              file_metadata = {'name': fname, 'parents': [parent_id]}
+              media = MediaFileUpload(fname, mimetype='application/zip', resumable=True)
+              result = svc.files().create(
                   body=file_metadata,
                   media_body=media,
                   supportsAllDrives=True,
@@ -84,11 +84,11 @@ jobs:
               except HttpError as e:
                   if e.resp.status == 404:
                       print(f'Warning: file {file_id} not found during update; creating a new file instead.')
-                      create_file()
+                      create_file(service, filename, folder_id)
                   else:
                       raise
           else:
-              create_file()
+              create_file(service, filename, folder_id)
           EOF
         env:
           GDRIVE_CREDENTIALS: ${{ secrets.GDRIVE_CREDENTIALS }}
