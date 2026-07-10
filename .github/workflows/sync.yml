@@ -79,11 +79,13 @@ jobs:
                       file=sys.stderr,
                   )
                   sys.exit(1)
-              sys.exit(
+              print(
                   f'Error: Cannot access Google Drive folder "{folder_id}": {e}\n'
                   'Check that GDRIVE_FOLDER_ID is the folder ID (not the full URL) '
-                  'and that the service account has been granted access to that folder.'
+                  'and that the service account has been granted access to that folder.',
+                  file=sys.stderr,
               )
+              sys.exit(1)
 
           # Escape backslashes first, then single quotes, to produce a safe
           # Drive API query string (folder IDs are alphanumeric, but be defensive).
