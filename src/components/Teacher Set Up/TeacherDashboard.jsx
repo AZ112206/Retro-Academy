@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep';
-import GradeConfigStep from './GradeConfigStep';
-import ClassSelectionStep from './ClassSelectionStep';
-import HighSchoolScheduleStep from './HighSchoolScheduleStep';
-import MiddleSchoolScheduleStep from './MiddleSchoolScheduleStep';
+import GradeConfigStep from './2. GradeConfigStep';
+import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep';
+import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep';
+import ClassSelectionStep from './4. ClassSelectionStep';
 
 export default function TeacherDashboard({ onExit }) {
   const [phase, setPhase] = useState('SCHOOL_TYPE');
