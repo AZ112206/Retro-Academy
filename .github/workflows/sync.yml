@@ -68,15 +68,17 @@ jobs:
               ).execute()
           except HttpError as e:
               if e.resp.status == 404:
-                  sys.exit(
+                  print(
                       f'Error: Google Drive folder "{folder_id}" was not found (HTTP 404).\n'
                       'To fix this:\n'
                       '  1. Open Google Drive, right-click the target folder and choose "Share".\n'
                       '  2. Share it (Editor access) with the service-account e-mail from GDRIVE_CREDENTIALS.\n'
                       '  3. Copy the folder ID from the URL (the part after /folders/) and update\n'
                       '     the GDRIVE_FOLDER_ID repository secret with that value.\n'
-                      'If the folder was deleted, create a new one and repeat the steps above.'
+                      'If the folder was deleted, create a new one and repeat the steps above.',
+                      file=sys.stderr,
                   )
+                  sys.exit(1)
               sys.exit(
                   f'Error: Cannot access Google Drive folder "{folder_id}": {e}\n'
                   'Check that GDRIVE_FOLDER_ID is the folder ID (not the full URL) '
