@@ -16,7 +16,7 @@ export default function SchoolTypeStep({ onSelect, onExit, styles }) {
         </button>
         <button style={styles.menuButton} onClick={() => onSelect('High')}>
           🎓 HIGH SCHOOL
-          <span style={styles.subtext}>Grades 9-12 | 4-Period Matrix | Long & Short Blocks | 4 Lunch Waves</span>
+          <span style={styles.subtext}>Grades 9-12 | 6 Classrooms per department | 4-Period Matrix | Long & Short Blocks | 4 Lunch Waves</span>
         </button>
       </div>
       <button style={{ ...styles.exitButton, marginTop: '30px' }} onClick={onExit}>

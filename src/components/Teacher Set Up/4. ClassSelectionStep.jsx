@@ -7,15 +7,6 @@ const ELEMENTARY_OPTIONS = [
   { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
-// Base Middle School Pool: 5 core subjects
-const MIDDLE_SCHOOL_BASE_OPTIONS = [
-  { id: 'mid_reading', name: '📖 Reading', desc: 'Text comprehension, literary analysis, and vocabulary building.' },
-  { id: 'mid_ela', name: '📝 English Language Arts', desc: 'Advanced grammar, essay composition, and creative writing.' },
-  { id: 'mid_math', name: '📐 Mathematics', desc: 'Pre-Algebra logic, equations, and problem-solving tracks.' },
-  { id: 'mid_science', name: '🧪 Science', desc: 'Introduction to earth science, life systems, and physics concepts.' },
-  { id: 'mid_social_studies', name: '📜 Social Studies', desc: 'Exploring global geography, world cultures, and early civics.' }
-];
-
 export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, styles }) {
   
   // Rule: Grades 1 and 2 are fully locked as general core blocks
@@ -26,17 +17,38 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
     if (schoolType === 'Elementary') {
       if (elementaryGrade >= 3 && elementaryGrade <= 5) return ELEMENTARY_OPTIONS;
     }
+    
     if (schoolType === 'Middle') {
-      // 8th Grade replaces 'Reading' with 'Spanish'
-      if (middleGrade === 8) {
-        return MIDDLE_SCHOOL_BASE_OPTIONS.map(course => {
-          if (course.id === 'mid_reading') {
-            return { id: 'mid_spanish', name: '🗣️ Spanish', desc: 'Introductory conversational phrases, vocabulary, and linguistic structures.' };
-          }
-          return course;
-        });
+      // Dynamic grade-by-grade course names instead of generic subjects
+      if (middleGrade === 6) {
+        return [
+          { id: 'mid_reading', name: '📖 Narrative Literacy & Reading Workshop', desc: 'Text comprehension, reading workshop tracks, and vocabulary building.' },
+          { id: 'mid_ela', name: '📝 Introductory Composition & Grammar Mechanics', desc: 'Advanced grammar, sentence building, and essay structures.' },
+          { id: 'mid_math', name: '📐 Foundations of Mathematics VI', desc: 'Focusing on numbers, fractions, structural logic, and introductory arithmetic.' },
+          { id: 'mid_science', name: '🧪 Introductory Earth & Space Science', desc: 'Exploring geological shifts, planetary orbits, and natural structures.' },
+          { id: 'mid_social_studies', name: '📜 Ancient World History & Geography', desc: 'Exploring foundational world history, ancient societies, and maps.' }
+        ];
       }
-      return MIDDLE_SCHOOL_BASE_OPTIONS;
+      
+      if (middleGrade === 7) {
+        return [
+          { id: 'mid_reading', name: '📖 Critical Reading & Literary Analysis', desc: 'Analyzing textual elements, themes, character arcs, and literary motifs.' },
+          { id: 'mid_ela', name: '📝 Intermediate Writing & Rhetoric', desc: 'Focusing on argumentative essays, structure mechanics, and perspective formatting.' },
+          { id: 'mid_math', name: '📐 Intermediate Mathematical Concepts', desc: 'Stepping up arithmetic skills and logic paths to build bridges toward algebra.' },
+          { id: 'mid_science', name: '🧪 Life Science & Microscopic Worlds', desc: 'Introduction to biology concepts, biological structures, and ecosystem mechanics.' },
+          { id: 'mid_social_studies', name: '📜 Global Cultures & World Geography', desc: 'Exploring cultural landscapes, continental geography, and societal development.' }
+        ];
+      }
+      
+      if (middleGrade === 8) {
+        return [
+          { id: 'mid_spanish', name: '🗣️ Español: Curso Avanzado Roja', desc: 'Introductory conversational phrases, structural vocabulary, and linguistic elements.' },
+          { id: 'mid_ela', name: '📝 Pre-English', desc: 'Advanced analytical composition to bridge and prepare students for High School requirements.' },
+          { id: 'mid_math', name: '📐 Pre-Algebra', desc: 'Core logic, equation formulas, functional calculations, and variables.' },
+          { id: 'mid_science', name: '🧪 Introductory Physical Science & Physics Foundations', desc: 'Formulating physical properties, elemental concepts, and energy physics.' },
+          { id: 'mid_social_studies', name: '📜 Early American History & Civics Foundations', desc: 'Reviewing governing mechanisms, early constitutional models, and historical events.' }
+        ];
+      }
     }
     return [];
   };
