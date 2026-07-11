@@ -3,7 +3,11 @@ import { RetroArrow } from '../RetroIcon';
 
 const GENDERS = ['Male', 'Female'];
 const RACES = ['Black', 'Latino', 'White', 'Asian', 'Middle Eastern', 'Multiracial'];
-const FIRST_NAMES = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Avery', 'Casey', 'Riley', 'Parker', 'Reese', 'Quinn'];
+
+// Gender-specific first name pools
+const MALE_FIRST_NAMES = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Arthur', 'Casey', 'Marcus', 'Parker', 'David', 'Quinn'];
+const FEMALE_FIRST_NAMES = ['Avery', 'Riley', 'Reese', 'Morgan', 'Elena', 'Casey', 'Chloe', 'Sarah', 'Maya', 'Quinn'];
+
 const LAST_NAMES_BY_RACE = {
   Black: ['Johnson', 'Brown', 'Washington', 'Brooks', 'Carter', 'Jackson'],
   Latino: ['Garcia', 'Martinez', 'Rivera', 'Lopez', 'Ramirez', 'Santos'],
@@ -83,100 +87,66 @@ function ColorButton({ active, color, onClick }) {
 
 function getFaceGeometry(faceShape) {
   switch (faceShape) {
-    case 'Round':
-      return { width: 56, height: 56, borderRadius: '16px' };
-    case 'Square':
-      return { width: 58, height: 54, borderRadius: '4px' };
-    case 'Heart':
-      return { width: 56, height: 58, borderRadius: '12px 12px 18px 18px' };
-    default:
-      return { width: 56, height: 58, borderRadius: '10px' };
+    case 'Round': return { width: 56, height: 56, borderRadius: '16px' };
+    case 'Square': return { width: 58, height: 54, borderRadius: '4px' };
+    case 'Heart': return { width: 56, height: 58, borderRadius: '12px 12px 18px 18px' };
+    default: return { width: 56, height: 58, borderRadius: '10px' };
   }
 }
 
 function getHairGeometry(hairStyle, gender) {
   const isFemale = gender === 'Female';
   switch (hairStyle) {
-    case 'Crop':
-      return { width: 54, height: 12, top: -6, borderRadius: '4px' };
-    case 'Waves':
-      return { width: 58, height: 16, top: isFemale ? -8 : -4, borderRadius: '10px 10px 2px 2px' };
-    case 'Slick Back':
-      return { width: 56, height: 14, top: -6, borderRadius: '6px 6px 1px 1px' };
-    case 'Spiky':
-      return { width: 56, height: 20, top: -10, borderRadius: '4px 4px 0 0', clipPath: 'polygon(0% 100%, 10% 30%, 25% 70%, 40% 20%, 55% 60%, 70% 25%, 85% 75%, 100% 100%)' };
-    case 'Long Straight':
-      return { width: 60, height: 18, top: -10, borderRadius: '8px 8px 2px 2px', tail: 'long_straight', fringe: true };
-    case 'Curly Long':
-      return { width: 60, height: 20, top: -10, borderRadius: '10px 10px 4px 4px', tail: 'curly_long', fringe: true };
-    case 'Mullet':
-      return { width: 58, height: 32, top: -6, borderRadius: '8px 8px 4px 4px', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 82% 100%, 82% 40%, 18% 40%, 18% 100%, 0 100%)' };
-    case 'Buzz':
-      return { width: 54, height: 6, top: -2, borderRadius: '4px 4px 0 0' };
-    case 'Fade':
-      return { width: 54, height: 10, top: -4, borderRadius: '6px 6px 0 0', sideFade: true };
-    case 'Ponytail':
-      return { width: 58, height: 16, top: -8, borderRadius: '10px 10px 2px 2px', tail: 'pony', fringe: true };
-    case 'Pigtails':
-      return { width: 58, height: 16, top: -8, borderRadius: '10px 10px 2px 2px', tail: 'pigtails', fringe: true };
-    case 'Bun':
-      return { width: 58, height: 16, top: -6, borderRadius: '10px 10px 4px 4px', tail: 'bun', fringe: true };
-    case 'Braids':
-      return { width: 58, height: 18, top: -6, borderRadius: '8px 8px 2px 2px', tail: 'braids', fringe: true };
-    default:
-      return { width: 56, height: 14, top: -4, borderRadius: '6px 6px 2px 2px' };
+    case 'Crop': return { width: 54, height: 12, top: -6, borderRadius: '4px' };
+    case 'Waves': return { width: 58, height: 16, top: isFemale ? -8 : -4, borderRadius: '10px 10px 2px 2px' };
+    case 'Slick Back': return { width: 56, height: 14, top: -6, borderRadius: '6px 6px 1px 1px' };
+    case 'Spiky': return { width: 56, height: 20, top: -10, borderRadius: '4px 4px 0 0', clipPath: 'polygon(0% 100%, 10% 30%, 25% 70%, 40% 20%, 55% 60%, 70% 25%, 85% 75%, 100% 100%)' };
+    case 'Long Straight': return { width: 60, height: 18, top: -10, borderRadius: '8px 8px 2px 2px', tail: 'long_straight', fringe: true };
+    case 'Curly Long': return { width: 60, height: 20, top: -10, borderRadius: '10px 10px 4px 4px', tail: 'curly_long', fringe: true };
+    case 'Mullet': return { width: 58, height: 32, top: -6, borderRadius: '8px 8px 4px 4px', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 82% 100%, 82% 40%, 18% 40%, 18% 100%, 0 100%)' };
+    case 'Buzz': return { width: 54, height: 6, top: -2, borderRadius: '4px 4px 0 0' };
+    case 'Fade': return { width: 54, height: 10, top: -4, borderRadius: '6px 6px 0 0', sideFade: true };
+    case 'Ponytail': return { width: 58, height: 16, top: -8, borderRadius: '10px 10px 2px 2px', tail: 'pony', fringe: true };
+    case 'Pigtails': return { width: 58, height: 16, top: -8, borderRadius: '10px 10px 2px 2px', tail: 'pigtails', fringe: true };
+    case 'Bun': return { width: 58, height: 16, top: -6, borderRadius: '10px 10px 4px 4px', tail: 'bun', fringe: true };
+    case 'Braids': return { width: 58, height: 18, top: -6, borderRadius: '8px 8px 2px 2px', tail: 'braids', fringe: true };
+    default: return { width: 56, height: 14, top: -4, borderRadius: '6px 6px 2px 2px' };
   }
 }
 
 function getEyeGeometry(eyeShape) {
   switch (eyeShape) {
-    case 'Round':
-      return { width: 11, height: 10, borderRadius: '4px' };
-    case 'Narrow':
-      return { width: 13, height: 5, borderRadius: '2px' };
-    case 'Soft':
-      return { width: 12, height: 7, borderRadius: '3px' };
-    default:
-      return { width: 12, height: 6, borderRadius: '2px' };
+    case 'Round': return { width: 11, height: 10, borderRadius: '4px' };
+    case 'Narrow': return { width: 13, height: 5, borderRadius: '2px' };
+    case 'Soft': return { width: 12, height: 7, borderRadius: '3px' };
+    default: return { width: 12, height: 6, borderRadius: '2px' };
   }
 }
 
 function getBrowGeometry(browStyle) {
   switch (browStyle) {
-    case 'Arched':
-      return { width: 14, height: 3, leftRotate: '-18deg', rightRotate: '18deg' };
-    case 'Soft':
-      return { width: 12, height: 2, leftRotate: '-5deg', rightRotate: '5deg' };
-    case 'Bold':
-      return { width: 16, height: 4, leftRotate: '-10deg', rightRotate: '10deg' };
-    default:
-      return { width: 14, height: 3, leftRotate: '-10deg', rightRotate: '10deg' };
+    case 'Arched': return { width: 14, height: 3, leftRotate: '-18deg', rightRotate: '18deg' };
+    case 'Soft': return { width: 12, height: 2, leftRotate: '-5deg', rightRotate: '5deg' };
+    case 'Bold': return { width: 16, height: 4, leftRotate: '-10deg', rightRotate: '10deg' };
+    default: return { width: 14, height: 3, leftRotate: '-10deg', rightRotate: '10deg' };
   }
 }
 
 function getNoseGeometry(noseShape) {
   switch (noseShape) {
-    case 'Straight':
-      return { width: 6, height: 13 };
-    case 'Wide':
-      return { width: 10, height: 10 };
-    case 'Sharp':
-      return { width: 4, height: 14 };
-    default:
-      return { width: 8, height: 9 };
+    case 'Straight': return { width: 6, height: 13 };
+    case 'Wide': return { width: 10, height: 10 };
+    case 'Sharp': return { width: 4, height: 14 };
+    default: return { width: 8, height: 9 };
   }
 }
 
 function getMouthGeometry(mouthStyle) {
   switch (mouthStyle) {
-    case 'Smile':
-      return { width: 16, height: 4, borderRadius: '0 0 6px 6px', offset: 0 };
-    case 'Smirk':
-      return { width: 14, height: 3, borderRadius: '0 0 6px 0', offset: 2 };
-    case 'Focused':
-      return { width: 11, height: 2, borderRadius: '2px', offset: 0 };
-    default:
-      return { width: 12, height: 2, borderRadius: '2px', offset: 0 };
+    case 'Smile': return { width: 16, height: 4, borderRadius: '0 0 6px 6px', offset: 0 };
+    case 'Smirk': return { width: 14, height: 3, borderRadius: '0 0 6px 0', offset: 2 };
+    case 'Focused': return { width: 11, height: 2, borderRadius: '2px', offset: 0 };
+    default: return { width: 12, height: 2, borderRadius: '2px', offset: 0 };
   }
 }
 
@@ -247,7 +217,6 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
 
       <div style={{ position: 'absolute', inset: 0 }}>
 
-      {/* FIXED: Added 'Ponytail' here so the shell layer renders on the avatar core */}
       {(appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails' || appearance.hairStyle === 'Long Straight' || appearance.hairStyle === 'Curly Long' || appearance.hairStyle === 'Ponytail') && (
         <div
           style={{
@@ -267,7 +236,6 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
         />
       )}
 
-      {/* Extended background structure for Ponytail alignment */}
       {hair.tail === 'pony' && (
         <div 
           style={{ 
@@ -463,7 +431,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const [gender, setGender] = useState('Male');
   const [race, setRace] = useState('Black');
   const [title, setTitle] = useState('Mr.');
-  const [firstName, setFirstName] = useState(FIRST_NAMES[0]);
+  const [firstName, setFirstName] = useState(MALE_FIRST_NAMES[0]);
   const [lastName, setLastName] = useState(LAST_NAMES_BY_RACE.Black[0]);
   const [skinTone, setSkinTone] = useState(SKIN_TONES_BY_RACE.Black[0]);
   const [hairStyle, setHairStyle] = useState(HAIR_STYLES_BY_GENDER.Male[0]);
@@ -489,13 +457,16 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const badgeName = `${title} ${lastName}`;
   const rosterName = `${firstName} ${lastName}`;
 
+  // FIXED: Flips first names pool parameters immediately when gender value shifts
   useEffect(() => {
     if (gender === 'Male') {
       setTitle('Mr.');
-    } else if (!['Ms.', 'Mrs.'].includes(title)) {
+      setFirstName(MALE_FIRST_NAMES[Math.floor(Math.random() * MALE_FIRST_NAMES.length)]);
+    } else {
       setTitle('Ms.');
+      setFirstName(FEMALE_FIRST_NAMES[Math.floor(Math.random() * FEMALE_FIRST_NAMES.length)]);
     }
-  }, [gender, title]);
+  }, [gender]);
 
   useEffect(() => {
     if (!hairStyleOptions.includes(hairStyle)) {
@@ -507,10 +478,11 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
     if (!skinToneOptions.includes(skinTone)) {
       setSkinTone(skinToneOptions[0]);
     }
-    if (!lastNameOptions.includes(lastName)) {
+    // Only update default matching names if user hasn't typed a completely custom name manually
+    if (lastNameOptions.includes(lastName) || lastName === '') {
       setLastName(lastNameOptions[0]);
     }
-  }, [lastName, lastNameOptions, race, skinTone, skinToneOptions]);
+  }, [race, skinTone, skinToneOptions]);
 
   useEffect(() => {
     let tick = 0;
@@ -586,18 +558,35 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
               <select value={title} onChange={(e) => setTitle(e.target.value)} disabled={gender === 'Male'} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '110px', opacity: gender === 'Male' ? 0.65 : 1 }}>
                 {(gender === 'Male' ? ['Mr.'] : ['Ms.', 'Mrs.']).map((option) => <option key={option}>{option}</option>)}
               </select>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
               <select value={race} onChange={(e) => setRace(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '160px' }}>
                 {RACES.map((option) => <option key={option}>{option}</option>)}
               </select>
-              <select value={firstName} onChange={(e) => setFirstName(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '140px' }}>
-                {FIRST_NAMES.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={lastName} onChange={(e) => setLastName(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '160px' }}>
-                {lastNameOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
             </div>
+            
+            {/* FIXED: Form layout inputs allowing customized text entry overrides for first/last signatures */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#39FF14' }}>FIRST NAME</span>
+                <input 
+                  type="text" 
+                  value={firstName} 
+                  onChange={(e) => setFirstName(e.target.value)} 
+                  placeholder="Enter First Name"
+                  style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', width: '150px', fontSize: '0.85rem' }} 
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#39FF14' }}>LAST NAME</span>
+                <input 
+                  type="text" 
+                  value={lastName} 
+                  onChange={(e) => setLastName(e.target.value)} 
+                  placeholder="Enter Last Name"
+                  style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', width: '150px', fontSize: '0.85rem' }} 
+                />
+              </div>
+            </div>
+            
             <div style={{ marginTop: '14px', fontSize: '0.8rem', color: '#9acb92', letterSpacing: '0.5px' }}>
               BADGE NAME: {badgeName} | ROSTER NAME: {rosterName}
             </div>
