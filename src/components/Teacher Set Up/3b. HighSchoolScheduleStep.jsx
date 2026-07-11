@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import RetroIcon, { RetroArrow, RetroClose } from '../RetroIcon';
 
 const DEPARTMENTS = [
-  { id: 'math', name: '[MATH] Math Dept' },
-  { id: 'science', name: '[SCI] Science Dept' },
-  { id: 'history', name: '[HIST] History Dept' },
-  { id: 'english', name: '[ENG] English Dept' },
-  { id: 'language', name: '[LANG] Foreign Lang Dept' }
+  { id: 'math', name: 'Math Dept', icon: 'math', code: 'MATH' },
+  { id: 'science', name: 'Science Dept', icon: 'science', code: 'SCI' },
+  { id: 'history', name: 'History Dept', icon: 'history', code: 'HIST' },
+  { id: 'english', name: 'English Dept', icon: 'book', code: 'ENG' },
+  { id: 'language', name: 'Foreign Lang Dept', icon: 'language', code: 'LANG' }
 ];
 
 const POOL_EXPANSIONS = {
@@ -212,7 +212,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 }} 
                 onClick={() => handleSelectDept(dept.id)}
               >
-                {dept.name}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                  <RetroIcon kind={dept.icon} />
+                  <span>[{dept.code}] {dept.name}</span>
+                </span>
               </button>
             ))}
           </div>
@@ -231,7 +234,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 }} 
                 onClick={() => handleSelectDept(dept.id)}
               >
-                {dept.name}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                  <RetroIcon kind={dept.icon} />
+                  <span>[{dept.code}] {dept.name}</span>
+                </span>
               </button>
             ))}
           </div>
