@@ -31,15 +31,15 @@ const BLOCK_TIMES = [
   { id: 'block2', label: 'Block 2', time: '9:00 AM - 9:55 AM', type: 'class' },
   { id: 'block3', label: 'Block 3', time: '10:00 AM - 10:55 AM', type: 'class' },
   { id: 'lunch', label: 'Lunch Block', type: 'lunch' },
-  { id: 'block4', label: 'Prep Block', time: '11:45 AM - 12:25 PM', type: 'prep' },
-  { id: 'block5', label: 'Block 5', time: '12:30 PM - 1:15 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', time: '1:20 PM - 2:05 PM', type: 'class' }
+  { id: 'block4', label: 'Prep Block', time: '11:35 AM - 12:10 PM', type: 'prep' },
+  { id: 'block5', label: 'Block 5', time: '12:15 PM - 1:05 PM', type: 'class' },
+  { id: 'block6', label: 'Block 6', time: '1:10 PM - 2:00 PM', type: 'class' }
 ];
 
 const LUNCH_WINDOWS = {
   'Wave A (Early)': '11:00 AM - 11:30 AM',
-  'Wave B (Mid)': '11:20 AM - 11:50 AM',
-  'Wave C (Late)': '11:40 AM - 12:10 PM'
+  'Wave B (Mid)': '11:05 AM - 11:35 AM',
+  'Wave C (Late)': '11:10 AM - 11:40 AM'
 };
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
