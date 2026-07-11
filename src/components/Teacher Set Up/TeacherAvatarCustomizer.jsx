@@ -234,7 +234,9 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
   const handY = armBaseY + 30 * scale + motion.armSwing * scale;
   const mouthHeight = motion.blink ? Math.max(1, mouth.height - 1) : mouth.height + Math.max(0, motion.mouthShift);
   const hairLeftInFace = ((face.width - hair.width) / 2) * scale;
-  const fringeLeftInFace = ((face.width - 44) / 2) * scale;
+  const fringeWidth = Math.min(44, hair.width - 6);
+  const fringeLeftInFace = ((face.width - fringeWidth) / 2) * scale;
+  const centerHairLeft = centerX - (hair.width * scale) / 2;
 
   return (
     <div
@@ -259,7 +261,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
         <div
           style={{
             position: 'absolute',
-            left: `${centerX - (hair.width + 4) * scale / 2}px`,
+            left: `${centerHairLeft - 2 * scale}px`,
             top: `${faceTop + 34 * scale + hair.top * scale}px`,
             width: `${(hair.width + 4) * scale}px`,
             height: `${(hair.height + 4) * scale}px`,
@@ -272,21 +274,21 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
 
       {/* EXTRA FEMALE ATTACHMENTS REHUNG BACK-BOUND */}
       {hair.tail === 'pony' && !facingBack && (
-        <div style={{ position: 'absolute', left: `${centerX + 12 * scale}px`, top: `${faceTop + 44 * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
+        <div style={{ position: 'absolute', left: `${centerX - 7 * scale}px`, top: `${faceTop + 46 * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 10px 10px', zIndex: 1 }} />
       )}
       {hair.tail === 'pigtails' && !facingBack && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 34 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '8px 0 4px 12px', zIndex: 1 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 22 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX - 32 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '8px 0 4px 12px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX + 20 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
         </>
       )}
       {hair.tail === 'bun' && !facingBack && (
-        <div style={{ position: 'absolute', left: `${centerX - 12 * scale}px`, top: `${faceTop + 24 * scale}px`, width: `${24 * scale}px`, height: `${16 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '50% 50% 4px 4px', zIndex: 1 }} />
+        <div style={{ position: 'absolute', left: `${centerX - 12 * scale}px`, top: `${faceTop + 18 * scale}px`, width: `${24 * scale}px`, height: `${16 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '50% 50% 4px 4px', zIndex: 1 }} />
       )}
       {hair.tail === 'braids' && !facingBack && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 30 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
-          <div style={{ position: 'absolute', left: `${centerX + 20 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX - 28 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX + 18 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
         </>
       )}
 
@@ -326,7 +328,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
               position: 'absolute',
               left: `${fringeLeftInFace}px`,
               top: `${(hair.top + 14) * scale}px`,
-              width: `${44 * scale}px`,
+              width: `${fringeWidth * scale}px`,
               height: `${10 * scale}px`,
               backgroundColor: appearance.hairColor,
               borderRadius: '0 0 4px 4px',

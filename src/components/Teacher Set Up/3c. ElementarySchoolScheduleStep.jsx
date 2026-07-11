@@ -109,7 +109,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
         <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup.wave, lunchWindow: currentSetup.time })}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CLASS ASSIGNMENT <RetroArrow color="#0a0a0a" /></span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" /></span>
         </button>
       </div>
     </div>

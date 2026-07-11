@@ -358,7 +358,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
           <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
           <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
-            SIGN CONTRACT <RetroArrow color="#0a0a0a" />
+            CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
           </button>
         </div>
       </div>

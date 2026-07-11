@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep.jsx';
 import GradeConfigStep from './2. GradeConfigStep.jsx';
-import ClassSelectionStep from './4. ClassSelectionStep.jsx';
 import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
 import ElementarySchoolScheduleStep from './3c. ElementarySchoolScheduleStep.jsx';
@@ -105,7 +104,7 @@ const retroStyles = {
 };
 
 export default function TeacherDashboard({ onExit }) {
-  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECT' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
+  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
   const [step, setStep] = useState('SCHOOL_TYPE');
   
   // Track unified setup states configurations
@@ -114,7 +113,6 @@ export default function TeacherDashboard({ onExit }) {
   const [middleGrade, setMiddleGrade] = useState(null);
   const [middleLunchWave, setMiddleLunchWave] = useState('');
   
-  const [assignedClass, setAssignedClass] = useState(null);
   const [highSchoolDept, setHighSchoolDept] = useState(null);
   const [lunchWave, setLunchWave] = useState('');
   
@@ -140,11 +138,6 @@ export default function TeacherDashboard({ onExit }) {
     }
   };
 
-  const handleClassSelectNext = (selectedCourse) => {
-    setAssignedClass(selectedCourse);
-    setStep('AVATAR_CUSTOMIZE');
-  };
-
   const handleScheduleLaunch = (data) => {
     if (schoolType === 'High') {
       setHighSchoolDept(data.selectedDept);
@@ -154,7 +147,7 @@ export default function TeacherDashboard({ onExit }) {
     } else if (schoolType === 'Elementary') {
       setLunchWave(data.lunchWave);
     }
-    setStep('CLASS_SELECT');
+    setStep('AVATAR_CUSTOMIZE');
   };
 
   const handleFinishCustomization = (profileData) => {
@@ -186,23 +179,7 @@ export default function TeacherDashboard({ onExit }) {
     );
   }
 
-  // 3. Elementary dynamic course collection selector 
-  if (step === 'CLASS_SELECT') {
-    return (
-      <ClassSelectionStep 
-        schoolType={schoolType}
-        elementaryGrade={elementaryGrade}
-        middleGrade={middleGrade}
-        highSchoolDept={highSchoolDept}
-        onSelectClass={handleClassSelectNext}
-        onBack={() => setStep('SCHEDULE_MATRIX')}
-        onExit={onExit}
-        styles={retroStyles}
-      />
-    );
-  }
-
-  // 4. Structural schedule grids generation stages
+  // 3. Structural schedule grids generation stages
   if (step === 'SCHEDULE_MATRIX') {
     if (schoolType === 'High') {
       return <HighSchoolScheduleStep onLaunchGame={handleScheduleLaunch} onBack={() => setStep('SCHOOL_TYPE')} onExit={onExit} styles={retroStyles} />;
@@ -232,7 +209,7 @@ export default function TeacherDashboard({ onExit }) {
     }
   }
 
-  // 5. Final Step: The Avatar Customizer 
+  // 4. Final Step: The Avatar Customizer 
   if (step === 'AVATAR_CUSTOMIZE') {
     return (
       <TeacherAvatarCustomizer 
@@ -244,7 +221,7 @@ export default function TeacherDashboard({ onExit }) {
     );
   }
 
-  // 6. 2D Game Exploration Sandbox Viewport Screen
+  // 5. 2D Game Exploration Sandbox Viewport Screen
   if (step === 'WORLD_MAP') {
     return (
       <div style={{ ...retroStyles.setupBox, maxWidth: '1000px', borderStyle: 'solid' }}>
