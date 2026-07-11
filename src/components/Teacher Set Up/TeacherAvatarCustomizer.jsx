@@ -22,7 +22,7 @@ const SKIN_TONES_BY_RACE = {
 };
 const HAIR_STYLES_BY_GENDER = {
   Male: ['Side Part', 'Crop', 'Waves', 'Mullet', 'Buzz', 'Fade'],
-  Female: ['Bob', 'Waves', 'Ponytail', 'Pigtails', 'Bun', 'Braids']
+  Female: ['Long Straight', 'Curly Long', 'Ponytail', 'Pigtails', 'Bun', 'Braids']
 };
 const HAIR_COLORS = ['#20140F', '#4A3728', '#6D4C41', '#8E6B3F', '#A63F3F', '#1F2E4F'];
 const FACE_SHAPES = ['Oval', 'Round', 'Square', 'Heart'];
@@ -38,6 +38,7 @@ const EYE_COLOR_OPTIONS = [
 const BROW_STYLES = ['Straight', 'Arched', 'Soft', 'Bold'];
 const NOSE_SHAPES = ['Short', 'Straight', 'Wide', 'Sharp'];
 const MOUTH_STYLES = ['Calm', 'Smile', 'Smirk', 'Focused'];
+const FEMALE_LIP_COLORS = ['#8B3A62', '#A54B74', '#B85C7D', '#C96B79', '#D8788A', '#E29AA3'];
 const WARDROBE_COLORS = ['#1F3A5F', '#2D6A4F', '#7A3E2B', '#5B3F8C', '#6E4B2A', '#3C3C3C', '#9A2D2D', '#E8E1D4'];
 const DIRECTIONS = ['Front', 'Right', 'Back', 'Left'];
 
@@ -98,6 +99,10 @@ function getHairGeometry(hairStyle, gender) {
       return { width: 54, height: 16, top: -4, borderRadius: '4px' };
     case 'Waves':
       return { width: 58, height: 22, top: isFemale ? -6 : -2, borderRadius: '10px 10px 4px 4px' };
+    case 'Long Straight':
+      return { width: 60, height: 24, top: -8, borderRadius: '8px 8px 4px 4px', tail: 'long_straight', fringe: true, backVolume: 34 };
+    case 'Curly Long':
+      return { width: 60, height: 26, top: -8, borderRadius: '10px 10px 6px 6px', tail: 'curly_long', fringe: true, backVolume: 36 };
     case 'Bob':
       return { width: 62, height: 42, top: -6, borderRadius: '12px 12px 14px 14px' };
     case 'Mullet':
@@ -205,7 +210,7 @@ function buildAppearance(state, overrides = {}) {
   return { ...state, ...overrides };
 }
 
-function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion = { blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0 } }) {
+function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion = { blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairShift: 0 } }) {
   const face = getFaceGeometry(appearance.faceShape);
   const hair = getHairGeometry(appearance.hairStyle, appearance.gender);
   const eyes = getEyeGeometry(appearance.eyeShape);
@@ -236,6 +241,8 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
   const hairLeftInFace = ((face.width - hair.width) / 2) * scale;
   const fringeWidth = Math.min(44, hair.width - 6);
   const fringeLeftInFace = ((face.width - fringeWidth) / 2) * scale;
+  const longHairStyles = ['Long Straight', 'Curly Long', 'Ponytail', 'Pigtails', 'Braids'];
+  const hairMotionOffset = longHairStyles.includes(appearance.hairStyle) ? motion.hairShift * scale : 0;
 
   return (
     <div
@@ -256,29 +263,31 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
       <div style={{ position: 'absolute', inset: 0 }}>
 
       {/* EXTENDED FEMALE BACK HAIR EFFECTS (Render behind the head canvas) */}
-      {(appearance.hairStyle === 'Bob' || appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails') && (
+      {(appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails' || appearance.hairStyle === 'Long Straight' || appearance.hairStyle === 'Curly Long') && (
         <div
           style={{
             position: 'absolute',
-            left: `${centerX - ((hair.width + 4) * scale) / 2}px`,
+            left: `${centerX - ((hair.width + 4) * scale) / 2 + hairMotionOffset}px`,
             top: `${faceTop + 34 * scale + hair.top * scale + (facingBack ? -2 * scale : 0)}px`,
             width: `${(hair.width + 4) * scale}px`,
             height: `${(hair.height + 6) * scale}px`,
             backgroundColor: appearance.hairColor,
             borderRadius: hair.borderRadius,
-            zIndex: 1
+            zIndex: 1,
+            backgroundImage: appearance.hairStyle === 'Curly Long' ? 'radial-gradient(circle at 2px 2px, rgba(0,0,0,0.18) 1px, transparent 1px)' : undefined,
+            backgroundSize: appearance.hairStyle === 'Curly Long' ? '6px 6px' : undefined
           }}
         />
       )}
 
       {/* EXTRA FEMALE ATTACHMENTS REHUNG BACK-BOUND */}
       {hair.tail === 'pony' && (
-        <div style={{ position: 'absolute', left: `${centerX - 7 * scale}px`, top: `${faceTop + (facingBack ? 42 : 46) * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '8px 8px 12px 12px' : '0 0 10px 10px', zIndex: 1 }} />
+        <div style={{ position: 'absolute', left: `${centerX - 7 * scale + hairMotionOffset}px`, top: `${faceTop + (facingBack ? 42 : 46) * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '8px 8px 12px 12px' : '0 0 10px 10px', zIndex: 1 }} />
       )}
       {hair.tail === 'pigtails' && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 30 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '8px 0 4px 12px', zIndex: 1 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 18 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '0 8px 12px 4px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX - 30 * scale + hairMotionOffset}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '8px 0 4px 12px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX + 18 * scale - hairMotionOffset}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '0 8px 12px 4px', zIndex: 1 }} />
         </>
       )}
       {hair.tail === 'bun' && (
@@ -286,9 +295,15 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
       )}
       {hair.tail === 'braids' && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 26 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
-          <div style={{ position: 'absolute', left: `${centerX + 16 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX - 26 * scale + hairMotionOffset}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX + 16 * scale - hairMotionOffset}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
         </>
+      )}
+      {hair.tail === 'long_straight' && (
+        <div style={{ position: 'absolute', left: `${centerX - 20 * scale + hairMotionOffset}px`, top: `${faceTop + 46 * scale}px`, width: `${40 * scale}px`, height: `${44 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 10px 10px', zIndex: 1 }} />
+      )}
+      {hair.tail === 'curly_long' && (
+        <div style={{ position: 'absolute', left: `${centerX - 21 * scale + hairMotionOffset}px`, top: `${faceTop + 46 * scale}px`, width: `${42 * scale}px`, height: `${46 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 12px 12px', zIndex: 1, backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(0,0,0,0.15) 1px, transparent 1px)', backgroundSize: '6px 6px' }} />
       )}
 
       {/* CORE FACE LAYER */}
@@ -310,7 +325,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
         <div
           style={{
             position: 'absolute',
-            left: `${hairLeftInFace}px`,
+            left: `${hairLeftInFace + hairMotionOffset}px`,
             top: `${hair.top * scale}px`,
             width: `${hair.width * scale}px`,
             height: `${hair.height * scale}px`,
@@ -357,7 +372,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
                 </div>
                 <div style={{ position: 'absolute', top: `${30 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
                 {/* Mouth moved up significantly from 54px to 42px to create clear separation for the chin line */}
-                <div style={{ position: 'absolute', top: `${42 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2 - mouth.offset * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
+                <div style={{ position: 'absolute', top: `${42 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2 - mouth.offset * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: appearance.gender === 'Female' ? appearance.lipColor : '#542423', borderRadius: mouth.borderRadius }} />
               </>
             )}
             {facingSide && (
@@ -367,7 +382,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
                 <div style={{ position: 'absolute', top: `${32 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 4) * scale}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
-                <div style={{ position: 'absolute', top: `${44 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 2 + mouth.offset) * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
+                <div style={{ position: 'absolute', top: `${44 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 2 + mouth.offset) * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: appearance.gender === 'Female' ? appearance.lipColor : '#542423', borderRadius: mouth.borderRadius }} />
               </>
             )}
           </>
@@ -449,6 +464,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const [browStyle, setBrowStyle] = useState(BROW_STYLES[0]);
   const [noseShape, setNoseShape] = useState(NOSE_SHAPES[0]);
   const [mouthStyle, setMouthStyle] = useState(MOUTH_STYLES[0]);
+  const [lipColor, setLipColor] = useState(FEMALE_LIP_COLORS[0]);
   const [topColor, setTopColor] = useState(WARDROBE_COLORS[0]);
   const [bottomColor, setBottomColor] = useState(WARDROBE_COLORS[5]);
   const [shoeColor, setShoeColor] = useState('#111111');
@@ -464,10 +480,14 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   useEffect(() => {
     if (gender === 'Male') {
       setTitle('Mr.');
+      setLipColor('#542423');
     } else if (!['Ms.', 'Mrs.'].includes(title)) {
       setTitle('Ms.');
+      if (lipColor === '#542423') {
+        setLipColor(FEMALE_LIP_COLORS[0]);
+      }
     }
-  }, [gender, title]);
+  }, [gender, title, lipColor]);
 
   useEffect(() => {
     if (!hairStyleOptions.includes(hairStyle)) {
@@ -492,6 +512,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
         armSwing: Math.random() > 0.5 ? 2 : -2,
         footShift: Math.random() > 0.5 ? 1 : -1,
         browShift: Math.random() > 0.7 ? -1 : 0,
+        hairShift: Math.random() > 0.5 ? 2 : -2,
       }));
     }, 900);
 
@@ -519,10 +540,11 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
     browStyle,
     noseShape,
     mouthStyle,
+    lipColor,
     topColor,
     bottomColor,
     shoeColor
-  }), [gender, skinTone, hairStyle, hairColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, mouthStyle, topColor, bottomColor, shoeColor]);
+  }), [gender, skinTone, hairStyle, hairColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, mouthStyle, lipColor, topColor, bottomColor, shoeColor]);
 
   const panelStyle = {
     backgroundColor: '#1a1a1a',
@@ -569,6 +591,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
       browStyle,
       noseShape,
       mouthStyle,
+      lipColor,
       topColor,
       bottomColor,
       shoeColor
@@ -641,6 +664,17 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           <PreviewSelector label="NOSE SHAPE" options={NOSE_SHAPES} activeValue={noseShape} onSelect={setNoseShape} appearance={appearance} buildOverride={(value) => ({ noseShape: value })} />
           <PreviewSelector label="MOUTH SHAPE" options={MOUTH_STYLES} activeValue={mouthStyle} onSelect={setMouthStyle} appearance={appearance} buildOverride={(value) => ({ mouthStyle: value })} />
           <PreviewSelector label="HAIR STYLE" options={hairStyleOptions} activeValue={hairStyle} onSelect={setHairStyle} appearance={appearance} buildOverride={(value) => ({ hairStyle: value, gender })} />
+
+          {gender === 'Female' && (
+            <div style={sectionStyle}>
+              <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>LIP COLOR</span>
+              <div style={swatchRowStyle}>
+                {FEMALE_LIP_COLORS.map((color) => (
+                  <ColorButton key={color} color={color} active={lipColor === color} onClick={() => setLipColor(color)} />
+                ))}
+              </div>
+            </div>
+          )}
 
           <div style={sectionStyle}>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>HAIR COLOR</span>
