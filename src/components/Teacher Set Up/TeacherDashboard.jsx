@@ -1,200 +1,230 @@
 import React, { useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep';
-import GradeConfigStep from './2. GradeConfigStep';
+import GradeConfigStep from './GradeConfigStep';
+import ClassSelectionStep from './ClassSelectionStep';
+import HighSchoolScheduleStep from './HighSchoolScheduleStep';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep';
-import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep';
-import ElementaryScheduleStep from './3c. ElementarySchoolScheduleStep';
-import ClassSelectionStep from './4. ClassSelectionStep';
+import TeacherAvatarCustomizer from './TeacherAvatarCustomizer';
 
-export default function TeacherDashboard({ onExit }) {
-  const [phase, setPhase] = useState('SCHOOL_TYPE');
-  const [schoolType, setSchoolType] = useState(null);
-  const [elementaryGrade, setElementaryGrade] = useState(null);
-  const [middleGrade, setMiddleGrade] = useState(null);
-  const [middleLunchWave, setMiddleLunchWave] = useState(null);
-  const [elementaryLunchWave, setElementaryLunchWave] = useState(null);
-  const [highSchoolLunchWave, setHighSchoolLunchWave] = useState(null);
-  const [chosenClass, setChosenClass] = useState(null);
-
-  const renderCentered = (content) => <div style={styles.container}>{content}</div>;
-
-  if (phase === 'SCHOOL_TYPE') {
-    return renderCentered(
-      <SchoolTypeStep
-        onSelect={(type) => {
-          setSchoolType(type);
-          if (type === 'High') setPhase('HIGH_SCHOOL_CONFIG');
-          else setPhase('GRADE_CONFIG');
-        }}
-        onExit={onExit}
-        styles={styles}
-      />
-    );
-  }
-
-  if (phase === 'GRADE_CONFIG') {
-    return renderCentered(
-      <GradeConfigStep
-        schoolType={schoolType}
-        stateVars={{ elementaryGrade, middleGrade, middleLunchWave }}
-        stateSetters={{ setElementaryGrade, setMiddleGrade, setMiddleLunchWave }}
-        onNext={() => {
-          if (schoolType === 'Middle') setPhase('MIDDLE_SCHEDULE');
-          else if (schoolType === 'Elementary') setPhase('ELEM_SCHEDULE');
-          else setPhase('CLASS_SELECT');
-        }}
-        onBack={() => setPhase('SCHOOL_TYPE')}
-        styles={styles}
-      />
-    );
-  }
-
-  if (phase === 'ELEM_SCHEDULE') {
-    return renderCentered(
-      <ElementaryScheduleStep
-        elementaryGrade={elementaryGrade}
-        onLaunchGame={(config) => {
-          if (config?.lunchWave) setElementaryLunchWave(config.lunchWave.wave);
-          setChosenClass({ id: 'elem_class', name: config?.gradeType || 'Elementary Class' });
-          setPhase('GAMEPLAY');
-        }}
-        onBack={() => setPhase('GRADE_CONFIG')}
-        styles={styles}
-      />
-    );
-  }
-
-  if (phase === 'MIDDLE_SCHEDULE') {
-    return renderCentered(
-      <MiddleSchoolScheduleStep
-        middleGrade={middleGrade}
-        middleLunchWave={middleLunchWave}
-        onLaunchGame={(config) => {
-          if (config?.wave) setMiddleLunchWave(config.wave);
-          setPhase('CLASS_SELECT');
-        }}
-        onBack={() => setPhase('GRADE_CONFIG')}
-        styles={styles}
-      />
-    );
-  }
-
-  if (phase === 'HIGH_SCHOOL_CONFIG') {
-    return renderCentered(
-      <HighSchoolScheduleStep
-        onLaunchGame={(config) => {
-          setChosenClass({ id: 'high_matrix', name: `${config.selectedDept.toUpperCase()} Department` });
-          setHighSchoolLunchWave(config.randomLunchWave);
-          setPhase('GAMEPLAY');
-        }}
-        onBack={() => setPhase('SCHOOL_TYPE')}
-        styles={styles}
-      />
-    );
-  }
-
-  if (phase === 'CLASS_SELECT') {
-    return renderCentered(
-      <ClassSelectionStep
-        schoolType={schoolType}
-        elementaryGrade={elementaryGrade}
-        middleGrade={middleGrade}
-        onSelectClass={(course) => {
-          setChosenClass(course);
-          setPhase('GAMEPLAY');
-        }}
-        onBack={() => setPhase(schoolType === 'Middle' ? 'MIDDLE_SCHEDULE' : 'GRADE_CONFIG')}
-        styles={styles}
-      />
-    );
-  }
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.setupBox}>
-        <h2 style={styles.heading}>CLASSROOM READY</h2>
-        <p style={styles.subtitle}>Role and track selection is complete.</p>
-        <p style={{ margin: '0 0 12px 0' }}>
-          School Type: <strong style={{ color: '#fff' }}>{schoolType}</strong>
-        </p>
-        <p style={{ margin: '0 0 12px 0' }}>
-          Course/Track: <strong style={{ color: '#fff' }}>{chosenClass?.name || 'N/A'}</strong>
-        </p>
-        {(elementaryLunchWave || middleLunchWave || highSchoolLunchWave) && (
-          <p style={{ margin: '0 0 24px 0' }}>
-            Lunch Wave Assignment: <strong style={{ color: '#ff9f43' }}>{elementaryLunchWave || middleLunchWave || highSchoolLunchWave}</strong>
-          </p>
-        )}
-        <button style={styles.exitButton} onClick={onExit}>RETURN TO MAIN MENU</button>
-      </div>
-    </div>
-  );
-}
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    width: '100%',
-    backgroundColor: '#121212',
-    color: '#39FF14',
-    fontFamily: '"Courier New", Courier, monospace',
-    padding: '20px',
-    boxSizing: 'border-box',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
+// Global Retro Styles Shared Matrix
+const retroStyles = {
   setupBox: {
+    backgroundColor: '#121212',
+    border: '2px solid #39FF14',
+    boxShadow: '0 0 20px rgba(57, 255, 20, 0.2)',
+    borderRadius: '8px',
+    padding: '30px',
     textAlign: 'center',
-    border: '3px solid #39FF14',
-    padding: '40px',
-    borderRadius: '10px',
-    backgroundColor: '#1a1a1a',
-    maxWidth: '750px',
-    width: '100%',
-    boxSizing: 'border-box',
-    boxShadow: '0 0 15px rgba(57, 255, 20, 0.4)'
+    fontFamily: '"Courier New", Courier, monospace',
+    color: '#fff',
+    width: '90%',
+    margin: '40px auto'
   },
-  heading: { fontSize: '1.8rem', marginBottom: '10px', marginTop: 0 },
-  subtitle: { color: '#888', marginBottom: '25px', fontSize: '1rem' },
-  menuColumn: { display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' },
+  heading: {
+    color: '#39FF14',
+    letterSpacing: '2px',
+    marginBottom: '10px',
+    textTransform: 'uppercase'
+  },
+  subtitle: {
+    color: '#aaa',
+    fontSize: '0.95rem',
+    marginBottom: '25px'
+  },
+  menuColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    width: '100%',
+    margin: '0 auto'
+  },
   menuButton: {
     backgroundColor: '#222',
     color: '#39FF14',
-    border: '2px solid #39FF14',
-    padding: '15px',
-    fontSize: '1.1rem',
+    border: '1px solid #39FF14',
+    padding: '12px 20px',
+    borderRadius: '4px',
     cursor: 'pointer',
+    fontSize: '1rem',
     fontFamily: 'inherit',
-    borderRadius: '5px',
-    textAlign: 'left',
+    transition: 'all 0.2s ease',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'background-color 0.2s',
-    textDecoration: 'none'
+    alignItems: 'center',
+    gap: '4px'
   },
-  subtext: { fontSize: '0.8rem', color: '#888', marginTop: '4px', textAlign: 'left' },
   actionButton: {
-    width: '100%',
     backgroundColor: '#39FF14',
     color: '#000',
     border: 'none',
-    padding: '14px',
-    fontSize: '1rem',
+    padding: '14px 24px',
+    borderRadius: '4px',
     fontWeight: 'bold',
     cursor: 'pointer',
+    fontSize: '1rem',
     fontFamily: 'inherit',
-    borderRadius: '4px',
-    textTransform: 'uppercase'
+    transition: 'opacity 0.2s ease'
   },
   exitButton: {
     backgroundColor: 'transparent',
     color: '#FF3333',
-    border: '2px solid #FF3333',
+    border: '1px dashed #FF3333',
     padding: '10px 20px',
+    borderRadius: '4px',
     cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontWeight: 'bold',
-    borderRadius: '4px'
+    fontSize: '0.9rem',
+    fontFamily: 'inherit'
   }
 };
+
+export default function TeacherDashboard({ onExit }) {
+  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECT' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
+  const [step, setStep] = useState('SCHOOL_TYPE');
+  
+  // Track unified setup states configurations
+  const [schoolType, setSchoolType] = useState(null);
+  const [elementaryGrade, setElementaryGrade] = useState(null);
+  const [middleGrade, setMiddleGrade] = useState(null);
+  const [middleLunchWave, setMiddleLunchWave] = useState('');
+  
+  const [assignedClass, setAssignedClass] = useState(null);
+  const [highSchoolDept, setHighSchoolDept] = useState(null);
+  const [lunchWave, setLunchWave] = useState('');
+  
+  // Finalized teacher operational properties payload
+  const [teacherProfile, setTeacherProfile] = useState(null);
+
+  // Structural wrappers for components that share global hooks
+  const stateVars = { middleGrade, middleLunchWave, elementaryGrade };
+  const stateSetters = { setElementaryGrade, setMiddleGrade, setMiddleLunchWave };
+
+  const handleSelectSchoolType = (type) => {
+    setSchoolType(type);
+    if (type === 'High') {
+      setStep('SCHEDULE_MATRIX'); // High school bypasses grade configuration steps
+    } else {
+      setStep('GRADE_CONFIG');
+    }
+  };
+
+  const handleGradeConfigNext = () => {
+    if (schoolType === 'Elementary') {
+      setStep('CLASS_SELECT');
+    } else if (schoolType === 'Middle') {
+      setStep('SCHEDULE_MATRIX');
+    }
+  };
+
+  const handleClassSelectNext = (selectedCourse) => {
+    setAssignedClass(selectedCourse);
+    setLunchWave(elementaryGrade <= 2 ? 'Wave A (Early)' : 'Wave B (Mid)');
+    setStep('AVATAR_CUSTOMIZE'); // Hand off step directly to registration avatar
+  };
+
+  const handleScheduleLaunch = (data) => {
+    if (schoolType === 'High') {
+      setHighSchoolDept(data.selectedDept);
+      setLunchWave(data.randomLunchWave);
+    } else if (schoolType === 'Middle') {
+      setLunchWave(data.wave);
+    }
+    setStep('AVATAR_CUSTOMIZE'); // Routing straight to badge tracking
+  };
+
+  const handleFinishCustomization = (profileData) => {
+    setTeacherProfile(profileData);
+    setStep('WORLD_MAP'); // Initialize the dual-control 2D grid viewport engine
+  };
+
+  // ----------------------------------------------------------------
+  // RENDERING TIMELINE ROUTER
+  // ----------------------------------------------------------------
+  
+  // 1. Initial configuration path choice
+  if (step === 'SCHOOL_TYPE') {
+    return <SchoolTypeStep onSelectType={handleSelectSchoolType} onExit={onExit} styles={retroStyles} />;
+  }
+
+  // 2. Class tracks setup stage
+  if (step === 'GRADE_CONFIG') {
+    return (
+      <GradeConfigStep 
+        schoolType={schoolType} 
+        stateVars={stateVars} 
+        stateSetters={stateSetters} 
+        onNext={handleGradeConfigNext} 
+        onBack={() => setStep('SCHOOL_TYPE')} 
+        styles={retroStyles} 
+      />
+    );
+  }
+
+  // 3. Elementary dynamic course collection selector 
+  if (step === 'CLASS_SELECT') {
+    return (
+      <ClassSelectionStep 
+        schoolType={schoolType}
+        elementaryGrade={elementaryGrade}
+        middleGrade={middleGrade}
+        onSelectClass={handleClassSelectNext}
+        onBack={() => setStep('GRADE_CONFIG')}
+        styles={retroStyles}
+      />
+    );
+  }
+
+  // 4. Structural schedule grids generation stages
+  if (step === 'SCHEDULE_MATRIX') {
+    if (schoolType === 'High') {
+      return <HighSchoolScheduleStep onLaunchGame={handleScheduleLaunch} onBack={() => setStep('SCHOOL_TYPE')} styles={retroStyles} />;
+    }
+    if (schoolType === 'Middle') {
+      return (
+        <MiddleSchoolScheduleStep 
+          middleGrade={middleGrade} 
+          middleLunchWave={middleLunchWave} 
+          onLaunchGame={handleScheduleLaunch} 
+          onBack={() => setStep('GRADE_CONFIG')} 
+          styles={retroStyles} 
+        />
+      );
+    }
+  }
+
+  // 5. Final Step: The Avatar Customizer 
+  if (step === 'AVATAR_CUSTOMIZE') {
+    return (
+      <TeacherAvatarCustomizer 
+        onSaveAvatar={handleFinishCustomization} 
+        onBack={() => {
+          if (schoolType === 'Elementary') setStep('CLASS_SELECT');
+          else setStep('SCHEDULE_MATRIX');
+        }} 
+        styles={retroStyles} 
+      />
+    );
+  }
+
+  // 6. 2D Game Exploration Sandbox Viewport Screen
+  if (step === 'WORLD_MAP') {
+    return (
+      <div style={{ ...retroStyles.setupBox, maxWidth: '1000px', borderStyle: 'solid' }}>
+        <h2 style={retroStyles.heading}>🕹️ CAMPUS OVERWORLD SANDBOX</h2>
+        <p style={retroStyles.subtitle}>Welcome, <strong>{teacherProfile.name}</strong>. The school year has officially initialized!</p>
+        
+        {/* Placeholder wrapper box targeting our cross-platform keyboard + mobile virtual touch overlay controls */}
+        <div style={{ width: '100%', height: '400px', backgroundColor: '#000', border: '2px solid #39FF14', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: '#39FF14', fontSize: '1.2rem', fontFamily: 'monospace', textShadow: '0 0 5px #39FF14' }}>
+            [ 🏃 2D MOVING SPRITE WORLD MAP CANVAS ENGINE GOES HERE ]
+          </span>
+        </div>
+
+        <button style={{ ...retroStyles.exitButton, marginTop: '20px', width: '100%', maxWidth: '200px' }} onClick={onExit}>
+          🚪 SHUT DOWN CLIENT
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
