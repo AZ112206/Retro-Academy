@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import SchoolTypeStep from './1. SchoolTypeStep';
-import GradeConfigStep from './GradeConfigStep';
-import ClassSelectionStep from './ClassSelectionStep';
-import HighSchoolScheduleStep from './HighSchoolScheduleStep';
-import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep';
-import TeacherAvatarCustomizer from './TeacherAvatarCustomizer';
+import SchoolTypeStep from './1. SchoolTypeStep.jsx';
+import GradeConfigStep from './GradeConfigStep.jsx';
+import ClassSelectionStep from './ClassSelectionStep.jsx';
+import HighSchoolScheduleStep from './HighSchoolScheduleStep.jsx';
+import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
+import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
 
 // Global Retro Styles Shared Matrix
 const retroStyles = {
@@ -210,7 +210,7 @@ export default function TeacherDashboard({ onExit }) {
     return (
       <div style={{ ...retroStyles.setupBox, maxWidth: '1000px', borderStyle: 'solid' }}>
         <h2 style={retroStyles.heading}>🕹️ CAMPUS OVERWORLD SANDBOX</h2>
-        <p style={retroStyles.subtitle}>Welcome, <strong>{teacherProfile.name}</strong>. The school year has officially initialized!</p>
+        <p style={retroStyles.subtitle}>Welcome, <strong>{teacherProfile?.name || 'Instructor'}</strong>. The school year has officially initialized!</p>
         
         {/* Placeholder wrapper box targeting our cross-platform keyboard + mobile virtual touch overlay controls */}
         <div style={{ width: '100%', height: '400px', backgroundColor: '#000', border: '2px solid #39FF14', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
