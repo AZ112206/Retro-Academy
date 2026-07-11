@@ -69,7 +69,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
     color: '#ecc9a8',
     fontSize: '0.85rem',
     marginBottom: '20px',
-    textAlign: 'left',
+    textAlign: 'center',
     lineHeight: '1.5'
   };
 
@@ -103,7 +103,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
       </div>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'left' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888' }}>BLOCK / TIME</th>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function GradeConfigStep({ schoolType, stateVars, stateSetters, onNext, onBack, styles }) {
+export default function GradeConfigStep({ schoolType, stateVars, stateSetters, onNext, onBack, onExit, styles }) {
   const { middleGrade, middleLunchWave, elementaryGrade } = stateVars;
   const { setElementaryGrade, setMiddleGrade, setMiddleLunchWave } = stateSetters;
 
@@ -28,7 +28,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
       width: '100%',
       maxWidth: '500px',
       boxSizing: 'border-box',
-      textAlign: 'left'
+      textAlign: 'center'
     },
     buttonGrid: {
       display: 'grid',
@@ -117,9 +117,14 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
           </div>
         )}
 
-        <button style={{ ...styles.exitButton, marginTop: '20px', width: '100%', maxWidth: '500px' }} onClick={onBack}>
-          ← BACK
-        </button>
+        <div style={styles.footerActions}>
+          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
+            ← BACK
+          </button>
+          <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
+            RETURN TO MAIN MENU
+          </button>
+        </div>
       </div>
     </div>
   );

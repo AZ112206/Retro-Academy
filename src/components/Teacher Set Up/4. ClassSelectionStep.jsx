@@ -7,7 +7,7 @@ const ELEMENTARY_OPTIONS = [
   { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
-export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, styles }) {
+export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, onExit, styles }) {
   
   // Rule: Grades 1 and 2 are fully locked as general core blocks
   const isLockedGeneral = schoolType === 'Elementary' && (elementaryGrade === 1 || elementaryGrade === 2);
@@ -77,9 +77,10 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
           <p style={{ ...styles.subtitle, maxWidth: '500px' }}>
             You will guide a single primary cohort through all fundamental subjects seamlessly throughout the school day block.
           </p>
-          <div style={{ display: 'flex', gap: '20px', marginTop: '30px', width: '100%', maxWidth: '500px' }}>
-            <button style={{ ...styles.exitButton, flex: 1 }} onClick={onBack}>BACK</button>
-            <button style={{ ...styles.actionButton, flex: 2 }} onClick={() => onSelectClass({ id: 'general_core', name: 'General Classroom Block' })}>
+          <div style={styles.footerActions}>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>← BACK</button>
+            <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+            <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'general_core', name: 'General Classroom Block' })}>
               🚀 START GAME
             </button>
           </div>
@@ -95,9 +96,10 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
         <div style={centeredContainerStyle}>
           <h2 style={styles.heading}>🎓 SCHEDULE CONFIRMED</h2>
           <p style={{ ...styles.subtitle, maxWidth: '500px' }}>Your customized 4-Period high school block configuration is loaded into the system.</p>
-          <div style={{ display: 'flex', gap: '20px', marginTop: '30px', width: '100%', maxWidth: '500px' }}>
-            <button style={{ ...styles.exitButton, flex: 1 }} onClick={onBack}>BACK</button>
-            <button style={{ ...styles.actionButton, flex: 2 }} onClick={() => onSelectClass({ id: 'high_matrix', name: '4-Period Matrix Track' })}>
+          <div style={styles.footerActions}>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>← BACK</button>
+            <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+            <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'high_matrix', name: '4-Period Matrix Track' })}>
               🚀 START GAME
             </button>
           </div>
@@ -123,9 +125,14 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
           ))}
         </div>
 
-        <button style={{ ...styles.exitButton, marginTop: '30px', width: '100%', maxWidth: '500px' }} onClick={onBack}>
-          ← BACK
-        </button>
+        <div style={styles.footerActions}>
+          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
+            ← BACK
+          </button>
+          <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
+            RETURN TO MAIN MENU
+          </button>
+        </div>
       </div>
     </div>
   );

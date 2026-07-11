@@ -36,7 +36,7 @@ const BLOCK_TIMES = [
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, onLaunchGame, onBack, styles }) {
+export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, onLaunchGame, onBack, onExit, styles }) {
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
   const resolvedGrade = middleGrade || 6;
@@ -73,7 +73,11 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
               {subject.name}
             </button>
           ))}
-          <button style={{ ...styles.exitButton, marginTop: '20px' }} onClick={onBack}>← BACK</button>
+        </div>
+
+        <div style={styles.footerActions}>
+          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>← BACK</button>
+          <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         </div>
       </div>
     );
@@ -85,7 +89,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       <p style={styles.subtitle}>Review your unchangeable annual block timeline registration:</p>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'left' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888' }}>BLOCK / TIME</th>
@@ -111,9 +115,10 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         </table>
       </div>
 
-      <div style={{ display: 'flex', gap: '15px', maxWidth: '550px', margin: '0 auto' }}>
-        <button style={{ ...styles.exitButton, flex: 1 }} onClick={() => setSelectedSubjectId(null)}>← BACK</button>
-        <button style={{ ...styles.actionButton, flex: 2 }} onClick={() => onLaunchGame({ wave: middleLunchWave })}>
+      <div style={styles.footerActions}>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setSelectedSubjectId(null)}>← BACK</button>
+        <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: middleLunchWave })}>
           🚀 CONFIRM & START GAME
         </button>
       </div>

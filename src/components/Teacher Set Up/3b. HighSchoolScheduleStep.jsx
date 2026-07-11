@@ -59,7 +59,7 @@ const LUNCH_WAVE_TIMES = {
   'Wave 4': '12:10 PM - 12:40 PM'
 };
 
-export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles }) {
+export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles }) {
   const [selectedDept, setSelectedDept] = useState(null);
   const [confirmedDept, setConfirmedDept] = useState(false); // Tracks if player hit NEXT
   const [currentTokens, setCurrentTokens] = useState([]);
@@ -251,9 +251,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
           NEXT: GENERATE SCHEDULE ➡️
         </button>
 
-        <button style={{ ...styles.exitButton, marginTop: '20px', width: '100%', maxWidth: '500px' }} onClick={onBack}>
-          ← BACK
-        </button>
+        <div style={styles.footerActions}>
+          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
+            ← BACK
+          </button>
+          <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
+            RETURN TO MAIN MENU
+          </button>
+        </div>
       </div>
     );
   }
@@ -268,14 +273,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
         <p style={styles.subtitle}>Review your rotating 4x4 block timeline rotation matrix profiles below.</p>
         
         <div style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
             <h3 style={{ color: '#39FF14', margin: 0 }}>📅 4x4 True Rotational Matrix Grid</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
               📍 Room Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> ({LUNCH_WAVE_TIMES[randomLunchWave] || ''})
             </div>
           </div>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'left' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
                 <th style={{ padding: '10px', color: '#888', width: '24%' }}>BLOCK DETAILS</th>
@@ -331,14 +336,15 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
             </tbody>
           </table>
 
-          <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'left' }}>
+          <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
             💡 <strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', width: '100%', maxWidth: '550px', margin: '0 auto' }}>
-          <button style={{ ...styles.exitButton, flex: 1 }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
-          <button style={{ ...styles.actionButton, flex: 2 }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
+        <div style={styles.footerActions}>
+          <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
+          <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+          <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
             🚀 SIGN CONTRACT & ENTER WORLD
           </button>
         </div>
@@ -351,7 +357,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
   // ----------------------------------------------------------------
   return (
     <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #39FF14', paddingBottom: '10px', marginBottom: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #39FF14', paddingBottom: '10px', marginBottom: '15px' }}>
         <h2 style={{ ...styles.heading, margin: 0 }}>⚖️ MATRIX SCHEDULER</h2>
         <button 
           onClick={() => handleShuffleCatalog(selectedDept)} 
@@ -371,7 +377,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'left' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0' }}>📦 DRAGGABLE TOKENS (6 Available)</h3>
           
@@ -397,7 +403,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
                   cursor: 'grab'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>
                   <span>{course.name} {course.sec}</span>
                   <span style={{ color: '#888' }}>{course.grade}</span>
                 </div>
@@ -429,15 +435,15 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
                   justifyContent: 'center'
                 }}
               >
-                <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '10px', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px' }}>
                   PERIOD {idx + 1} {isP3 ? '🔥 FIXED MIDDLE LONG BLOCK (LUNCH SPLIT)' : '(SHORT BLOCK)'}
                 </span>
 
                 {filledItem ? (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '18px' }}>
                     <div>
                       <strong style={{ color: '#fff' }}>{filledItem.name}</strong>
-                      {!filledItem.isPrep && <span style={{ fontSize: '0.8rem', color: '#39FF14', marginLeft: '10px' }}>[{filledItem.level}] - {filledItem.grade}</span>}
+                      {!filledItem.isPrep && <div style={{ fontSize: '0.8rem', color: '#39FF14', marginTop: '4px' }}>[{filledItem.level}] - {filledItem.grade}</div>}
                     </div>
                     <button onClick={() => setSchedule(prev => ({ ...prev, [pKey]: null }))} style={{ background: 'transparent', color: '#FF3333', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>[X]</button>
                   </div>
@@ -452,10 +458,21 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
-        <button style={{ ...styles.exitButton, flex: 1 }} onClick={() => setConfirmedDept(false)}>CHANGE DEPT</button>
+      <div style={styles.footerActions}>
+        <button
+          style={{ ...styles.backButton, flex: '1 1 180px' }}
+          onClick={() => {
+            setConfirmedDept(false);
+            setReviewMode(false);
+          }}
+        >
+          ← BACK
+        </button>
+        <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>
+          RETURN TO MAIN MENU
+        </button>
         <button 
-          style={{ ...styles.actionButton, flex: 2 }}
+          style={{ ...styles.actionButton, flex: '2 1 240px' }}
           onClick={handleProceedToReview}
         >
           ➡️ PROCEED TO CONTRACT REVIEW

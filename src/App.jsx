@@ -18,18 +18,19 @@ function App() {
   // Cross-platform styling overlay wrapper ensuring clean centering on windows + touch devices
   const appWrapperStyle = {
     minHeight: '100vh',
-    width: '100vw',
+    width: '100%',
     backgroundColor: '#0a0a0a',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     overflowX: 'hidden',
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    padding: '24px'
   };
 
   return (
-    <div style={appWrapperStyle} id="root">
+    <div style={appWrapperStyle}>
       {!currentRole ? (
         /* 1. Show Main Menu if no role is chosen */
         <MainMenu onSelectRole={handleSelectRole} />

@@ -8,7 +8,7 @@ const OUTFITS_COLORS = ['#27ae60', '#2980b9', '#8e44ad', '#d35400', '#2c3e50'];
 const EXPRESSIONS = ['🍎 Enthusiastic', '🕶️ Ultra Cool', '☕ Sleep Deprived', '📚 Laser Focused', '🤔 Puzzled'];
 const ACCESSORIES = ['None', 'Classic Spectacles', 'Coffee Thermos', 'Laser Pointer', 'Retro Wristwatch', 'Gold Chalk Holder'];
 
-export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }) {
+export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, styles }) {
   // Avatar state configuration
   const [hairStyle, setHairStyle] = useState(HAIR_STYLES[0]);
   const [hairColor, setHairColor] = useState(HAIR_COLORS[0]);
@@ -57,7 +57,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
       <h2 style={styles.heading}>📇 ISSUE FACULTY IDENTIFICATION BADGE</h2>
       <p style={styles.subtitle}>Customize your 2D retro avatar and register your operational credentials:</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '30px', marginTop: '20px', textAlign: 'left' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '30px', marginTop: '20px', textAlign: 'center' }}>
         
         {/* LEFT COLUMN: LIVE RETRO BADGE PREVIEW */}
         <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', border: '1px solid #39FF14', textAlign: 'center' }}>
@@ -109,12 +109,12 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
         </div>
 
         {/* RIGHT COLUMN: INTERACTIVE INPUT MODIFIERS */}
-        <div style={{ backgroundColor: '#222', padding: '20px', borderRadius: '8px', border: '1px solid #39FF14', display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '420px', overflowY: 'auto' }}>
+        <div style={{ backgroundColor: '#222', padding: '20px', borderRadius: '8px', border: '1px solid #39FF14', display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '420px', overflowY: 'auto', alignItems: 'center' }}>
           
           {/* Hair Style configuration */}
           <div>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold' }}>💇 HAIRSTYLE</span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px', justifyContent: 'center' }}>
               {HAIR_STYLES.map(style => (
                 <button key={style} onClick={() => setHairStyle(style)} style={{ padding: '6px 10px', fontSize: '0.75rem', backgroundColor: hairStyle === style ? '#fff' : '#121212', color: hairStyle === style ? '#000' : '#fff', border: `1px solid ${hairStyle === style ? '#fff' : '#39FF14'}`, borderRadius: '4px', cursor: 'pointer' }}>
                   {style}
@@ -126,7 +126,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
           {/* Hair Color selection */}
           <div>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold' }}>🎨 HAIR COLOR</span>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '5px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '5px', justifyContent: 'center' }}>
               {HAIR_COLORS.map(color => (
                 <button key={color} onClick={() => setHairColor(color)} style={{ width: '24px', height: '24px', backgroundColor: color, border: hairColor === color ? '2px solid #fff' : '1px solid #000', borderRadius: '50%', cursor: 'pointer' }} />
               ))}
@@ -136,7 +136,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
           {/* Outfit Type specification */}
           <div>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold' }}>👔 WARDROBE RAIMENT</span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px', justifyContent: 'center' }}>
               {OUTFITS.map(style => (
                 <button key={style} onClick={() => setOutfit(style)} style={{ padding: '6px 10px', fontSize: '0.75rem', backgroundColor: outfit === style ? '#fff' : '#121212', color: outfit === style ? '#000' : '#fff', border: `1px solid ${outfit === style ? '#fff' : '#39FF14'}`, borderRadius: '4px', cursor: 'pointer' }}>
                   {style}
@@ -148,7 +148,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
           {/* Expressions config */}
           <div>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold' }}>🎭 FACIAL DISPOSITION</span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px', justifyContent: 'center' }}>
               {EXPRESSIONS.map(expr => (
                 <button key={expr} onClick={() => setExpression(expr)} style={{ padding: '6px 10px', fontSize: '0.75rem', backgroundColor: expression === expr ? '#fff' : '#121212', color: expression === expr ? '#000' : '#fff', border: `1px solid ${expression === expr ? '#fff' : '#39FF14'}`, borderRadius: '4px', cursor: 'pointer' }}>
                   {expr}
@@ -160,7 +160,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
           {/* Equipment accessory config */}
           <div>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold' }}>💼 HELD ITEM ACCESSORY</span>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '5px', justifyContent: 'center' }}>
               {ACCESSORIES.map(acc => (
                 <button key={acc} onClick={() => setAccessory(acc)} style={{ padding: '6px 10px', fontSize: '0.75rem', backgroundColor: accessory === acc ? '#fff' : '#121212', color: accessory === acc ? '#000' : '#fff', border: `1px solid ${accessory === acc ? '#fff' : '#39FF14'}`, borderRadius: '4px', cursor: 'pointer' }}>
                   {acc}
@@ -173,10 +173,11 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, styles }
       </div>
 
       {/* FOOTER INTERACTION MATRIX */}
-      <div style={{ display: 'flex', gap: '20px', marginTop: '30px', width: '100%' }}>
-        <button style={{ ...styles.exitButton, flex: 1 }} onClick={onBack}>← RETURN TO CONTRACT</button>
+      <div style={styles.footerActions}>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>← RETURN TO CONTRACT</button>
+        <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button 
-          style={{ ...styles.actionButton, flex: 2 }} 
+          style={{ ...styles.actionButton, flex: '2 1 240px' }} 
           onClick={handleFinishCustomization}
         >
           📇 VALIDATE BADGE & START SCHOOL YEAR 🚀

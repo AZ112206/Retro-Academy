@@ -17,8 +17,14 @@ const retroStyles = {
     textAlign: 'center',
     fontFamily: '"Courier New", Courier, monospace',
     color: '#fff',
-    width: '90%',
-    margin: '40px auto'
+    width: '100%',
+    maxWidth: '1100px',
+    minHeight: '720px',
+    margin: '0 auto',
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center'
   },
   heading: {
     color: '#39FF14',
@@ -65,6 +71,16 @@ const retroStyles = {
     fontFamily: 'inherit',
     transition: 'opacity 0.2s ease'
   },
+  backButton: {
+    backgroundColor: 'transparent',
+    color: '#39FF14',
+    border: '1px solid #39FF14',
+    padding: '10px 20px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '0.9rem',
+    fontFamily: 'inherit'
+  },
   exitButton: {
     backgroundColor: 'transparent',
     color: '#FF3333',
@@ -74,6 +90,15 @@ const retroStyles = {
     cursor: 'pointer',
     fontSize: '0.9rem',
     fontFamily: 'inherit'
+  },
+  footerActions: {
+    display: 'flex',
+    gap: '15px',
+    width: '100%',
+    maxWidth: '760px',
+    margin: '30px auto 0',
+    justifyContent: 'center',
+    flexWrap: 'wrap'
   }
 };
 
@@ -142,7 +167,7 @@ export default function TeacherDashboard({ onExit }) {
   
   // 1. Initial configuration path choice
   if (step === 'SCHOOL_TYPE') {
-    return <SchoolTypeStep onSelectType={handleSelectSchoolType} onExit={onExit} styles={retroStyles} />;
+    return <SchoolTypeStep onSelectType={handleSelectSchoolType} onBack={onExit} onExit={onExit} styles={retroStyles} />;
   }
 
   // 2. Class tracks setup stage
@@ -154,6 +179,7 @@ export default function TeacherDashboard({ onExit }) {
         stateSetters={stateSetters} 
         onNext={handleGradeConfigNext} 
         onBack={() => setStep('SCHOOL_TYPE')} 
+        onExit={onExit}
         styles={retroStyles} 
       />
     );
@@ -168,6 +194,7 @@ export default function TeacherDashboard({ onExit }) {
         middleGrade={middleGrade}
         onSelectClass={handleClassSelectNext}
         onBack={() => setStep('GRADE_CONFIG')}
+        onExit={onExit}
         styles={retroStyles}
       />
     );
@@ -176,7 +203,7 @@ export default function TeacherDashboard({ onExit }) {
   // 4. Structural schedule grids generation stages
   if (step === 'SCHEDULE_MATRIX') {
     if (schoolType === 'High') {
-      return <HighSchoolScheduleStep onLaunchGame={handleScheduleLaunch} onBack={() => setStep('SCHOOL_TYPE')} styles={retroStyles} />;
+      return <HighSchoolScheduleStep onLaunchGame={handleScheduleLaunch} onBack={() => setStep('SCHOOL_TYPE')} onExit={onExit} styles={retroStyles} />;
     }
     if (schoolType === 'Middle') {
       return (
@@ -185,6 +212,7 @@ export default function TeacherDashboard({ onExit }) {
           middleLunchWave={middleLunchWave} 
           onLaunchGame={handleScheduleLaunch} 
           onBack={() => setStep('GRADE_CONFIG')} 
+          onExit={onExit}
           styles={retroStyles} 
         />
       );
@@ -200,6 +228,7 @@ export default function TeacherDashboard({ onExit }) {
           if (schoolType === 'Elementary') setStep('CLASS_SELECT');
           else setStep('SCHEDULE_MATRIX');
         }} 
+        onExit={onExit}
         styles={retroStyles} 
       />
     );
@@ -219,9 +248,14 @@ export default function TeacherDashboard({ onExit }) {
           </span>
         </div>
 
-        <button style={{ ...retroStyles.exitButton, marginTop: '20px', width: '100%', maxWidth: '200px' }} onClick={onExit}>
-          🚪 SHUT DOWN CLIENT
-        </button>
+        <div style={retroStyles.footerActions}>
+          <button style={{ ...retroStyles.backButton, flex: '1 1 200px' }} onClick={() => setStep('AVATAR_CUSTOMIZE')}>
+            ← BACK TO BADGE
+          </button>
+          <button style={{ ...retroStyles.exitButton, flex: '1 1 200px' }} onClick={onExit}>
+            🚪 SHUT DOWN CLIENT
+          </button>
+        </div>
       </div>
     );
   }
