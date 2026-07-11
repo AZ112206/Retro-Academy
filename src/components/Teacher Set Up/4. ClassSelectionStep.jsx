@@ -125,13 +125,13 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
   return (
     <div style={styles.setupBox}>
       <div style={centeredContainerStyle}>
-        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="book" /> SELECT ASSIGNED COURSE</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="class" /> CLASS ASSIGNMENT</h2>
         <p style={styles.subtitle}>
           {schoolType === 'Elementary'
-            ? `Grade ${elementaryGrade} Track Selection`
+            ? `Grade ${elementaryGrade} Classroom Assignment`
             : schoolType === 'Middle'
-              ? `${middleGrade}th Grade Department Selection`
-              : `${(highSchoolDept || 'selected').toUpperCase()} Department Selection`}
+              ? `${middleGrade}th Grade Department Assignment`
+              : `${(highSchoolDept || 'selected').toUpperCase()} Department Assignment`}
         </p>
 
         <div style={{ ...styles.menuColumn, width: '100%', maxWidth: '500px' }}>

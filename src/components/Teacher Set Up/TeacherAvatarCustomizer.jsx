@@ -91,32 +91,31 @@ function getFaceGeometry(faceShape) {
 }
 
 function getHairGeometry(hairStyle, gender) {
-  const feminineTop = 16;
-  const masculineTop = 22;
-
+  const isFemale = gender === 'Female';
+  
   switch (hairStyle) {
     case 'Crop':
-      return { width: 52, height: 14, top: 26, borderRadius: '4px' };
+      return { width: 54, height: 16, top: -4, borderRadius: '4px' };
     case 'Waves':
-      return { width: 58, height: 24, top: gender === 'Female' ? feminineTop : masculineTop, borderRadius: '8px 8px 6px 6px' };
+      return { width: 58, height: 22, top: isFemale ? -6 : -2, borderRadius: '10px 10px 4px 4px' };
     case 'Bob':
-      return { width: 62, height: 30, top: 16, borderRadius: '8px 8px 10px 10px' };
+      return { width: 62, height: 42, top: -6, borderRadius: '12px 12px 14px 14px' };
     case 'Mullet':
-      return { width: 58, height: 28, top: 20, borderRadius: '8px 8px 8px 8px', clipPath: 'polygon(0 0, 100% 0, 100% 68%, 86% 68%, 86% 100%, 14% 100%, 14% 68%, 0 68%)' };
+      return { width: 58, height: 38, top: -4, borderRadius: '8px 8px 8px 8px', clipPath: 'polygon(0 0, 100% 0, 100% 100%, 82% 100%, 82% 40%, 18% 40%, 18% 100%, 0 100%)' };
     case 'Buzz':
-      return { width: 50, height: 8, top: 34, borderRadius: '2px' };
+      return { width: 54, height: 8, top: 0, borderRadius: '4px 4px 0 0' };
     case 'Fade':
-      return { width: 52, height: 12, top: 30, borderRadius: '3px', sideFade: true };
+      return { width: 54, height: 14, top: -2, borderRadius: '6px 6px 0 0', sideFade: true };
     case 'Ponytail':
-      return { width: 60, height: 22, top: 18, borderRadius: '8px 8px 4px 4px', tail: 'pony', fringe: true };
+      return { width: 58, height: 20, top: -6, borderRadius: '10px 10px 4px 4px', tail: 'pony', fringe: true };
     case 'Pigtails':
-      return { width: 60, height: 22, top: 18, borderRadius: '8px 8px 4px 4px', tail: 'pigtails', fringe: true };
+      return { width: 58, height: 20, top: -6, borderRadius: '10px 10px 4px 4px', tail: 'pigtails', fringe: true };
     case 'Bun':
-      return { width: 58, height: 18, top: 20, borderRadius: '8px', tail: 'bun', fringe: true };
+      return { width: 58, height: 20, top: -4, borderRadius: '10px 10px 6px 6px', tail: 'bun', fringe: true };
     case 'Braids':
-      return { width: 60, height: 22, top: 18, borderRadius: '8px 8px 4px 4px', tail: 'braids', fringe: true };
+      return { width: 58, height: 22, top: -4, borderRadius: '8px 8px 4px 4px', tail: 'braids', fringe: true };
     default:
-      return { width: 56, height: 18, top: 24, borderRadius: '6px 6px 4px 4px' };
+      return { width: 56, height: 18, top: -2, borderRadius: '6px 6px 4px 4px' };
   }
 }
 
@@ -234,6 +233,8 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
   const armBaseY = torsoTop + 12 * scale;
   const handY = armBaseY + 30 * scale + motion.armSwing * scale;
   const mouthHeight = motion.blink ? Math.max(1, mouth.height - 1) : mouth.height + Math.max(0, motion.mouthShift);
+  const hairLeftInFace = ((face.width - hair.width) / 2) * scale;
+  const fringeLeftInFace = ((face.width - 44) / 2) * scale;
 
   return (
     <div
@@ -253,57 +254,43 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
 
       <div style={{ position: 'absolute', inset: 0 }}>
 
-      <div
-        style={{
-          position: 'absolute',
-          left: `${centerX - (hair.width * scale) / 2}px`,
-          top: `${faceTop + hair.top * scale}px`,
-          width: `${hair.width * scale}px`,
-          height: `${hair.height * scale}px`,
-          backgroundColor: appearance.hairColor,
-          borderRadius: hair.borderRadius,
-          clipPath: hair.clipPath || 'none',
-          zIndex: 4
-        }}
-      />
-      {hair.fringe && !facingBack && (
+      {/* EXTENDED FEMALE BACK HAIR EFFECTS (Render behind the head canvas) */}
+      {!facingBack && (appearance.hairStyle === 'Bob' || appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails') && (
         <div
           style={{
             position: 'absolute',
-            left: `${centerX - 20 * scale}px`,
-            top: `${faceTop + (hair.top + 12) * scale}px`,
-            width: `${40 * scale}px`,
-            height: `${8 * scale}px`,
+            left: `${centerX - (hair.width + 4) * scale / 2}px`,
+            top: `${faceTop + 34 * scale + hair.top * scale}px`,
+            width: `${(hair.width + 4) * scale}px`,
+            height: `${(hair.height + 4) * scale}px`,
             backgroundColor: appearance.hairColor,
-            zIndex: 4
+            borderRadius: hair.borderRadius,
+            zIndex: 1
           }}
         />
       )}
-      {hair.sideFade && !facingBack && (
+
+      {/* EXTRA FEMALE ATTACHMENTS REHUNG BACK-BOUND */}
+      {hair.tail === 'pony' && !facingBack && (
+        <div style={{ position: 'absolute', left: `${centerX + 12 * scale}px`, top: `${faceTop + 44 * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
+      )}
+      {hair.tail === 'pigtails' && !facingBack && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 32 * scale}px`, top: `${faceTop + (hair.top + 8) * scale}px`, width: `${8 * scale}px`, height: `${16 * scale}px`, backgroundColor: 'rgba(0,0,0,0.18)', zIndex: 3 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 24 * scale}px`, top: `${faceTop + (hair.top + 8) * scale}px`, width: `${8 * scale}px`, height: `${16 * scale}px`, backgroundColor: 'rgba(0,0,0,0.18)', zIndex: 3 }} />
+          <div style={{ position: 'absolute', left: `${centerX - 34 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '8px 0 4px 12px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX + 22 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
         </>
       )}
-      {hair.tail === 'pony' && (
-        <div style={{ position: 'absolute', left: `${centerX + 16 * scale}px`, top: `${faceTop + (hair.top + 8) * scale}px`, width: `${12 * scale}px`, height: `${30 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 6px 6px', zIndex: 3 }} />
+      {hair.tail === 'bun' && !facingBack && (
+        <div style={{ position: 'absolute', left: `${centerX - 12 * scale}px`, top: `${faceTop + 24 * scale}px`, width: `${24 * scale}px`, height: `${16 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '50% 50% 4px 4px', zIndex: 1 }} />
       )}
-      {hair.tail === 'pigtails' && (
+      {hair.tail === 'braids' && !facingBack && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 32 * scale}px`, top: `${faceTop + (hair.top + 10) * scale}px`, width: `${10 * scale}px`, height: `${28 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 6px 6px', zIndex: 3 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 22 * scale}px`, top: `${faceTop + (hair.top + 10) * scale}px`, width: `${10 * scale}px`, height: `${28 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 6px 6px', zIndex: 3 }} />
-        </>
-      )}
-      {hair.tail === 'bun' && (
-        <div style={{ position: 'absolute', left: `${centerX - 11 * scale}px`, top: `${faceTop + (hair.top - 12) * scale}px`, width: `${22 * scale}px`, height: `${12 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '6px', zIndex: 5 }} />
-      )}
-      {hair.tail === 'braids' && (
-        <>
-          <div style={{ position: 'absolute', left: `${centerX - 28 * scale}px`, top: `${faceTop + (hair.top + 10) * scale}px`, width: `${7 * scale}px`, height: `${30 * scale}px`, backgroundColor: appearance.hairColor, zIndex: 3 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 21 * scale}px`, top: `${faceTop + (hair.top + 10) * scale}px`, width: `${7 * scale}px`, height: `${30 * scale}px`, backgroundColor: appearance.hairColor, zIndex: 3 }} />
+          <div style={{ position: 'absolute', left: `${centerX - 30 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX + 20 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
         </>
       )}
 
+      {/* CORE FACE LAYER */}
       <div
         style={{
           position: 'absolute',
@@ -318,30 +305,68 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
           boxSizing: 'border-box'
         }}
       >
+        {/* HAIR CAP OVERRIDE (Renders attached to top frame inside head boundary) */}
+        <div
+          style={{
+            position: 'absolute',
+            left: `${hairLeftInFace}px`,
+            top: `${hair.top * scale}px`,
+            width: `${hair.width * scale}px`,
+            height: `${hair.height * scale}px`,
+            backgroundColor: appearance.hairColor,
+            borderRadius: hair.borderRadius,
+            clipPath: hair.clipPath || 'none',
+            zIndex: 4
+          }}
+        />
+
+        {hair.fringe && !facingBack && (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${fringeLeftInFace}px`,
+              top: `${(hair.top + 14) * scale}px`,
+              width: `${44 * scale}px`,
+              height: `${10 * scale}px`,
+              backgroundColor: appearance.hairColor,
+              borderRadius: '0 0 4px 4px',
+              zIndex: 5
+            }}
+          />
+        )}
+        {hair.sideFade && !facingBack && (
+          <>
+            <div style={{ position: 'absolute', left: '0px', top: '0px', width: `${6 * scale}px`, height: `${18 * scale}px`, backgroundColor: 'rgba(0,0,0,0.22)' }} />
+            <div style={{ position: 'absolute', right: '0px', top: '0px', width: `${6 * scale}px`, height: `${18 * scale}px`, backgroundColor: 'rgba(0,0,0,0.22)' }} />
+          </>
+        )}
+
         {!facingBack && (
           <>
             {facingFront && (
               <>
-                <div style={{ position: 'absolute', top: `${(15 + motion.browShift) * scale}px`, left: `${11 * scale}px`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor, transform: `rotate(${brows.leftRotate})` }} />
-                <div style={{ position: 'absolute', top: `${(15 + motion.browShift) * scale}px`, right: `${11 * scale}px`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor, transform: `rotate(${brows.rightRotate})` }} />
-                <div style={{ position: 'absolute', top: `${26 * scale}px`, left: `${14 * scale}px`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
+                {/* Rebalanced facial node positioning to secure chin height gap clearance */}
+                <div style={{ position: 'absolute', top: `${(10 + motion.browShift) * scale}px`, left: `${11 * scale}px`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor, transform: `rotate(${brows.leftRotate})` }} />
+                <div style={{ position: 'absolute', top: `${(10 + motion.browShift) * scale}px`, right: `${11 * scale}px`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor, transform: `rotate(${brows.rightRotate})` }} />
+                <div style={{ position: 'absolute', top: `${18 * scale}px`, left: `${12 * scale}px`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
-                <div style={{ position: 'absolute', top: `${26 * scale}px`, right: `${14 * scale}px`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
+                <div style={{ position: 'absolute', top: `${18 * scale}px`, right: `${12 * scale}px`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
-                <div style={{ position: 'absolute', top: `${42 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
-                <div style={{ position: 'absolute', top: `${54 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2 - mouth.offset * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
+                <div style={{ position: 'absolute', top: `${30 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
+                {/* Mouth moved up significantly from 54px to 42px to create clear separation for the chin line */}
+                <div style={{ position: 'absolute', top: `${42 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2 - mouth.offset * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
               </>
             )}
             {facingSide && (
               <>
-                <div style={{ position: 'absolute', top: `${(18 + motion.browShift) * scale}px`, left: `calc(50% + ${sideFeatureOffset * scale}px)`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor }} />
-                <div style={{ position: 'absolute', top: `${28 * scale}px`, left: `calc(50% + ${sideFeatureOffset * scale}px)`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
+                <div style={{ position: 'absolute', top: `${(12 + motion.browShift) * scale}px`, left: `calc(50% + ${sideFeatureOffset * scale}px)`, width: `${brows.width * scale}px`, height: `${brows.height * scale}px`, backgroundColor: appearance.hairColor }} />
+                <div style={{ position: 'absolute', top: `${20 * scale}px`, left: `calc(50% + ${sideFeatureOffset * scale}px)`, width: `${eyes.width * scale}px`, height: `${(motion.blink ? 2 : eyes.height) * scale}px`, backgroundColor: '#F7F7F7', border: `${Math.max(1, 2 * scale)}px solid ${borderColor}`, boxSizing: 'border-box' }}>
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
-                <div style={{ position: 'absolute', top: `${44 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 4) * scale}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
-                <div style={{ position: 'absolute', top: `${56 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 2 + mouth.offset) * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
+                <div style={{ position: 'absolute', top: `${32 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 4) * scale}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)' }} />
+                <div style={{ position: 'absolute', top: `${44 * scale}px`, left: `calc(50% + ${(sideFeatureOffset + 2 + mouth.offset) * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: '#542423', borderRadius: mouth.borderRadius }} />
               </>
             )}
           </>
