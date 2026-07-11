@@ -26,13 +26,20 @@ const SUBJECT_POOL = {
 };
 
 const BLOCK_TIMES = [
-  { id: 'block1', label: 'Block 1', time: '8:00 AM - 9:00 AM', type: 'class' },
-  { id: 'block2', label: 'Block 2', time: '9:00 AM - 10:00 AM', type: 'class' },
-  { id: 'block3', label: 'Block 3', time: '10:00 AM - 11:00 AM', type: 'class' },
-  { id: 'block4', label: 'Block 4', time: '11:00 AM - 12:00 PM', type: 'prep' },
-  { id: 'block5', label: 'Block 5', time: '12:00 PM - 1:00 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', time: '1:00 PM - 2:00 PM', type: 'class' }
+  { id: 'block1', label: 'Block 1', time: '8:00 AM - 8:55 AM', type: 'class' },
+  { id: 'block2', label: 'Block 2', time: '9:00 AM - 9:55 AM', type: 'class' },
+  { id: 'block3', label: 'Block 3', time: '10:00 AM - 10:55 AM', type: 'class' },
+  { id: 'lunch', label: 'Lunch Block', type: 'lunch' },
+  { id: 'block4', label: 'Prep Block', time: '11:45 AM - 12:25 PM', type: 'prep' },
+  { id: 'block5', label: 'Block 5', time: '12:30 PM - 1:15 PM', type: 'class' },
+  { id: 'block6', label: 'Block 6', time: '1:20 PM - 2:05 PM', type: 'class' }
 ];
+
+const LUNCH_WINDOWS = {
+  'Wave A (Early)': '11:00 AM - 11:30 AM',
+  'Wave B (Mid)': '11:20 AM - 11:50 AM',
+  'Wave C (Late)': '11:40 AM - 12:10 PM'
+};
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
@@ -52,14 +59,28 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
     if (!selectedSubject) return [];
     let sectionCounter = resolvedGrade * 100 + 1; // Generates 601+, 701+, or 801+ based on grade context
     return BLOCK_TIMES.map(block => {
-      if (block.type === 'prep') {
-        return { block, entry: { name: '☕ Teacher Prep Block', sec: null, isPrep: true } };
+      if (block.type === 'lunch') {
+        return {
+          block: {
+            ...block,
+            time: LUNCH_WINDOWS[middleLunchWave] || '11:20 AM - 11:50 AM'
+          },
+          entry: {
+            name: `Student Lunch Supervision (${middleLunchWave || 'Assigned Wave'})`,
+            sec: null,
+            isLunch: true,
+            isPrep: false
+          }
+        };
       }
-      const entry = { name: selectedSubject.course, sec: `#${sectionCounter}`, isPrep: false };
+      if (block.type === 'prep') {
+        return { block, entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false } };
+      }
+      const entry = { name: selectedSubject.course, sec: `#${sectionCounter}`, isPrep: false, isLunch: false };
       sectionCounter += 1;
       return { block, entry };
     });
-  }, [selectedSubject, resolvedGrade]);
+  }, [middleLunchWave, selectedSubject, resolvedGrade]);
 
   if (!selectedSubject) {
     return (
@@ -104,7 +125,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
                   <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{block.time}</div>
                 </td>
                 {WEEK_DAYS.map(day => (
-                  <td key={`${block.id}-${day}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', color: entry.isPrep ? '#ff9f43' : '#fff' }}>
+                  <td key={`${block.id}-${day}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', color: entry.isLunch ? '#f6d365' : entry.isPrep ? '#ff9f43' : '#fff' }}>
                     <div>{entry.name}</div>
                     {entry.sec && <div style={{ fontSize: '0.7rem', color: '#39FF14' }}>Sec {entry.sec}</div>}
                   </td>

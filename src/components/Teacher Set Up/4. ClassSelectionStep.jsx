@@ -2,15 +2,15 @@ import React from 'react';
 
 // Consolidated Elementary Pool: 3 classes consistent from 3rd to 5th grade
 const ELEMENTARY_OPTIONS = [
-  { id: 'elem_ela', name: '📚 Reading & ELA', desc: 'Developing core literacy, grammar mechanics, and sentence structures.' },
-  { id: 'elem_math', name: '📐 Mathematics', desc: 'Focusing on numbers, fractions, operations, and arithmetic logic.' },
-  { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
+  { id: 'elem_ela', name: '📚 Reading & ELA', course: 'Language Arts & Reading', desc: 'Developing core literacy, grammar mechanics, and sentence structures.' },
+  { id: 'elem_math', name: '📐 Mathematics', course: 'Elementary Math Focus', desc: 'Focusing on numbers, fractions, operations, and arithmetic logic.' },
+  { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', course: 'Integrated Science/SS', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
 export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, onExit, styles }) {
   
-  // Rule: Grades 1 and 2 are fully locked as general core blocks
-  const isLockedGeneral = schoolType === 'Elementary' && (elementaryGrade === 1 || elementaryGrade === 2);
+  // Rule: Grades K-2 are fully locked as general core blocks
+  const isLockedGeneral = schoolType === 'Elementary' && (elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2);
 
   // Generate correct course choices matching your scaling curriculum
   const getClassPool = () => {

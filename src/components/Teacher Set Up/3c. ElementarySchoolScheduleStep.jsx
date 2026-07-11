@@ -6,25 +6,26 @@ const ELEMENTARY_SUBJECTS = [
   { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', course: 'Integrated Science/SS' }
 ];
 
-export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunchGame, onBack, styles }) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState(null);
+export default function ElementarySchoolScheduleStep({ elementaryGrade, assignedClass, onLaunchGame, onBack, onExit, styles }) {
+  const [selectedSubjectId, setSelectedSubjectId] = useState(assignedClass?.id || null);
   
   const isLowerElem = elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2;
   const displayGradeName = elementaryGrade === 0 ? 'Kindergarten' : `Grade ${elementaryGrade}`;
 
   const currentSubject = useMemo(() => {
-    return ELEMENTARY_SUBJECTS.find(s => s.id === selectedSubjectId) || null;
-  }, [selectedSubjectId]);
+    const subjectId = assignedClass?.id || selectedSubjectId;
+    return ELEMENTARY_SUBJECTS.find(s => s.id === subjectId) || null;
+  }, [assignedClass, selectedSubjectId]);
 
   // Generate permanent Grade-to-Grade pairs and their specific Mid-Day order for the school year
   const elementaryMasterSetup = useMemo(() => {
     return {
-      Kindergarten: { wave: 'Wave A (Early)', time: '10:30 AM - 11:30 AM', pairedWith: 'Grade 4', order: 'Recess First ➡️ Lunch Second' },
-      'Grade 1':    { wave: 'Wave B (Mid)',   time: '11:15 AM - 12:15 PM', pairedWith: 'Grade 3', order: 'Lunch First ➡️ Recess Second' },
-      'Grade 2':    { wave: 'Wave C (Late)',  time: '12:00 PM - 1:00 PM',  pairedWith: 'Grade 5', order: 'Recess First ➡️ Lunch Second' },
-      'Grade 3':    { wave: 'Wave B (Mid)',   time: '11:15 AM - 12:15 PM', pairedWith: 'Grade 1', order: 'Lunch First ➡️ Recess Second' },
-      'Grade 4':    { wave: 'Wave A (Early)', time: '10:30 AM - 11:30 AM', pairedWith: 'Kindergarten', order: 'Recess First ➡️ Lunch Second' },
-      'Grade 5':    { wave: 'Wave C (Late)',  time: '12:00 PM - 1:00 PM',  pairedWith: 'Grade 2', order: 'Recess First ➡️ Lunch Second' }
+      Kindergarten: { wave: 'Wave A (Early)', time: '10:50 AM - 11:50 AM', pairedWith: 'Grade 4', order: 'Recess First / Lunch Second' },
+      'Grade 1':    { wave: 'Wave B (Mid)',   time: '11:20 AM - 12:20 PM', pairedWith: 'Grade 3', order: 'Lunch First / Recess Second' },
+      'Grade 2':    { wave: 'Wave C (Late)',  time: '11:50 AM - 12:50 PM', pairedWith: 'Grade 5', order: 'Recess First / Lunch Second' },
+      'Grade 3':    { wave: 'Wave B (Mid)',   time: '11:20 AM - 12:20 PM', pairedWith: 'Grade 1', order: 'Lunch First / Recess Second' },
+      'Grade 4':    { wave: 'Wave A (Early)', time: '10:50 AM - 11:50 AM', pairedWith: 'Kindergarten', order: 'Recess First / Lunch Second' },
+      'Grade 5':    { wave: 'Wave C (Late)',  time: '11:50 AM - 12:50 PM', pairedWith: 'Grade 2', order: 'Recess First / Lunch Second' }
     };
   }, []);
 
@@ -32,31 +33,32 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
 
   // Dynamic schedule generator keeping timelines mirrored between brackets
   const scheduleRows = useMemo(() => {
-    const midDayLabel = `Lunch Block [${currentSetup.wave}]`;
-    const midDayDisplay = `🥪 Mid-Day Block (${currentSetup.order}) — Sharing with: 👥 ${currentSetup.pairedWith} (Locked)`;
+    const midDayLabel = `Lunch and Recess [${currentSetup.wave}]`;
+    const midDayDisplay = `Shared midday block with ${currentSetup.pairedWith}. Sequence: ${currentSetup.order}.`;
 
     if (isLowerElem) {
-      // K-2 Self-Contained Day with explicit core subjects structured perfectly
       return [
-        { time: '8:00 AM - 9:00 AM', label: 'Reading Block', display: '📚 Core Module I: Reading & ELA Foundations (Phonics, Word Study & Read-Aloud)', isSpecial: false },
-        { time: '9:00 AM - 9:30 AM', label: 'Snack Time', display: '🍎 Class-Wide Morning Snack Break & Story Circle', isSpecial: true },
-        { time: '9:30 AM - 10:45 AM', label: 'Math Block', display: '📐 Core Module II: Mathematics Focus (Early Numeracy, Counting Labs & Hands-On Centers)', isSpecial: false },
+        { time: '8:00 AM - 8:20 AM', label: 'Morning Meeting', display: 'Homeroom routines, attendance, calendar work, and SEL check-in.', isSpecial: true },
+        { time: '8:20 AM - 9:35 AM', label: 'Literacy Block', display: 'Reading foundations, phonics labs, read-alouds, and guided writing.', isSpecial: false },
+        { time: '9:35 AM - 9:50 AM', label: 'Snack and Reset', display: 'Class snack, movement break, and transition reset.', isSpecial: true },
+        { time: '9:50 AM - 10:45 AM', label: 'Math Workshop', display: 'Whole-group numeracy, centers, and intervention rotations.', isSpecial: false },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '11:45 AM - 1:15 PM', label: 'Inquiry Block', display: '🌍 Core Module III: Science & Social Studies (Exploration, Interactive Maps & Lab Work)', isSpecial: false },
-        { time: '1:15 PM - 2:00 PM', label: 'Dismissal Pack', display: '🎒 Classroom Reflection Circle, Shared Review & Dismissal Protocol', isSpecial: true }
+        { time: '12:00 PM - 1:05 PM', label: 'Inquiry Block', display: 'Science and social studies investigations, labs, and project work.', isSpecial: false },
+        { time: '1:05 PM - 1:40 PM', label: 'Specials / Small Group', display: 'Encore rotation, targeted support, or enrichment.', isSpecial: false },
+        { time: '1:40 PM - 2:00 PM', label: 'Pack Up', display: 'Reflection, family notes, and dismissal routines.', isSpecial: true }
       ];
     } else {
-      // 3-5 Departmentalized 3-Session Block Rotation
       if (!currentSubject) return [];
       let baseSectionNum = 301 + (elementaryGrade - 3) * 100;
 
       return [
-        { time: '8:00 AM - 9:00 AM', label: 'Session 1', display: `${currentSubject.course} — Departmental Section #${baseSectionNum}`, isSpecial: false },
-        { time: '9:00 AM - 9:30 AM', label: 'Snack Time', display: '🍎 Upper Elementary Hydration & Healthy Snack Interval', isSpecial: true },
-        { time: '9:30 AM - 10:45 AM', label: 'Session 2', display: `${currentSubject.course} — Departmental Section #${baseSectionNum + 1}`, isSpecial: false },
+        { time: '8:00 AM - 8:55 AM', label: 'Session 1', display: `${currentSubject.course} - Departmental Section #${baseSectionNum}`, isSpecial: false },
+        { time: '9:00 AM - 9:50 AM', label: 'Session 2', display: `${currentSubject.course} - Departmental Section #${baseSectionNum + 1}`, isSpecial: false },
+        { time: '9:55 AM - 10:25 AM', label: 'WIN / Intervention', display: 'Targeted reteach, acceleration, and student conferencing.', isSpecial: true },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '11:45 AM - 1:15 PM', label: 'Session 3', display: `${currentSubject.course} — Departmental Section #${baseSectionNum + 2}`, isSpecial: false },
-        { time: '1:15 PM - 2:00 PM', label: 'Prep Block', display: '☕ Teacher Planning, Grading & Inter-Departmental Alignment', isSpecial: true }
+        { time: '12:00 PM - 12:55 PM', label: 'Session 3', display: `${currentSubject.course} - Departmental Section #${baseSectionNum + 2}`, isSpecial: false },
+        { time: '1:00 PM - 1:45 PM', label: 'Planning Block', display: 'Lesson prep, grading, and team alignment.', isSpecial: true },
+        { time: '1:45 PM - 2:10 PM', label: 'Closure / Dismissal', display: 'Student wrap-up, hall coverage, and dismissal support.', isSpecial: true }
       ];
     }
   }, [isLowerElem, currentSubject, elementaryGrade, currentSetup]);
@@ -96,10 +98,10 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
       <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained Structure' : '3-Session Departmental Structure'})</p>
 
       <div style={alertStyle}>
-        🔑 <strong>Annual Schedule Matrix Lock:</strong> <br />
-        • Paired Interaction Grade: <strong style={{ color: '#ff9f43' }}>{currentSetup.pairedWith}</strong><br />
-        • Time Interval Slot: <strong style={{ color: '#ff9f43' }}>{currentSetup.wave} ({currentSetup.time})</strong><br />
-        • Mid-Day Activity Sequence: <strong style={{ color: '#39FF14' }}>{currentSetup.order}</strong>
+        <strong>Annual Schedule Lock</strong><br />
+        Paired grade: <strong style={{ color: '#ff9f43' }}>{currentSetup.pairedWith}</strong><br />
+        Midday window: <strong style={{ color: '#ff9f43' }}>{currentSetup.wave} ({currentSetup.time})</strong><br />
+        Sequence: <strong style={{ color: '#39FF14' }}>{currentSetup.order}</strong>
       </div>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
@@ -126,9 +128,10 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
         </table>
       </div>
 
-      <div style={{ display: 'flex', gap: '15px', maxWidth: '550px', margin: '0 auto' }}>
-        <button style={{ ...styles.exitButton, flex: 1 }} onClick={isLowerElem ? onBack : () => setSelectedSubjectId(null)}>← BACK</button>
-        <button style={{ ...styles.actionButton, flex: 2 }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup })}>
+      <div style={styles.footerActions}>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={assignedClass ? onBack : isLowerElem ? onBack : () => setSelectedSubjectId(null)}>← BACK</button>
+        <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup.wave, lunchWindow: currentSetup.time })}>
           🚀 FINALIZE SCHEDULE
         </button>
       </div>

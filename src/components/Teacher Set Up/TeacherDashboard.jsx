@@ -4,6 +4,7 @@ import GradeConfigStep from './2. GradeConfigStep.jsx';
 import ClassSelectionStep from './4. ClassSelectionStep.jsx';
 import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
+import ElementarySchoolScheduleStep from './3c. ElementarySchoolScheduleStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
 
 // Global Retro Styles Shared Matrix
@@ -142,8 +143,7 @@ export default function TeacherDashboard({ onExit }) {
 
   const handleClassSelectNext = (selectedCourse) => {
     setAssignedClass(selectedCourse);
-    setLunchWave(elementaryGrade <= 2 ? 'Wave A (Early)' : 'Wave B (Mid)');
-    setStep('AVATAR_CUSTOMIZE'); // Hand off step directly to registration avatar
+    setStep('SCHEDULE_MATRIX');
   };
 
   const handleScheduleLaunch = (data) => {
@@ -152,6 +152,8 @@ export default function TeacherDashboard({ onExit }) {
       setLunchWave(data.randomLunchWave);
     } else if (schoolType === 'Middle') {
       setLunchWave(data.wave);
+    } else if (schoolType === 'Elementary') {
+      setLunchWave(data.lunchWave);
     }
     setStep('AVATAR_CUSTOMIZE'); // Routing straight to badge tracking
   };
@@ -217,6 +219,18 @@ export default function TeacherDashboard({ onExit }) {
         />
       );
     }
+    if (schoolType === 'Elementary') {
+      return (
+        <ElementarySchoolScheduleStep
+          elementaryGrade={elementaryGrade}
+          assignedClass={assignedClass}
+          onLaunchGame={handleScheduleLaunch}
+          onBack={() => setStep('CLASS_SELECT')}
+          onExit={onExit}
+          styles={retroStyles}
+        />
+      );
+    }
   }
 
   // 5. Final Step: The Avatar Customizer 
@@ -224,10 +238,7 @@ export default function TeacherDashboard({ onExit }) {
     return (
       <TeacherAvatarCustomizer 
         onSaveAvatar={handleFinishCustomization} 
-        onBack={() => {
-          if (schoolType === 'Elementary') setStep('CLASS_SELECT');
-          else setStep('SCHEDULE_MATRIX');
-        }} 
+        onBack={() => setStep('SCHEDULE_MATRIX')} 
         onExit={onExit}
         styles={retroStyles} 
       />
