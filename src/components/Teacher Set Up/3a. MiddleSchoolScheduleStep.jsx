@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Middle school courses aligned precisely with ClassSelectionStep.jsx pool structure
@@ -26,79 +26,156 @@ const SUBJECT_POOL = {
   ]
 };
 
-const BLOCK_TIMES = [
-  { id: 'block1', label: 'Block 1', time: '8:00 AM - 8:55 AM', type: 'class' },
-  { id: 'block2', label: 'Block 2', time: '9:00 AM - 9:55 AM', type: 'class' },
-  { id: 'block3', label: 'Block 3', time: '10:00 AM - 10:55 AM', type: 'class' },
-  { id: 'lunch', label: 'Lunch Block', type: 'lunch' },
-  { id: 'block4', label: 'Prep Block', time: '11:35 AM - 12:10 PM', type: 'prep' },
-  { id: 'block5', label: 'Block 5', time: '12:15 PM - 1:05 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', time: '1:10 PM - 2:00 PM', type: 'class' }
+// Adjusted timeline terminating cleanly at 2:30 PM
+const BELL_TIMELINE = [
+  { id: 'homeroom', label: 'Homeroom', start: '8:00 AM', end: '8:15 AM', type: 'homeroom' },
+  { id: 'block1', label: 'Block 1', start: '8:20 AM', end: '9:10 AM', type: 'class' },
+  { id: 'block2', label: 'Block 2', start: '9:15 AM', end: '10:05 AM', type: 'class' },
+  { id: 'block3', label: 'Block 3', start: '10:10 AM', end: '11:00 AM', type: 'class' },
+  
+  // Mid-day Rotations (Adjusted slightly to shift the afternoon blocks up)
+  { id: 'mid_slot1', start: '11:05 AM', end: '11:35 AM', type: 'rotation' },
+  { id: 'mid_slot2', start: '11:40 AM', end: '12:10 PM', type: 'rotation' },
+  { id: 'mid_slot3', start: '12:15 PM', end: '12:45 PM', type: 'rotation' },
+  
+  { id: 'block5', label: 'Block 5', start: '12:50 PM', end: '1:40 PM', type: 'class' },
+  { id: 'block6', label: 'Block 6', start: '1:45 PM', end: '2:30 PM', type: 'class' } // End target 2:30 PM
 ];
-
-const LUNCH_WINDOWS = {
-  'Wave A (Early)': '11:00 AM - 11:30 AM',
-  'Wave B (Mid)': '11:05 AM - 11:35 AM',
-  'Wave C (Late)': '11:10 AM - 11:40 AM'
-};
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, onLaunchGame, onBack, onExit, styles }) {
-  const resolvedGrade = middleGrade || 6;
+  const resolvedGrade = Number(middleGrade) || 6;
 
   const autoScheduleRows = useMemo(() => {
     let sectionCounter = resolvedGrade * 100 + 1;
-    return BLOCK_TIMES.map(block => {
-      if (block.type === 'lunch') {
+
+    return BELL_TIMELINE.map(slot => {
+      if (slot.type === 'homeroom') {
         return {
-          block: {
-            ...block,
-            time: LUNCH_WINDOWS[middleLunchWave] || '11:20 AM - 11:50 AM'
-          },
-          entry: {
-            name: `Student Lunch Supervision (${middleLunchWave || 'Assigned Wave'})`,
-            sec: null,
-            isLunch: true,
-            isPrep: false
-          }
+          block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
+          entry: { name: 'Homeroom & Attendance', sec: null, isPrep: false, isLunch: false, isHomeroom: true }
         };
       }
-      if (block.type === 'prep') {
-        return { block, entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false } };
+
+      if (slot.type === 'class') {
+        const row = {
+          block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
+          entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+        };
+        sectionCounter += 1;
+        return row;
       }
-      const entry = { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false };
-      sectionCounter += 1;
-      return { block, entry };
+
+      if (slot.type === 'rotation') {
+        // Grade 6: Lunch -> Prep -> Class
+        if (resolvedGrade === 6) {
+          if (slot.id === 'mid_slot1') {
+            return {
+              block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Student Lunch Supervision (Wave A)', sec: null, isPrep: false, isLunch: true }
+            };
+          }
+          if (slot.id === 'mid_slot2') {
+            return {
+              block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+            };
+          }
+          const row = {
+            block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
+            entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+          };
+          sectionCounter += 1;
+          return row;
+        }
+
+        // Grade 7: Class -> Lunch -> Prep
+        if (resolvedGrade === 7) {
+          if (slot.id === 'mid_slot1') {
+            const row = {
+              block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
+              entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+            };
+            sectionCounter += 1;
+            return row;
+          }
+          if (slot.id === 'mid_slot2') {
+            return {
+              block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Student Lunch Supervision (Wave B)', sec: null, isPrep: false, isLunch: true }
+            };
+          }
+          return {
+            block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
+            entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+          };
+        }
+
+        // Grade 8: Prep -> Class -> Lunch
+        if (resolvedGrade === 8) {
+          if (slot.id === 'mid_slot1') {
+            return {
+              block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+            };
+          }
+          if (slot.id === 'mid_slot2') {
+            const row = {
+              block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
+              entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+            };
+            sectionCounter += 1;
+            return row;
+          }
+          return {
+            block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
+            entry: { name: 'Student Lunch Supervision (Wave C)', sec: null, isPrep: false, isLunch: true }
+          };
+        }
+      }
+
+      return { block: { label: 'Error', time: '' }, entry: { name: 'Unassigned', sec: null } };
     });
-  }, [middleLunchWave, resolvedGrade]);
+  }, [resolvedGrade]);
+
+  const actualWaveOutput = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '900px' }}>
-      <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> MASTER WEEKLY SCHEDULE</h2>
+      <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+        <RetroIcon kind="grid" /> MASTER GRADE {resolvedGrade} SCHEDULE
+      </h2>
       <p style={styles.subtitle}>Review your grade-wide middle school bell schedule before choosing a class assignment.</p>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
-              <th style={{ padding: '8px', color: '#888' }}>BLOCK / TIME</th>
+              <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>
               {WEEK_DAYS.map(day => <th key={day} style={{ padding: '8px', color: '#39FF14' }}>{day}</th>)}
             </tr>
           </thead>
           <tbody>
-            {autoScheduleRows.map(({ block, entry }) => (
-              <tr key={block.id} style={{ borderBottom: '1px solid #222' }}>
-                <td style={{ padding: '10px 8px', borderRight: '1px solid #222' }}>
-                  <div style={{ fontWeight: 'bold' }}>{block.label}</div>
+            {autoScheduleRows.map(({ block, entry }, idx) => (
+              <tr key={`${block.label}-${idx}`} style={{ borderBottom: '1px solid #222' }}>
+                <td style={{ padding: '10px 8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '150px' }}>
+                  <div style={{ fontWeight: 'bold', color: entry.isHomeroom ? '#00FFFF' : '#fff' }}>{block.label}</div>
                   <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{block.time}</div>
                 </td>
-                {WEEK_DAYS.map(day => (
-                  <td key={`${block.id}-${day}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', color: entry.isLunch ? '#f6d365' : entry.isPrep ? '#ff9f43' : '#fff' }}>
-                    <div>{entry.name}</div>
-                    {entry.sec && <div style={{ fontSize: '0.7rem', color: '#39FF14' }}>Sec {entry.sec}</div>}
-                  </td>
-                ))}
+                {WEEK_DAYS.map(day => {
+                  let scheduleColor = '#fff';
+                  if (entry.isLunch) scheduleColor = '#f6d365';
+                  else if (entry.isPrep) scheduleColor = '#ff9f43';
+                  else if (entry.isHomeroom) scheduleColor = '#00FFFF';
+
+                  return (
+                    <td key={`${block.label}-${day}-${idx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', color: scheduleColor }}>
+                      <div style={{ fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal' }}>{entry.name}</div>
+                      {entry.sec && <div style={{ fontSize: '0.7rem', color: '#39FF14' }}>Sec {entry.sec}</div>}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
@@ -106,10 +183,16 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       </div>
 
       <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+            <RetroArrow direction="left" /> BACK
+          </span>
+        </button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: middleLunchWave })}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" /></span>
+        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: actualWaveOutput })}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+            CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
+          </span>
         </button>
       </div>
     </div>

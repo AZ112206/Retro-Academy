@@ -46,23 +46,25 @@ const POOL_EXPANSIONS = {
   ]
 };
 
+// FIXED: Timeline format with Homeroom, standardized gaps, ending at 2:30 PM
 const PERIOD_TIMES = {
-  period1: { label: 'Period 1', time: '8:00 AM - 9:15 AM', length: 'Short Block' },
-  period2: { label: 'Period 2', time: '9:20 AM - 10:35 AM', length: 'Short Block' },
-  period3: { label: 'Period 3', time: '10:40 AM - 12:40 PM', length: 'Long Block (Lunch Split)' },
-  period4: { label: 'Period 4', time: '12:45 PM - 2:00 PM', length: 'Short Block' }
+  homeroom: { label: 'Homeroom', time: '8:00 AM - 8:15 AM', length: '15 Min Attendance' },
+  period1: { label: 'Period 1', time: '8:20 AM - 9:15 AM', length: 'Short Block' },
+  period2: { label: 'Period 2', time: '9:20 AM - 10:15 AM', length: 'Short Block' },
+  period3: { label: 'Period 3', time: '10:20 AM - 12:50 PM', length: 'Long Block (Lunch Split)' },
+  period4: { label: 'Period 4', time: '12:55 PM - 2:30 PM', length: 'Short Block' }
 };
 
 const LUNCH_WAVE_TIMES = {
-  'Wave 1': '10:40 AM - 11:10 AM',
-  'Wave 2': '11:10 AM - 11:40 AM',
-  'Wave 3': '11:40 AM - 12:10 PM',
-  'Wave 4': '12:10 PM - 12:40 PM'
+  'Wave 1': '10:20 AM - 10:55 AM',
+  'Wave 2': '10:55 AM - 11:30 AM',
+  'Wave 3': '11:30 AM - 12:05 PM',
+  'Wave 4': '12:05 PM - 12:40 PM'
 };
 
 export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles }) {
   const [selectedDept, setSelectedDept] = useState(null);
-  const [confirmedDept, setConfirmedDept] = useState(false); // Tracks if player hit NEXT
+  const [confirmedDept, setConfirmedDept] = useState(false);
   const [currentTokens, setCurrentTokens] = useState([]);
   const [shuffleCount, setShuffleCount] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
@@ -105,12 +107,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     }
   };
 
-  // Handles clicking a department slot (Updates visuals only)
   const handleSelectDept = (deptId) => {
     setSelectedDept(deptId);
   };
 
-  // Triggered when hitting the action confirmation button
   const handleConfirmNextStep = () => {
     if (!selectedDept) return;
     setShuffleCount(0);
@@ -121,7 +121,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       period4: null
     });
     handleShuffleCatalog(selectedDept, true);
-    setConfirmedDept(true); // Transitions to interactive matrix step
+    setConfirmedDept(true);
   };
 
   const checkDuplicateLimit = (itemData, targetPeriod) => {
@@ -177,7 +177,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
   const getRotatedClass = (dayIndex, displayPeriodIndex) => {
     const sequenceKeys = ['period1', 'period2', 'period3', 'period4'];
-    const targetedIndex = (displayPeriodIndex - dayIndex + 4) % 4;
+    // Offset calculation accounts for skipped index 0 (Homeroom)
+    const targetedIndex = (displayPeriodIndex - 1 - dayIndex + 4) % 4;
     return schedule[sequenceKeys[targetedIndex]];
   };
 
@@ -243,7 +244,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           </div>
         </div>
 
-        {/* Dynamic validation button built identically to GradeConfigStep structure */}
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
           <button 
             style={{ 
@@ -305,11 +305,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             <tbody>
               {Object.entries(PERIOD_TIMES).map(([pKey, details], pIdx) => {
                 const isP3 = pKey === 'period3';
+                const isHR = pKey === 'homeroom';
 
                 return (
                   <tr key={pKey} style={{ borderBottom: '1px solid #222', backgroundColor: isP3 ? '#162510' : 'transparent' }}>
                     <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
-                      <div style={{ fontWeight: 'bold', color: isP3 ? '#39FF14' : '#fff' }}>{details.label}</div>
+                      <div style={{ fontWeight: 'bold', color: isHR ? '#00FFFF' : isP3 ? '#39FF14' : '#fff' }}>{details.label}</div>
                       <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{details.time}</div>
                       <div style={{ fontSize: '0.7rem', color: isP3 ? '#ffa500' : '#666', fontStyle: 'italic', marginTop: '2px' }}>
                         {isP3 ? `Midday: ${LUNCH_WAVE_TIMES[randomLunchWave]}` : details.length}
@@ -317,16 +318,16 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                     </td>
 
                     {['Day 1', 'Day 2', 'Day 3', 'Day 4'].map((day, dayIdx) => {
-                      const rotatingItem = getRotatedClass(dayIdx, pIdx);
+                      const rotatingItem = isHR ? { name: 'Homeroom & Attendance', isPrep: false } : getRotatedClass(dayIdx, pIdx);
 
                       return (
                         <td key={day} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
                           {rotatingItem ? (
                             <div>
-                              <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: rotatingItem.isPrep ? '#aaa' : '#fff' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: isHR ? '#00FFFF' : rotatingItem.isPrep ? '#aaa' : '#fff' }}>
                                 {rotatingItem.name}
                               </div>
-                              {!rotatingItem.isPrep && (
+                              {!rotatingItem.isPrep && !isHR && (
                                 <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: '500', color: getLevelColor(rotatingItem.level) }}>
                                   [{rotatingItem.level}] - {rotatingItem.grade}
                                 </div>
@@ -427,6 +428,11 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Static Homeroom Header Slot */}
+          <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED ASSIGNMENT</span>
+          </div>
+
           {['period1', 'period2', 'period3', 'period4'].map((pKey, idx) => {
             const isP3 = pKey === 'period3';
             const filledItem = schedule[pKey];

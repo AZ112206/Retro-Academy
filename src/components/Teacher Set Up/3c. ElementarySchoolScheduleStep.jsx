@@ -12,47 +12,48 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
   const isLowerElem = elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2;
   const displayGradeName = elementaryGrade === 0 ? 'Kindergarten' : `Grade ${elementaryGrade}`;
 
-  // Generate permanent Grade-to-Grade pairs and their specific Mid-Day order for the school year
+  // Adjusted schedule lock times shifted by 15 minutes to preserve instructional space
   const elementaryMasterSetup = useMemo(() => {
     return {
-      Kindergarten: { wave: 'Wave A (Early)', time: '11:00 AM - 11:40 AM', pairedWith: 'Grade 4', order: 'Recess First / Lunch Second' },
-      'Grade 1':    { wave: 'Wave B (Mid)',   time: '11:10 AM - 11:50 AM', pairedWith: 'Grade 3', order: 'Lunch First / Recess Second' },
-      'Grade 2':    { wave: 'Wave C (Late)',  time: '11:20 AM - 12:00 PM', pairedWith: 'Grade 5', order: 'Recess First / Lunch Second' },
-      'Grade 3':    { wave: 'Wave B (Mid)',   time: '11:10 AM - 11:50 AM', pairedWith: 'Grade 1', order: 'Lunch First / Recess Second' },
-      'Grade 4':    { wave: 'Wave A (Early)', time: '11:00 AM - 11:40 AM', pairedWith: 'Kindergarten', order: 'Recess First / Lunch Second' },
-      'Grade 5':    { wave: 'Wave C (Late)',  time: '11:20 AM - 12:00 PM', pairedWith: 'Grade 2', order: 'Recess First / Lunch Second' }
+      Kindergarten: { wave: 'Wave A (Early)', time: '11:15 AM - 11:55 AM', pairedWith: 'Grade 4', order: 'Recess First / Lunch Second' },
+      'Grade 1':    { wave: 'Wave B (Mid)',   time: '11:25 AM - 12:05 PM', pairedWith: 'Grade 3', order: 'Lunch First / Recess Second' },
+      'Grade 2':    { wave: 'Wave C (Late)',  time: '11:35 AM - 12:15 PM', pairedWith: 'Grade 5', order: 'Recess First / Lunch Second' },
+      'Grade 3':    { wave: 'Wave B (Mid)',   time: '11:25 AM - 12:05 PM', pairedWith: 'Grade 1', order: 'Lunch First / Recess Second' },
+      'Grade 4':    { wave: 'Wave A (Early)', time: '11:15 AM - 11:55 AM', pairedWith: 'Kindergarten', order: 'Recess First / Lunch Second' },
+      'Grade 5':    { wave: 'Wave C (Late)',  time: '11:35 AM - 12:15 PM', pairedWith: 'Grade 2', order: 'Recess First / Lunch Second' }
     };
   }, []);
 
   const currentSetup = elementaryMasterSetup[displayGradeName];
 
-  // Dynamic schedule generator keeping timelines mirrored between brackets
+  // Dynamic schedule matrix scaled to complete precisely at 2:30 PM
   const scheduleRows = useMemo(() => {
     const midDayLabel = `Lunch and Recess [${currentSetup.wave}]`;
     const midDayDisplay = `Shared midday block with ${currentSetup.pairedWith}. Sequence: ${currentSetup.order}.`;
 
     if (isLowerElem) {
       return [
-        { time: '8:00 AM - 8:20 AM', label: 'Morning Meeting', display: 'Homeroom routines, attendance, calendar work, and SEL check-in.', isSpecial: true },
-        { time: '8:20 AM - 9:30 AM', label: 'Literacy Block', display: 'Reading foundations, phonics labs, read-alouds, and guided writing.', isSpecial: false },
-        { time: '9:30 AM - 9:45 AM', label: 'Snack and Reset', display: 'Class snack, movement break, and transition reset.', isSpecial: true },
-        { time: '9:45 AM - 10:55 AM', label: 'Math Workshop', display: 'Whole-group numeracy, centers, and intervention rotations.', isSpecial: false },
+        { time: '8:00 AM - 8:15 AM', label: 'Homeroom', display: 'Homeroom routines, attendance tracking, calendar work, and SEL check-in.', isSpecial: true },
+        { time: '8:20 AM - 9:35 AM', label: 'Literacy Block', display: 'Reading foundations, phonics labs, read-alouds, and guided writing workshop.', isSpecial: false },
+        { time: '9:35 AM - 9:50 AM', label: 'Snack and Reset', display: 'Class nutrition snack, active movement break, and transition reset.', isSpecial: true },
+        { time: '9:55 AM - 11:10 AM', label: 'Math Workshop', display: 'Whole-group numeracy, guided math centers, and physical intervention rotations.', isSpecial: false },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '11:45 AM - 12:40 PM', label: 'Inquiry Block', display: 'Science and social studies investigations, labs, and project work.', isSpecial: false },
-        { time: '12:45 PM - 1:30 PM', label: 'Specials / Small Group', display: 'Encore rotation, targeted support, or enrichment.', isSpecial: false },
-        { time: '1:30 PM - 2:00 PM', label: 'Pack Up', display: 'Reflection, family notes, and dismissal routines.', isSpecial: true }
+        { time: '12:20 PM - 1:15 PM', label: 'Inquiry Block', display: 'Science and social studies investigations, observations, and project-based labs.', isSpecial: false },
+        { time: '1:20 PM - 2:05 PM', label: 'Specians / Small Group', display: 'Encore specialized rotation support, targeted support, or enrichment slots.', isSpecial: false },
+        { time: '2:05 PM - 2:30 PM', label: 'Pack Up & Dismissal', display: 'Daily student reflection, family notes filing, and baseline dismissal routines.', isSpecial: true }
       ];
     } else {
       let baseSectionNum = 301 + (elementaryGrade - 3) * 100;
 
       return [
-        { time: '8:00 AM - 8:55 AM', label: 'Session 1', display: `Upper Elementary Core Rotation - Section #${baseSectionNum}`, isSpecial: false },
-        { time: '9:00 AM - 9:50 AM', label: 'Session 2', display: `Upper Elementary Core Rotation - Section #${baseSectionNum + 1}`, isSpecial: false },
-        { time: '9:55 AM - 10:55 AM', label: 'WIN / Intervention', display: 'Targeted reteach, acceleration, and student conferencing.', isSpecial: true },
+        { time: '8:00 AM - 8:15 AM', label: 'Homeroom', display: 'Homeroom check-in, attendance tracking, school announcements, and organizational routines.', isSpecial: true },
+        { time: '8:20 AM - 9:15 AM', label: 'Session 1', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum}`, isSpecial: false },
+        { time: '9:20 AM - 10:15 AM', label: 'Session 2', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum + 1}`, isSpecial: false },
+        { time: '10:20 AM - 11:10 AM', label: 'WIN / Intervention', display: 'Targeted core reteach, instructional acceleration, and individual student conferencing.', isSpecial: true },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '11:45 AM - 12:40 PM', label: 'Session 3', display: `Upper Elementary Core Rotation - Section #${baseSectionNum + 2}`, isSpecial: false },
-        { time: '12:45 PM - 1:30 PM', label: 'Planning Block', display: 'Lesson prep, grading, and team alignment.', isSpecial: true },
-        { time: '1:30 PM - 2:00 PM', label: 'Closure / Dismissal', display: 'Student wrap-up, hall coverage, and dismissal support.', isSpecial: true }
+        { time: '12:20 PM - 1:15 PM', label: 'Session 3', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum + 2}`, isSpecial: false },
+        { time: '1:20 PM - 2:05 PM', label: 'Planning Block', display: 'Lesson asset preparation, administrative grading, and grade level team alignment.', isSpecial: true },
+        { time: '2:05 PM - 2:30 PM', label: 'Closure & Dismissal', display: 'Student wrap-up support, hallway monitoring coverage, and staggered dismissal routines.', isSpecial: true }
       ];
     }
   }, [isLowerElem, elementaryGrade, currentSetup]);
@@ -72,7 +73,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
   return (
     <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> ELEMENTARY SCHEDULE CONFIG</h2>
-      <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained K-2 Schedule' : '3-Session Departmental Structure'}) | Day Window: 8:00 AM - 2:00 PM</p>
+      <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained K-2 Schedule' : '3-Session Departmental Structure'}) | Day Window: 8:00 AM - 2:30 PM</p>
 
       <div style={alertStyle}>
         <strong>Annual Schedule Lock</strong><br />
@@ -85,22 +86,31 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
-              <th style={{ padding: '8px', color: '#888' }}>BLOCK / TIME</th>
-              <th style={{ padding: '8px', color: '#39FF14' }}>DAILY SCHEDULE SYSTEM ACTIVITIES</th>
+              <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>
+              <th style={{ padding: '8px', color: '#39FF14', textAlign: 'left' }}>DAILY SCHEDULE SYSTEM ACTIVITIES</th>
             </tr>
           </thead>
           <tbody>
-            {scheduleRows.map((row, idx) => (
-              <tr key={idx} style={{ borderBottom: '1px solid #222', backgroundColor: row.isSpecial ? '#1b1b1b' : 'transparent' }}>
-                <td style={{ padding: '10px 8px', borderRight: '1px solid #222', width: '35%' }}>
-                  <div style={{ fontWeight: 'bold' }}>{row.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{row.time}</div>
-                </td>
-                <td style={{ padding: '10px 8px', color: row.isSpecial ? (row.label.includes('Snack') ? '#39FF14' : '#ff9f43') : '#fff' }}>
-                  {row.display}
-                </td>
-              </tr>
-            ))}
+            {scheduleRows.map((row, idx) => {
+              let cellColor = '#fff';
+              if (row.isSpecial) {
+                if (row.label.includes('Snack')) cellColor = '#39FF14';
+                else if (row.label.includes('Homeroom')) cellColor = '#00FFFF';
+                else cellColor = '#ff9f43';
+              }
+
+              return (
+                <tr key={idx} style={{ borderBottom: '1px solid #222', backgroundColor: row.isSpecial ? '#1b1b1b' : 'transparent' }}>
+                  <td style={{ padding: '10px 8px', borderRight: '1px solid #222', width: '35%', textAlign: 'left' }}>
+                    <div style={{尊fontWeight: 'bold', color: row.label === 'Homeroom' ? '#00FFFF' : '#fff' }}>{row.label}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{row.time}</div>
+                  </td>
+                  <td style={{ padding: '10px 8px', color: cellColor, textAlign: 'left' }}>
+                    {row.display}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
