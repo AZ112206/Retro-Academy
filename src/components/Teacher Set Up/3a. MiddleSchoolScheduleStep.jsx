@@ -46,6 +46,8 @@ const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, styles }) {
   const resolvedGrade = Number(middleGrade) || 6;
+  const prepBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
+  const prepBlockId = prepBlockByGrade[resolvedGrade] || 'block2';
 
   const fallbackSubject = SUBJECT_POOL[resolvedGrade]?.[0];
   const activeSubjectLabel = selectedClass?.name || selectedClass?.course || fallbackSubject?.course || `Grade ${resolvedGrade} Core Block`;
@@ -62,6 +64,13 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       }
 
       if (slot.type === 'class') {
+        if (slot.id === prepBlockId) {
+          return {
+            block: { label: `${slot.label} Specialists / Prep`, time: `${slot.start} - ${slot.end}` },
+            entry: { name: 'Students in Specialists while Teachers Prep', sec: null, isPrep: true, isLunch: false }
+          };
+        }
+
         const row = {
           block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
           entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
@@ -81,8 +90,8 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           }
           if (slot.id === 'mid_slot2') {
             return {
-              block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+              block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
             };
           }
           const row = {
@@ -96,12 +105,10 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         // Grade 7: Class -> Lunch -> Prep
         if (resolvedGrade === 7) {
           if (slot.id === 'mid_slot1') {
-            const row = {
-              block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-              entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+            return {
+              block: { label: 'Block 4 Specialists / Prep', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Students in Specialists while Teachers Prep', sec: null, isPrep: true, isLunch: false }
             };
-            sectionCounter += 1;
-            return row;
           }
           if (slot.id === 'mid_slot2') {
             return {
@@ -110,8 +117,8 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
             };
           }
           return {
-            block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
-            entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+            block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
+            entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
           };
         }
 
@@ -119,8 +126,8 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         if (resolvedGrade === 8) {
           if (slot.id === 'mid_slot1') {
             return {
-              block: { label: 'Prep Block', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false }
+              block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
+              entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
             };
           }
           if (slot.id === 'mid_slot2') {

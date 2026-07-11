@@ -46,13 +46,14 @@ const POOL_EXPANSIONS = {
   ]
 };
 
-// FIXED: Timeline format with Homeroom, standardized gaps, ending at 2:30 PM
+// High school timeline with 5 periods: 2 short, 1 long, then 2 short
 const PERIOD_TIMES = {
   homeroom: { label: 'Homeroom', time: '8:00 AM - 8:15 AM', length: '15 Min Attendance' },
   period1: { label: 'Period 1', time: '8:20 AM - 9:15 AM', length: 'Short Block' },
   period2: { label: 'Period 2', time: '9:20 AM - 10:15 AM', length: 'Short Block' },
   period3: { label: 'Period 3', time: '10:20 AM - 12:50 PM', length: 'Long Block (Lunch Split)' },
-  period4: { label: 'Period 4', time: '12:55 PM - 2:30 PM', length: 'Short Block' }
+  period4: { label: 'Period 4', time: '12:55 PM - 1:40 PM', length: 'Short Block' },
+  period5: { label: 'Period 5', time: '1:45 PM - 2:30 PM', length: 'Short Block' }
 };
 
 const LUNCH_WAVE_TIMES = {
@@ -74,7 +75,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     period1: null,
     period2: null,
     period3: null, 
-    period4: null
+    period4: null,
+    period5: null
   });
 
   const handleShuffleCatalog = (deptId, isInitialLoad = false) => {
@@ -85,21 +87,27 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
     const basePool = POOL_EXPANSIONS[deptId] || [];
     const shuffledBase = [...basePool].sort(() => Math.random() - 0.5);
-    const selectedBases = shuffledBase.slice(0, 2); 
+    const levelPool = ['Standard', 'Honors', 'Advanced'];
+    const usedSections = new Set();
+    const buildRandomSection = () => {
+      let candidate = '';
+      do {
+        candidate = `#${Math.floor(Math.random() * 900) + 100}`;
+      } while (usedSections.has(candidate));
+      usedSections.add(candidate);
+      return candidate;
+    };
 
-    const generatedTokens = [];
-    let sectionIdCounter = 101;
-
-    selectedBases.forEach(base => {
-      ['Standard', 'Honors', 'Advanced'].forEach(level => {
-        generatedTokens.push({
-          name: base.name,
-          grade: base.grade,
-          level: level,
-          sec: `#${sectionIdCounter++}`
-        });
-      });
-    });
+    const generatedTokens = Array.from({ length: 3 }).map((_, idx) => {
+      const base = shuffledBase[idx % Math.max(shuffledBase.length, 1)] || { name: 'General Elective', grade: '9th' };
+      const level = levelPool[Math.floor(Math.random() * levelPool.length)];
+      return {
+        name: base.name,
+        grade: base.grade,
+        level,
+        sec: buildRandomSection()
+      };
+    }).sort(() => Math.random() - 0.5);
 
     setCurrentTokens(generatedTokens);
     if (!isInitialLoad) {
@@ -118,7 +126,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       period1: null,
       period2: null,
       period3: null,
-      period4: null
+      period4: null,
+      period5: null
     });
     handleShuffleCatalog(selectedDept, true);
     setConfirmedDept(true);
@@ -176,9 +185,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   };
 
   const getRotatedClass = (dayIndex, displayPeriodIndex) => {
-    const sequenceKeys = ['period1', 'period2', 'period3', 'period4'];
+    const sequenceKeys = ['period1', 'period2', 'period3', 'period4', 'period5'];
     // Offset calculation accounts for skipped index 0 (Homeroom)
-    const targetedIndex = (displayPeriodIndex - 1 - dayIndex + 4) % 4;
+    const targetedIndex = (displayPeriodIndex - 1 - dayIndex + 5) % 5;
     return schedule[sequenceKeys[targetedIndex]];
   };
 
@@ -283,11 +292,11 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SIGN OFFICIAL COVENANT MATRIX</h2>
-        <p style={styles.subtitle}>Review your rotating 4x4 block timeline rotation matrix profiles below.</p>
+        <p style={styles.subtitle}>Review your rotating 5-day / 5-period matrix profile below.</p>
         
         <div style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
-            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 4x4 True Rotational Matrix</h3>
+            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 5x5 Rotational Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> ({LUNCH_WAVE_TIMES[randomLunchWave] || ''})</span>
             </div>
@@ -297,8 +306,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
                 <th style={{ padding: '10px', color: '#888', width: '24%' }}>BLOCK DETAILS</th>
-                {['Day 1', 'Day 2', 'Day 3', 'Day 4'].map(day => (
-                  <th key={day} style={{ padding: '10px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '19%' }}>{day}</th>
+                {['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'].map(day => (
+                  <th key={day} style={{ padding: '10px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
                 ))}
               </tr>
             </thead>
@@ -317,7 +326,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                       </div>
                     </td>
 
-                    {['Day 1', 'Day 2', 'Day 3', 'Day 4'].map((day, dayIdx) => {
+                    {['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'].map((day, dayIdx) => {
                       const rotatingItem = isHR ? { name: 'Homeroom & Attendance', isPrep: false } : getRotatedClass(dayIdx, pIdx);
 
                       return (
@@ -351,7 +360,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           </table>
 
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.</span></span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day across the 5x5 matrix. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.</span></span>
           </div>
         </div>
 
@@ -393,14 +402,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> DRAGGABLE SET (6 AVAILABLE)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> DRAGGABLE SET (3 AVAILABLE)</h3>
           
           <div 
             draggable 
-            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep Block', isPrep: true })}
+            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep / Student Study Hall', isPrep: true })}
             style={{ padding: '10px', backgroundColor: '#333', border: '2px dashed #aaa', borderRadius: '4px', cursor: 'grab', marginBottom: '15px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="class" size={20} /> MOVE PREP BLOCK</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="class" size={20} /> MOVE PREP / STUDY HALL BLOCK</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -433,7 +442,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED ASSIGNMENT</span>
           </div>
 
-          {['period1', 'period2', 'period3', 'period4'].map((pKey, idx) => {
+          {['period1', 'period2', 'period3', 'period4', 'period5'].map((pKey, idx) => {
             const isP3 = pKey === 'period3';
             const filledItem = schedule[pKey];
 

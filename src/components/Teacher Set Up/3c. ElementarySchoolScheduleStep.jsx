@@ -40,7 +40,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, selected
         { time: '9:55 AM - 11:10 AM', label: 'Math Workshop', display: 'Whole-group numeracy, guided math centers, and physical intervention rotations.', isSpecial: false },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
         { time: '12:20 PM - 1:15 PM', label: 'Inquiry Block', display: 'Science and social studies investigations, observations, and project-based labs.', isSpecial: false },
-        { time: '1:20 PM - 2:05 PM', label: 'Specians / Small Group', display: 'Encore specialized rotation support, targeted support, or enrichment slots.', isSpecial: false },
+        { time: '1:20 PM - 2:05 PM', label: 'Specialists / Prep Block', display: 'Students attend specialists while teacher prep and small-group planning are completed.', isSpecial: true },
         { time: '2:05 PM - 2:30 PM', label: 'Pack Up & Dismissal', display: 'Daily student reflection, family notes filing, and baseline dismissal routines.', isSpecial: true }
       ];
     } else {
@@ -53,7 +53,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, selected
         { time: '10:20 AM - 11:10 AM', label: 'WIN / Intervention', display: 'Targeted core reteach, instructional acceleration, and individual student conferencing.', isSpecial: true },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
         { time: '12:20 PM - 1:15 PM', label: 'Session 3', display: `${selectedUpperSubject} - Section #${baseSectionNum + 2}`, isSpecial: false },
-        { time: '1:20 PM - 2:05 PM', label: 'Planning Block', display: 'Lesson asset preparation, administrative grading, and grade level team alignment.', isSpecial: true },
+        { time: '1:20 PM - 2:05 PM', label: 'Planning Block / Specialists', display: 'Teacher planning block while students are in specialists at the same time.', isSpecial: true },
         { time: '2:05 PM - 2:30 PM', label: 'Closure & Dismissal', display: 'Student wrap-up support, hallway monitoring coverage, and staggered dismissal routines.', isSpecial: true }
       ];
     }
