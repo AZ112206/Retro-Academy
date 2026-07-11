@@ -70,7 +70,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
               disabled={elementaryGrade === null}
               onClick={onNext}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>GENERATE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>{elementaryGrade >= 3 ? 'SELECT SUBJECT' : 'GENERATE SCHEDULE'} <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         )}
@@ -113,7 +113,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
               disabled={!middleGrade}
               onClick={onNext}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>GENERATE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>SELECT SUBJECT <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         )}

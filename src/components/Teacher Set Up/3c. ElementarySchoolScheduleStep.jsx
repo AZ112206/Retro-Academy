@@ -7,7 +7,7 @@ const ELEMENTARY_SUBJECTS = [
   { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS' }
 ];
 
-export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunchGame, onBack, onExit, styles }) {
+export default function ElementarySchoolScheduleStep({ elementaryGrade, selectedClass, onLaunchGame, onBack, onExit, styles }) {
   
   const isLowerElem = elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2;
   const displayGradeName = elementaryGrade === 0 ? 'Kindergarten' : `Grade ${elementaryGrade}`;
@@ -25,6 +25,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
   }, []);
 
   const currentSetup = elementaryMasterSetup[displayGradeName];
+  const selectedUpperSubject = selectedClass?.name || selectedClass?.course || 'Upper Elementary Core Rotation';
 
   // Dynamic schedule matrix scaled to complete precisely at 2:30 PM
   const scheduleRows = useMemo(() => {
@@ -47,16 +48,16 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
 
       return [
         { time: '8:00 AM - 8:15 AM', label: 'Homeroom', display: 'Homeroom check-in, attendance tracking, school announcements, and organizational routines.', isSpecial: true },
-        { time: '8:20 AM - 9:15 AM', label: 'Session 1', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum}`, isSpecial: false },
-        { time: '9:20 AM - 10:15 AM', label: 'Session 2', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum + 1}`, isSpecial: false },
+        { time: '8:20 AM - 9:15 AM', label: 'Session 1', display: `${selectedUpperSubject} - Section #${baseSectionNum}`, isSpecial: false },
+        { time: '9:20 AM - 10:15 AM', label: 'Session 2', display: `${selectedUpperSubject} - Section #${baseSectionNum + 1}`, isSpecial: false },
         { time: '10:20 AM - 11:10 AM', label: 'WIN / Intervention', display: 'Targeted core reteach, instructional acceleration, and individual student conferencing.', isSpecial: true },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '12:20 PM - 1:15 PM', label: 'Session 3', display: `Upper Elementary Core Rotation Class Block - Section #${baseSectionNum + 2}`, isSpecial: false },
+        { time: '12:20 PM - 1:15 PM', label: 'Session 3', display: `${selectedUpperSubject} - Section #${baseSectionNum + 2}`, isSpecial: false },
         { time: '1:20 PM - 2:05 PM', label: 'Planning Block', display: 'Lesson asset preparation, administrative grading, and grade level team alignment.', isSpecial: true },
         { time: '2:05 PM - 2:30 PM', label: 'Closure & Dismissal', display: 'Student wrap-up support, hallway monitoring coverage, and staggered dismissal routines.', isSpecial: true }
       ];
     }
-  }, [isLowerElem, elementaryGrade, currentSetup]);
+  }, [isLowerElem, elementaryGrade, currentSetup, selectedUpperSubject]);
 
   const alertStyle = {
     backgroundColor: '#221c11',
@@ -73,7 +74,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
   return (
     <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> ELEMENTARY SCHEDULE CONFIG</h2>
-      <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained K-2 Schedule' : '3-Session Departmental Structure'}) | Day Window: 8:00 AM - 2:30 PM</p>
+      <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained K-2 Schedule' : `Selected Subject: ${selectedUpperSubject}`}) | Day Window: 8:00 AM - 2:30 PM</p>
 
       <div style={alertStyle}>
         <strong>Annual Schedule Lock</strong><br />
@@ -102,7 +103,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunch
               return (
                 <tr key={idx} style={{ borderBottom: '1px solid #222', backgroundColor: row.isSpecial ? '#1b1b1b' : 'transparent' }}>
                   <td style={{ padding: '10px 8px', borderRight: '1px solid #222', width: '35%', textAlign: 'left' }}>
-                    <div style={{尊fontWeight: 'bold', color: row.label === 'Homeroom' ? '#00FFFF' : '#fff' }}>{row.label}</div>
+                    <div style={{ fontWeight: 'bold', color: row.label === 'Homeroom' ? '#00FFFF' : '#fff' }}>{row.label}</div>
                     <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{row.time}</div>
                   </td>
                   <td style={{ padding: '10px 8px', color: cellColor, textAlign: 'left' }}>

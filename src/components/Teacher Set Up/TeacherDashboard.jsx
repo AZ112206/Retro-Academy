@@ -4,6 +4,7 @@ import GradeConfigStep from './2. GradeConfigStep.jsx';
 import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
 import ElementarySchoolScheduleStep from './3c. ElementarySchoolScheduleStep.jsx';
+import ClassSelectionStep from './4. ClassSelectionStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
@@ -104,7 +105,7 @@ const retroStyles = {
 };
 
 export default function TeacherDashboard({ onExit }) {
-  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
+  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECTION' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
   const [step, setStep] = useState('SCHOOL_TYPE');
   
   // Track unified setup states configurations
@@ -115,6 +116,7 @@ export default function TeacherDashboard({ onExit }) {
   
   const [highSchoolDept, setHighSchoolDept] = useState(null);
   const [lunchWave, setLunchWave] = useState('');
+  const [selectedClass, setSelectedClass] = useState(null);
   
   // Finalized teacher operational properties payload
   const [teacherProfile, setTeacherProfile] = useState(null);
@@ -125,6 +127,7 @@ export default function TeacherDashboard({ onExit }) {
 
   const handleSelectSchoolType = (type) => {
     setSchoolType(type);
+    setSelectedClass(null);
     if (type === 'High') {
       setStep('SCHEDULE_MATRIX'); // High school bypasses grade configuration steps
     } else {
@@ -133,9 +136,28 @@ export default function TeacherDashboard({ onExit }) {
   };
 
   const handleGradeConfigNext = () => {
-    if (schoolType === 'Elementary' || schoolType === 'Middle') {
+    if (schoolType === 'Elementary') {
+      if (elementaryGrade >= 3) {
+        setStep('CLASS_SELECTION');
+        return;
+      }
+      setStep('SCHEDULE_MATRIX');
+      return;
+    }
+
+    if (schoolType === 'Middle') {
+      setStep('CLASS_SELECTION');
+      return;
+    }
+
+    if (schoolType === 'High') {
       setStep('SCHEDULE_MATRIX');
     }
+  };
+
+  const handleClassSelectionNext = (course) => {
+    setSelectedClass(course);
+    setStep('SCHEDULE_MATRIX');
   };
 
   const handleScheduleLaunch = (data) => {
@@ -189,8 +211,9 @@ export default function TeacherDashboard({ onExit }) {
         <MiddleSchoolScheduleStep 
           middleGrade={middleGrade} 
           middleLunchWave={middleLunchWave} 
+          selectedClass={selectedClass}
           onLaunchGame={handleScheduleLaunch} 
-          onBack={() => setStep('GRADE_CONFIG')} 
+          onBack={() => setStep('CLASS_SELECTION')} 
           onExit={onExit}
           styles={retroStyles} 
         />
@@ -200,13 +223,29 @@ export default function TeacherDashboard({ onExit }) {
       return (
         <ElementarySchoolScheduleStep
           elementaryGrade={elementaryGrade}
+          selectedClass={selectedClass}
           onLaunchGame={handleScheduleLaunch}
-          onBack={() => setStep('GRADE_CONFIG')}
+          onBack={() => (elementaryGrade >= 3 ? setStep('CLASS_SELECTION') : setStep('GRADE_CONFIG'))}
           onExit={onExit}
           styles={retroStyles}
         />
       );
     }
+  }
+
+  if (step === 'CLASS_SELECTION') {
+    return (
+      <ClassSelectionStep
+        schoolType={schoolType}
+        elementaryGrade={elementaryGrade}
+        middleGrade={middleGrade}
+        highSchoolDept={highSchoolDept}
+        onSelectClass={handleClassSelectionNext}
+        onBack={() => setStep('GRADE_CONFIG')}
+        onExit={onExit}
+        styles={retroStyles}
+      />
+    );
   }
 
   // 4. Final Step: The Avatar Customizer 

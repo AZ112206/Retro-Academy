@@ -44,8 +44,11 @@ const BELL_TIMELINE = [
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, onLaunchGame, onBack, onExit, styles }) {
+export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, styles }) {
   const resolvedGrade = Number(middleGrade) || 6;
+
+  const fallbackSubject = SUBJECT_POOL[resolvedGrade]?.[0];
+  const activeSubjectLabel = selectedClass?.name || selectedClass?.course || fallbackSubject?.course || `Grade ${resolvedGrade} Core Block`;
 
   const autoScheduleRows = useMemo(() => {
     let sectionCounter = resolvedGrade * 100 + 1;
@@ -61,7 +64,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       if (slot.type === 'class') {
         const row = {
           block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
-          entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+          entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
         };
         sectionCounter += 1;
         return row;
@@ -84,7 +87,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           }
           const row = {
             block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-            entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+            entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
           };
           sectionCounter += 1;
           return row;
@@ -95,7 +98,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           if (slot.id === 'mid_slot1') {
             const row = {
               block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-              entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+              entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
             };
             sectionCounter += 1;
             return row;
@@ -123,7 +126,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           if (slot.id === 'mid_slot2') {
             const row = {
               block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-              entry: { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
+              entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
             };
             sectionCounter += 1;
             return row;
@@ -137,7 +140,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
 
       return { block: { label: 'Error', time: '' }, entry: { name: 'Unassigned', sec: null } };
     });
-  }, [resolvedGrade]);
+  }, [resolvedGrade, activeSubjectLabel]);
 
   const actualWaveOutput = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
 
@@ -146,7 +149,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
         <RetroIcon kind="grid" /> MASTER GRADE {resolvedGrade} SCHEDULE
       </h2>
-      <p style={styles.subtitle}>Review your grade-wide middle school bell schedule before choosing a class assignment.</p>
+      <p style={styles.subtitle}>Selected subject: {activeSubjectLabel}</p>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
