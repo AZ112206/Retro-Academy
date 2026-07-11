@@ -152,7 +152,7 @@ export default function TeacherDashboard({ onExit }) {
 
   const handleFinishCustomization = (profileData) => {
     setTeacherProfile(profileData);
-    setStep('WORLD_MAP'); // Initialize the dual-control 2D grid viewport engine
+    setStep('WORLD_MAP'); 
   };
 
   // ----------------------------------------------------------------
@@ -221,28 +221,11 @@ export default function TeacherDashboard({ onExit }) {
     );
   }
 
-  // 5. 2D Game Exploration Sandbox Viewport Screen
+  // 5. Custom Gameplay Matrix Implementation Boundary
   if (step === 'WORLD_MAP') {
     return (
-      <div style={{ ...retroStyles.setupBox, maxWidth: '1000px', borderStyle: 'solid' }}>
-        <h2 style={{ ...retroStyles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="controller" /> CAMPUS OVERWORLD SANDBOX</h2>
-        <p style={retroStyles.subtitle}>Welcome, <strong>{teacherProfile?.name || 'Instructor'}</strong>. The school year has officially initialized!</p>
-        
-        {/* Placeholder wrapper box targeting our cross-platform keyboard + mobile virtual touch overlay controls */}
-        <div style={{ width: '100%', height: '400px', backgroundColor: '#000', border: '2px solid #39FF14', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ color: '#39FF14', fontSize: '1.2rem', fontFamily: 'monospace', textShadow: '0 0 5px #39FF14' }}>
-            [ 🏃 2D MOVING SPRITE WORLD MAP CANVAS ENGINE GOES HERE ]
-          </span>
-        </div>
-
-        <div style={retroStyles.footerActions}>
-          <button style={{ ...retroStyles.backButton, flex: '1 1 200px' }} onClick={() => setStep('AVATAR_CUSTOMIZE')}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK TO BADGE</span>
-          </button>
-          <button style={{ ...retroStyles.exitButton, flex: '1 1 200px' }} onClick={onExit}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="exit" /> SHUT DOWN CLIENT</span>
-          </button>
-        </div>
+      <div style={retroStyles.setupBox}>
+        {/* Your custom map and navigation layout code goes right here! */}
       </div>
     );
   }
