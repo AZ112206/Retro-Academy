@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import RetroIcon, { RetroArrow, RetroClose } from '../RetroIcon';
 
 const DEPARTMENTS = [
-  { id: 'math', name: '📐 Math Dept' },
-  { id: 'science', name: '🧪 Science Dept' },
-  { id: 'history', name: '📜 History Dept' },
-  { id: 'english', name: '📝 English Dept' },
-  { id: 'language', name: '🗣️ Foreign Lang Dept' }
+  { id: 'math', name: '[MATH] Math Dept' },
+  { id: 'science', name: '[SCI] Science Dept' },
+  { id: 'history', name: '[HIST] History Dept' },
+  { id: 'english', name: '[ENG] English Dept' },
+  { id: 'language', name: '[LANG] Foreign Lang Dept' }
 ];
 
 const POOL_EXPANSIONS = {
@@ -48,7 +49,7 @@ const POOL_EXPANSIONS = {
 const PERIOD_TIMES = {
   period1: { label: 'Period 1', time: '8:00 AM - 9:15 AM', length: 'Short Block' },
   period2: { label: 'Period 2', time: '9:20 AM - 10:35 AM', length: 'Short Block' },
-  period3: { label: 'Period 3', time: '10:40 AM - 12:40 PM', length: '🔥 Long Block (Lunch Split)' },
+  period3: { label: 'Period 3', time: '10:40 AM - 12:40 PM', length: 'Long Block (Lunch Split)' },
   period4: { label: 'Period 4', time: '12:45 PM - 2:00 PM', length: 'Short Block' }
 };
 
@@ -76,7 +77,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
   const handleShuffleCatalog = (deptId, isInitialLoad = false) => {
     if (!isInitialLoad && shuffleCount >= 3) {
-      alert('⚠️ Administration Notice: You have exhausted your 3-shuffle limit for this scheduling draft!');
+      alert('Administration Notice: You have exhausted your 3-shuffle limit for this scheduling draft.');
       return;
     }
 
@@ -166,7 +167,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
   const handleProceedToReview = () => {
     if (countPrepBlocks() !== 1) {
-      alert('⚠️ Mandatory Warning: Your schedule is invalid! You MUST include exactly 1 Teacher Prep Block.');
+      alert('Mandatory Warning: Your schedule is invalid. You must include exactly 1 Teacher Prep Block.');
       return;
     }
     const rolledWave = `Wave ${Math.floor(Math.random() * 4) + 1}`;
@@ -192,7 +193,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   if (!confirmedDept) {
     return (
       <div style={styles.setupBox}>
-        <h2 style={styles.heading}>🎓 HIGH SCHOOL DEPARTMENTS</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="cap" /> HIGH SCHOOL DEPARTMENTS</h2>
         <p style={styles.subtitle}>Select your specialization branch to load into the dashboard.</p>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center', marginTop: '20px', width: '100%' }}>
@@ -237,23 +238,29 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         </div>
 
         {/* Dynamic validation button built identically to GradeConfigStep structure */}
-        <button 
-          style={{ 
-            ...styles.actionButton, 
-            marginTop: '25px', 
-            width: '100%',
-            maxWidth: '500px', 
-            opacity: !selectedDept ? 0.5 : 1 
-          }}
-          disabled={!selectedDept}
-          onClick={handleConfirmNextStep}
-        >
-          NEXT: GENERATE SCHEDULE ➡️
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+          <button 
+            style={{ 
+              ...styles.actionButton, 
+              marginTop: '25px', 
+              width: '100%',
+              maxWidth: '500px', 
+              opacity: !selectedDept ? 0.5 : 1,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px'
+            }}
+            disabled={!selectedDept}
+            onClick={handleConfirmNextStep}
+          >
+            GENERATE SCHEDULE <RetroArrow color="#0a0a0a" />
+          </button>
+        </div>
 
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
-            ← BACK
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
           </button>
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU
@@ -269,14 +276,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   if (reviewMode) {
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
-        <h2 style={styles.heading}>📋 SIGN OFFICIAL COVENANT MATRIX</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SIGN OFFICIAL COVENANT MATRIX</h2>
         <p style={styles.subtitle}>Review your rotating 4x4 block timeline rotation matrix profiles below.</p>
         
         <div style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
-            <h3 style={{ color: '#39FF14', margin: 0 }}>📅 4x4 True Rotational Matrix Grid</h3>
+            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 4x4 True Rotational Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
-              📍 Room Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> ({LUNCH_WAVE_TIMES[randomLunchWave] || ''})
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> ({LUNCH_WAVE_TIMES[randomLunchWave] || ''})</span>
             </div>
           </div>
           
@@ -299,7 +306,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                       <div style={{ fontWeight: 'bold', color: isP3 ? '#39FF14' : '#fff' }}>{details.label}</div>
                       <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{details.time}</div>
                       <div style={{ fontSize: '0.7rem', color: isP3 ? '#ffa500' : '#666', fontStyle: 'italic', marginTop: '2px' }}>
-                        {isP3 ? `🍱 Lunch: ${LUNCH_WAVE_TIMES[randomLunchWave]}` : details.length}
+                        {isP3 ? `Midday: ${LUNCH_WAVE_TIMES[randomLunchWave]}` : details.length}
                       </div>
                     </td>
 
@@ -337,15 +344,15 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           </table>
 
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
-            💡 <strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.</span></span>
           </div>
         </div>
 
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
           <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-          <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
-            🚀 SIGN CONTRACT & ENTER WORLD
+          <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
+            SIGN CONTRACT <RetroArrow color="#0a0a0a" />
           </button>
         </div>
       </div>
@@ -358,7 +365,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   return (
     <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #39FF14', paddingBottom: '10px', marginBottom: '15px' }}>
-        <h2 style={{ ...styles.heading, margin: 0 }}>⚖️ MATRIX SCHEDULER</h2>
+        <h2 style={{ ...styles.heading, margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> MATRIX SCHEDULER</h2>
         <button 
           onClick={() => handleShuffleCatalog(selectedDept)} 
           disabled={shuffleCount >= 3}
@@ -373,20 +380,20 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             fontFamily: 'inherit' 
           }}
         >
-          🔄 SHUFFLE TOKENS ({shuffleCount}/3 LIMIT)
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="shuffle" /> TOKENS ({shuffleCount}/3 LIMIT)</span>
         </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0' }}>📦 DRAGGABLE TOKENS (6 Available)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> DRAGGABLE SET (6 AVAILABLE)</h3>
           
           <div 
             draggable 
-            onDragStart={(e) => handleDragStart(e, { name: '☕ Teacher Prep Block', isPrep: true })}
+            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep Block', isPrep: true })}
             style={{ padding: '10px', backgroundColor: '#333', border: '2px dashed #aaa', borderRadius: '4px', cursor: 'grab', marginBottom: '15px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}
           >
-            move block
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="class" size={20} /> MOVE PREP BLOCK</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -436,7 +443,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 }}
               >
                 <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px' }}>
-                  PERIOD {idx + 1} {isP3 ? '🔥 FIXED MIDDLE LONG BLOCK (LUNCH SPLIT)' : '(SHORT BLOCK)'}
+                  PERIOD {idx + 1} {isP3 ? 'FIXED LONG BLOCK (LUNCH SPLIT)' : '(SHORT BLOCK)'}
                 </span>
 
                 {filledItem ? (
@@ -445,7 +452,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                       <strong style={{ color: '#fff' }}>{filledItem.name}</strong>
                       {!filledItem.isPrep && <div style={{ fontSize: '0.8rem', color: '#39FF14', marginTop: '4px' }}>[{filledItem.level}] - {filledItem.grade}</div>}
                     </div>
-                    <button onClick={() => setSchedule(prev => ({ ...prev, [pKey]: null }))} style={{ background: 'transparent', color: '#FF3333', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>[X]</button>
+                    <button onClick={() => setSchedule(prev => ({ ...prev, [pKey]: null }))} style={{ background: 'transparent', color: '#FF3333', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><RetroClose /></button>
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', color: '#555', fontStyle: 'italic', fontSize: '0.85rem', marginTop: '10px' }}>
@@ -466,16 +473,16 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             setReviewMode(false);
           }}
         >
-          ← BACK
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
         </button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>
           RETURN TO MAIN MENU
         </button>
         <button 
-          style={{ ...styles.actionButton, flex: '2 1 240px' }}
+          style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
           onClick={handleProceedToReview}
         >
-          ➡️ PROCEED TO CONTRACT REVIEW
+          REVIEW CONTRACT <RetroArrow color="#0a0a0a" />
         </button>
       </div>
     </div>

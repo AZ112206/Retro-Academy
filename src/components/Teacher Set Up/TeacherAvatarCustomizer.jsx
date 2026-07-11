@@ -198,6 +198,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const [bottomColor, setBottomColor] = useState(WARDROBE_COLORS[5]);
   const [shoeColor, setShoeColor] = useState('#111111');
   const [teacherName, setTeacherName] = useState('');
+  const [workingTextbook, setWorkingTextbook] = useState('');
 
   const faceGeometry = useMemo(() => getFaceGeometry(faceShape), [faceShape]);
   const hairGeometry = useMemo(() => getHairGeometry(hairStyle, bodyFrame), [hairStyle, bodyFrame]);
@@ -256,6 +257,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
 
     onSaveAvatar({
       name: teacherName,
+      workingTextbook,
       bodyFrame,
       skinTone,
       hairStyle,
@@ -477,6 +479,26 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
                 borderRadius: '4px',
                 fontFamily: 'inherit',
                 textAlign: 'center'
+              }}
+            />
+            <label style={{ color: '#39FF14', fontWeight: 'bold', display: 'block', margin: '14px 0 8px', fontSize: '0.9rem' }}>
+              WORKING TEXTBOOK:
+            </label>
+            <textarea
+              rows={3}
+              placeholder="e.g., Algebra I Foundations, Unit 3"
+              value={workingTextbook}
+              onChange={(e) => setWorkingTextbook(e.target.value)}
+              style={{
+                width: '100%',
+                backgroundColor: '#000',
+                color: '#fff',
+                border: '1px solid #39FF14',
+                padding: '10px',
+                borderRadius: '4px',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                minHeight: '76px'
               }}
             />
             <div style={{ marginTop: '12px', fontSize: '0.78rem', color: '#9acb92', letterSpacing: '0.6px' }}>

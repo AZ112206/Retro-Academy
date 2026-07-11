@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 const ELEMENTARY_SUBJECTS = [
-  { id: 'elem_ela', name: '📚 Reading & ELA', course: 'Language Arts & Reading' },
-  { id: 'elem_math', name: '📐 Mathematics', course: 'Elementary Math Focus' },
-  { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', course: 'Integrated Science/SS' }
+  { id: 'elem_ela', name: 'Reading & ELA', icon: 'book', course: 'Language Arts & Reading' },
+  { id: 'elem_math', name: 'Mathematics', icon: 'math', course: 'Elementary Math Focus' },
+  { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS' }
 ];
 
 export default function ElementarySchoolScheduleStep({ elementaryGrade, assignedClass, onLaunchGame, onBack, onExit, styles }) {
@@ -78,15 +79,15 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
   if (!isLowerElem && !currentSubject) {
     return (
       <div style={styles.setupBox}>
-        <h2 style={styles.heading}>🍎 UPPER ELEMENTARY CORE</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="teacher" /> UPPER ELEMENTARY CORE</h2>
         <p style={styles.subtitle}>Select your primary block teaching core:</p>
         <div style={{ ...styles.menuColumn, maxWidth: '500px', margin: '0 auto' }}>
           {ELEMENTARY_SUBJECTS.map(subj => (
             <button key={subj.id} onClick={() => setSelectedSubjectId(subj.id)} style={styles.menuButton}>
-              {subj.name}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind={subj.icon} /> {subj.name}</span>
             </button>
           ))}
-          <button style={{ ...styles.exitButton, marginTop: '20px' }} onClick={onBack}>← BACK</button>
+          <button style={{ ...styles.exitButton, marginTop: '20px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         </div>
       </div>
     );
@@ -94,7 +95,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
-      <h2 style={styles.heading}>🍎 ELEMENTARY SCHEDULE CONFIG</h2>
+      <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> ELEMENTARY SCHEDULE CONFIG</h2>
       <p style={styles.subtitle}>{displayGradeName} ({isLowerElem ? 'Self-Contained Structure' : '3-Session Departmental Structure'})</p>
 
       <div style={alertStyle}>
@@ -129,10 +130,10 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
       </div>
 
       <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={assignedClass ? onBack : isLowerElem ? onBack : () => setSelectedSubjectId(null)}>← BACK</button>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={assignedClass ? onBack : isLowerElem ? onBack : () => setSelectedSubjectId(null)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup.wave, lunchWindow: currentSetup.time })}>
-          🚀 FINALIZE SCHEDULE
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>FINALIZE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
 import ElementarySchoolScheduleStep from './3c. ElementarySchoolScheduleStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
+import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Global Retro Styles Shared Matrix
 const retroStyles = {
@@ -249,7 +250,7 @@ export default function TeacherDashboard({ onExit }) {
   if (step === 'WORLD_MAP') {
     return (
       <div style={{ ...retroStyles.setupBox, maxWidth: '1000px', borderStyle: 'solid' }}>
-        <h2 style={retroStyles.heading}>🕹️ CAMPUS OVERWORLD SANDBOX</h2>
+        <h2 style={{ ...retroStyles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="controller" /> CAMPUS OVERWORLD SANDBOX</h2>
         <p style={retroStyles.subtitle}>Welcome, <strong>{teacherProfile?.name || 'Instructor'}</strong>. The school year has officially initialized!</p>
         
         {/* Placeholder wrapper box targeting our cross-platform keyboard + mobile virtual touch overlay controls */}
@@ -261,10 +262,10 @@ export default function TeacherDashboard({ onExit }) {
 
         <div style={retroStyles.footerActions}>
           <button style={{ ...retroStyles.backButton, flex: '1 1 200px' }} onClick={() => setStep('AVATAR_CUSTOMIZE')}>
-            ← BACK TO BADGE
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK TO BADGE</span>
           </button>
           <button style={{ ...retroStyles.exitButton, flex: '1 1 200px' }} onClick={onExit}>
-            🚪 SHUT DOWN CLIENT
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="exit" /> SHUT DOWN CLIENT</span>
           </button>
         </div>
       </div>

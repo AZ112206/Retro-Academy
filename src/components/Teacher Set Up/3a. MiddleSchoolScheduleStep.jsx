@@ -1,27 +1,28 @@
 import React, { useMemo, useState } from 'react';
+import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Middle school courses aligned precisely with ClassSelectionStep.jsx pool structure
 const SUBJECT_POOL = {
   6: [
-    { id: 'mid_reading_g6', name: '📖 Reading', course: 'Narrative Literacy & Reading Workshop' },
-    { id: 'mid_ela_g6', name: '📝 ELA', course: 'Introductory Composition & Grammar Mechanics' },
-    { id: 'mid_math_g6', name: '📐 Mathematics', course: 'Foundations of Mathematics VI' },
-    { id: 'mid_science_g6', name: '🧪 Science', course: 'Introductory Earth & Space Science' },
-    { id: 'mid_social_studies_g6', name: '📜 Social Studies', course: 'Ancient World History & Geography' }
+    { id: 'mid_reading_g6', name: 'Reading', icon: 'book', course: 'Narrative Literacy & Reading Workshop' },
+    { id: 'mid_ela_g6', name: 'ELA', icon: 'pencil', course: 'Introductory Composition & Grammar Mechanics' },
+    { id: 'mid_math_g6', name: 'Mathematics', icon: 'math', course: 'Foundations of Mathematics VI' },
+    { id: 'mid_science_g6', name: 'Science', icon: 'science', course: 'Introductory Earth & Space Science' },
+    { id: 'mid_social_studies_g6', name: 'Social Studies', icon: 'history', course: 'Ancient World History & Geography' }
   ],
   7: [
-    { id: 'mid_reading_g7', name: '📖 Reading', course: 'Critical Reading & Literary Analysis' },
-    { id: 'mid_ela_g7', name: '📝 ELA', course: 'Intermediate Writing & Rhetoric' },
-    { id: 'mid_math_g7', name: '📐 Mathematics', course: 'Intermediate Mathematical Concepts' },
-    { id: 'mid_science_g7', name: '🧪 Science', course: 'Life Science & Microscopic Worlds' },
-    { id: 'mid_social_studies_g7', name: '📜 Social Studies', course: 'Global Cultures & World Geography' }
+    { id: 'mid_reading_g7', name: 'Reading', icon: 'book', course: 'Critical Reading & Literary Analysis' },
+    { id: 'mid_ela_g7', name: 'ELA', icon: 'pencil', course: 'Intermediate Writing & Rhetoric' },
+    { id: 'mid_math_g7', name: 'Mathematics', icon: 'math', course: 'Intermediate Mathematical Concepts' },
+    { id: 'mid_science_g7', name: 'Science', icon: 'science', course: 'Life Science & Microscopic Worlds' },
+    { id: 'mid_social_studies_g7', name: 'Social Studies', icon: 'history', course: 'Global Cultures & World Geography' }
   ],
   8: [
-    { id: 'mid_spanish_g8', name: '🗣️ Spanish', course: 'Introductory Spanish' },
-    { id: 'mid_ela_g8', name: '📝 ELA', course: 'Pre-English' },
-    { id: 'mid_math_g8', name: '📐 Mathematics', course: 'Pre-Algebra' },
-    { id: 'mid_science_g8', name: '🧪 Science', course: 'Introductory Physical Science & Physics Foundations' },
-    { id: 'mid_social_studies_g8', name: '📜 Social Studies', course: 'Early American History & Civics Foundations' }
+    { id: 'mid_spanish_g8', name: 'Spanish', icon: 'language', course: 'Introductory Spanish' },
+    { id: 'mid_ela_g8', name: 'ELA', icon: 'pencil', course: 'Pre-English' },
+    { id: 'mid_math_g8', name: 'Mathematics', icon: 'math', course: 'Pre-Algebra' },
+    { id: 'mid_science_g8', name: 'Science', icon: 'science', course: 'Introductory Physical Science & Physics Foundations' },
+    { id: 'mid_social_studies_g8', name: 'Social Studies', icon: 'history', course: 'Early American History & Civics Foundations' }
   ]
 };
 
@@ -85,19 +86,19 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
   if (!selectedSubject) {
     return (
       <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
-        <h2 style={styles.heading}>🏫 MIDDLE SCHOOL SUBJECTS</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="school" /> MIDDLE SCHOOL SUBJECTS</h2>
         <p style={styles.subtitle}>Select your primary block teaching core (Grade {resolvedGrade}):</p>
         
         <div style={{ ...styles.menuColumn, maxWidth: '550px', margin: '0 auto' }}>
           {effectiveSubjects.map(subject => (
             <button key={subject.id} style={{ ...styles.menuButton, textAlign: 'center' }} onClick={() => setSelectedSubjectId(subject.id)}>
-              {subject.name}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind={subject.icon} /> {subject.name}</span>
             </button>
           ))}
         </div>
 
         <div style={styles.footerActions}>
-          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>← BACK</button>
+          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         </div>
       </div>
@@ -106,7 +107,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '900px' }}>
-      <h2 style={styles.heading}>🏫 MASTER WEEKLY SCHEDULE</h2>
+      <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> MASTER WEEKLY SCHEDULE</h2>
       <p style={styles.subtitle}>Review your unchangeable annual block timeline registration:</p>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
@@ -137,10 +138,10 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       </div>
 
       <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setSelectedSubjectId(null)}>← BACK</button>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setSelectedSubjectId(null)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: middleLunchWave })}>
-          🚀 CONFIRM & START GAME
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CONFIRM AND START <RetroArrow color="#0a0a0a" /></span>
         </button>
       </div>
     </div>

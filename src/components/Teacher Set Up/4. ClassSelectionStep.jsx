@@ -1,10 +1,11 @@
 import React from 'react';
+import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Consolidated Elementary Pool: 3 classes consistent from 3rd to 5th grade
 const ELEMENTARY_OPTIONS = [
-  { id: 'elem_ela', name: '📚 Reading & ELA', course: 'Language Arts & Reading', desc: 'Developing core literacy, grammar mechanics, and sentence structures.' },
-  { id: 'elem_math', name: '📐 Mathematics', course: 'Elementary Math Focus', desc: 'Focusing on numbers, fractions, operations, and arithmetic logic.' },
-  { id: 'elem_sci_ss', name: '🌍 Science & Social Studies', course: 'Integrated Science/SS', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
+  { id: 'elem_ela', name: 'Reading & ELA', icon: 'book', course: 'Language Arts & Reading', desc: 'Developing core literacy, grammar mechanics, and sentence structures.' },
+  { id: 'elem_math', name: 'Mathematics', icon: 'math', course: 'Elementary Math Focus', desc: 'Focusing on numbers, fractions, operations, and arithmetic logic.' },
+  { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
 export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, onExit, styles }) {
@@ -22,31 +23,31 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
       // Dynamic grade-by-grade course names with structured identifiers
       if (middleGrade === 6) {
         return [
-          { id: 'mid_reading_g6', name: '📖 Narrative Literacy & Reading Workshop', desc: 'Text comprehension, reading workshop tracks, and vocabulary building.' },
-          { id: 'mid_ela_g6', name: '📝 Introductory Composition & Grammar Mechanics', desc: 'Advanced grammar, sentence building, and essay structures.' },
-          { id: 'mid_math_g6', name: '📐 Foundations of Mathematics VI', desc: 'Focusing on numbers, fractions, structural logic, and introductory arithmetic.' },
-          { id: 'mid_science_g6', name: '🧪 Introductory Earth & Space Science', desc: 'Exploring geological shifts, planetary orbits, and natural structures.' },
-          { id: 'mid_social_studies_g6', name: '📜 Ancient World History & Geography', desc: 'Exploring foundational world history, ancient societies, and maps.' }
+          { id: 'mid_reading_g6', name: 'Narrative Literacy & Reading Workshop', icon: 'book', desc: 'Text comprehension, reading workshop tracks, and vocabulary building.' },
+          { id: 'mid_ela_g6', name: 'Introductory Composition & Grammar Mechanics', icon: 'pencil', desc: 'Advanced grammar, sentence building, and essay structures.' },
+          { id: 'mid_math_g6', name: 'Foundations of Mathematics VI', icon: 'math', desc: 'Focusing on numbers, fractions, structural logic, and introductory arithmetic.' },
+          { id: 'mid_science_g6', name: 'Introductory Earth & Space Science', icon: 'science', desc: 'Exploring geological shifts, planetary orbits, and natural structures.' },
+          { id: 'mid_social_studies_g6', name: 'Ancient World History & Geography', icon: 'history', desc: 'Exploring foundational world history, ancient societies, and maps.' }
         ];
       }
       
       if (middleGrade === 7) {
         return [
-          { id: 'mid_reading_g7', name: '📖 Critical Reading & Literary Analysis', desc: 'Analyzing textual elements, themes, character arcs, and literary motifs.' },
-          { id: 'mid_ela_g7', name: '📝 Intermediate Writing & Rhetoric', desc: 'Focusing on argumentative essays, structure mechanics, and perspective formatting.' },
-          { id: 'mid_math_g7', name: '📐 Intermediate Mathematical Concepts', desc: 'Stepping up arithmetic skills and logic paths to build bridges toward algebra.' },
-          { id: 'mid_science_g7', name: '🧪 Life Science & Microscopic Worlds', desc: 'Introduction to biology concepts, biological structures, and ecosystem mechanics.' },
-          { id: 'mid_social_studies_g7', name: '📜 Global Cultures & World Geography', desc: 'Exploring cultural landscapes, continental geography, and societal development.' }
+          { id: 'mid_reading_g7', name: 'Critical Reading & Literary Analysis', icon: 'book', desc: 'Analyzing textual elements, themes, character arcs, and literary motifs.' },
+          { id: 'mid_ela_g7', name: 'Intermediate Writing & Rhetoric', icon: 'pencil', desc: 'Focusing on argumentative essays, structure mechanics, and perspective formatting.' },
+          { id: 'mid_math_g7', name: 'Intermediate Mathematical Concepts', icon: 'math', desc: 'Stepping up arithmetic skills and logic paths to build bridges toward algebra.' },
+          { id: 'mid_science_g7', name: 'Life Science & Microscopic Worlds', icon: 'science', desc: 'Introduction to biology concepts, biological structures, and ecosystem mechanics.' },
+          { id: 'mid_social_studies_g7', name: 'Global Cultures & World Geography', icon: 'history', desc: 'Exploring cultural landscapes, continental geography, and societal development.' }
         ];
       }
       
       if (middleGrade === 8) {
         return [
-          { id: 'mid_spanish_g8', name: '🗣️ Español: Curso Avanzado Roja', desc: 'Introductory conversational phrases, structural vocabulary, and linguistic elements.' },
-          { id: 'mid_ela_g8', name: '📝 Pre-English', desc: 'Advanced analytical composition to bridge and prepare students for High School requirements.' },
-          { id: 'mid_math_g8', name: '📐 Pre-Algebra', desc: 'Core logic, equation formulas, functional calculations, and variables.' },
-          { id: 'mid_science_g8', name: '🧪 Introductory Physical Science & Physics Foundations', desc: 'Formulating physical properties, elemental concepts, and energy physics.' },
-          { id: 'mid_social_studies_g8', name: '📜 Early American History & Civics Foundations', desc: 'Reviewing governing mechanisms, early constitutional models, and historical events.' }
+          { id: 'mid_spanish_g8', name: 'Espanol: Curso Avanzado Roja', icon: 'language', desc: 'Introductory conversational phrases, structural vocabulary, and linguistic elements.' },
+          { id: 'mid_ela_g8', name: 'Pre-English', icon: 'pencil', desc: 'Advanced analytical composition to bridge and prepare students for High School requirements.' },
+          { id: 'mid_math_g8', name: 'Pre-Algebra', icon: 'math', desc: 'Core logic, equation formulas, functional calculations, and variables.' },
+          { id: 'mid_science_g8', name: 'Introductory Physical Science & Physics Foundations', icon: 'science', desc: 'Formulating physical properties, elemental concepts, and energy physics.' },
+          { id: 'mid_social_studies_g8', name: 'Early American History & Civics Foundations', icon: 'history', desc: 'Reviewing governing mechanisms, early constitutional models, and historical events.' }
         ];
       }
     }
@@ -70,7 +71,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
     return (
       <div style={styles.setupBox}>
         <div style={centeredContainerStyle}>
-          <h2 style={styles.heading}>🏫 CLASS ASSIGNMENT</h2>
+          <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="class" /> CLASS ASSIGNMENT</h2>
           <p style={{ fontSize: '1.2rem', color: '#fff', margin: '20px 0 10px 0' }}>
             Designation: <span style={{ color: '#39FF14' }}>General Classroom Teacher</span> (Grade {elementaryGrade})
           </p>
@@ -78,10 +79,10 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
             You will guide a single primary cohort through all fundamental subjects seamlessly throughout the school day block.
           </p>
           <div style={styles.footerActions}>
-            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>← BACK</button>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
             <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
             <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'general_core', name: 'General Classroom Block' })}>
-              🚀 START GAME
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>START GAME <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         </div>
@@ -94,13 +95,13 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
     return (
       <div style={styles.setupBox}>
         <div style={centeredContainerStyle}>
-          <h2 style={styles.heading}>🎓 SCHEDULE CONFIRMED</h2>
+          <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SCHEDULE CONFIRMED</h2>
           <p style={{ ...styles.subtitle, maxWidth: '500px' }}>Your customized 4-Period high school block configuration is loaded into the system.</p>
           <div style={styles.footerActions}>
-            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>← BACK</button>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
             <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
             <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'high_matrix', name: '4-Period Matrix Track' })}>
-              🚀 START GAME
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>START GAME <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         </div>
@@ -111,7 +112,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
   return (
     <div style={styles.setupBox}>
       <div style={centeredContainerStyle}>
-        <h2 style={styles.heading}>📚 SELECT ASSIGNED COURSE</h2>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="book" /> SELECT ASSIGNED COURSE</h2>
         <p style={styles.subtitle}>
           {schoolType === 'Elementary' ? `Grade ${elementaryGrade} Track Selection` : `${middleGrade}th Grade Department Selection`}
         </p>
@@ -119,7 +120,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
         <div style={{ ...styles.menuColumn, width: '100%', maxWidth: '500px' }}>
           {currentPool.map((course) => (
             <button key={course.id} style={{ ...styles.menuButton, textAlign: 'center' }} onClick={() => onSelectClass(course)}>
-              <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{course.name}</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind={course.icon} /> {course.name}</span>
               <span style={{ fontSize: '0.8rem', color: '#888', marginTop: '4px' }}>{course.desc}</span>
             </button>
           ))}
@@ -127,7 +128,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
 
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
-            ← BACK
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
           </button>
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU

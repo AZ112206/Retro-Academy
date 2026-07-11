@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import RetroIcon from './RetroIcon';
 
 export default function MainMenu({ onSelectRole }) {
   const [gameState, setGameState] = useState('TITLE'); // TITLE or SELECT_ROLE
@@ -18,12 +19,12 @@ export default function MainMenu({ onSelectRole }) {
           <h2 style={styles.heading}>CHOOSE YOUR ROLE</h2>
           <div style={styles.roleContainer}>
             <button style={styles.roleButton} onClick={() => onSelectRole('Student')}>
-              <h3>🎒 STUDENT</h3>
+              <h3 style={styles.roleTitle}><RetroIcon kind="student" /> STUDENT</h3>
               <p>Survive exams, manage your social life, and graduate without going broke.</p>
             </button>
             
             <button style={styles.roleButton} onClick={() => onSelectRole('Teacher')}>
-              <h3>🍎 TEACHER</h3>
+              <h3 style={styles.roleTitle}><RetroIcon kind="teacher" /> TEACHER</h3>
               <p>Manage classroom chaos, grade papers, and keep your sanity intact.</p>
             </button>
           </div>
@@ -106,6 +107,12 @@ const styles = {
     fontFamily: 'inherit',
     borderRadius: '5px',
     transition: 'background-color 0.2s',
+  },
+  roleTitle: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '10px',
+    margin: '0 0 10px 0'
   },
   backButton: {
     backgroundColor: 'transparent',

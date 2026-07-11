@@ -1,4 +1,5 @@
 import React from 'react';
+import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 export default function GradeConfigStep({ schoolType, stateVars, stateSetters, onNext, onBack, onExit, styles }) {
   const { middleGrade, middleLunchWave, elementaryGrade } = stateVars;
@@ -60,7 +61,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
                   }} 
                   onClick={() => setElementaryGrade(num)}
                 >
-                  ✏️ {num === 0 ? 'Kindergarten' : `Grade ${num}`} {num <= 2 ? '(General Core Block)' : '(Subject Specialist)'}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="pencil" /> {num === 0 ? 'Kindergarten' : `Grade ${num}`} {num <= 2 ? '(General Core Block)' : '(Subject Specialist)'}</span>
                 </button>
               ))}
             </div>
@@ -69,7 +70,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
               disabled={elementaryGrade === null}
               onClick={onNext}
             >
-              NEXT: GENERATE SCHEDULE ➡️
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>GENERATE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         )}
@@ -97,7 +98,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
             
             {middleGrade && (
               <div style={localStyles.infoCallout}>
-                <h3 style={{ fontSize: '1rem', margin: '0 0 8px 0', color: '#39FF14' }}>📋 Automated Track Profile</h3>
+                <h3 style={{ fontSize: '1rem', margin: '0 0 8px 0', color: '#39FF14', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="contract" /> Automated Track Profile</h3>
                 <p style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '0.85rem' }}>
                   Courses: {middleGrade === 8 ? 'Spanish, ELA, Math, Science, Social Studies' : 'Reading, ELA, Math, Science, Social Studies'}
                 </p>
@@ -112,14 +113,14 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
               disabled={!middleGrade}
               onClick={onNext}
             >
-              NEXT: GENERATE SCHEDULE ➡️
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>GENERATE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
             </button>
           </div>
         )}
 
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}>
-            ← BACK
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
           </button>
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU
