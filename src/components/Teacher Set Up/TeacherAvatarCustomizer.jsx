@@ -236,7 +236,6 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
   const hairLeftInFace = ((face.width - hair.width) / 2) * scale;
   const fringeWidth = Math.min(44, hair.width - 6);
   const fringeLeftInFace = ((face.width - fringeWidth) / 2) * scale;
-  const centerHairLeft = centerX - (hair.width * scale) / 2;
 
   return (
     <div
@@ -257,14 +256,14 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
       <div style={{ position: 'absolute', inset: 0 }}>
 
       {/* EXTENDED FEMALE BACK HAIR EFFECTS (Render behind the head canvas) */}
-      {!facingBack && (appearance.hairStyle === 'Bob' || appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails') && (
+      {(appearance.hairStyle === 'Bob' || appearance.hairStyle === 'Braids' || appearance.hairStyle === 'Pigtails') && (
         <div
           style={{
             position: 'absolute',
-            left: `${centerHairLeft - 2 * scale}px`,
-            top: `${faceTop + 34 * scale + hair.top * scale}px`,
+            left: `${centerX - ((hair.width + 4) * scale) / 2}px`,
+            top: `${faceTop + 34 * scale + hair.top * scale + (facingBack ? -2 * scale : 0)}px`,
             width: `${(hair.width + 4) * scale}px`,
-            height: `${(hair.height + 4) * scale}px`,
+            height: `${(hair.height + 6) * scale}px`,
             backgroundColor: appearance.hairColor,
             borderRadius: hair.borderRadius,
             zIndex: 1
@@ -273,22 +272,22 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
       )}
 
       {/* EXTRA FEMALE ATTACHMENTS REHUNG BACK-BOUND */}
-      {hair.tail === 'pony' && !facingBack && (
-        <div style={{ position: 'absolute', left: `${centerX - 7 * scale}px`, top: `${faceTop + 46 * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 0 10px 10px', zIndex: 1 }} />
+      {hair.tail === 'pony' && (
+        <div style={{ position: 'absolute', left: `${centerX - 7 * scale}px`, top: `${faceTop + (facingBack ? 42 : 46) * scale}px`, width: `${14 * scale}px`, height: `${36 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '8px 8px 12px 12px' : '0 0 10px 10px', zIndex: 1 }} />
       )}
-      {hair.tail === 'pigtails' && !facingBack && (
+      {hair.tail === 'pigtails' && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 32 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '8px 0 4px 12px', zIndex: 1 }} />
-          <div style={{ position: 'absolute', left: `${centerX + 20 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '0 8px 12px 4px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX - 30 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '8px 0 4px 12px', zIndex: 1 }} />
+          <div style={{ position: 'absolute', left: `${centerX + 18 * scale}px`, top: `${faceTop + 48 * scale}px`, width: `${12 * scale}px`, height: `${32 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: facingBack ? '10px 10px 12px 12px' : '0 8px 12px 4px', zIndex: 1 }} />
         </>
       )}
-      {hair.tail === 'bun' && !facingBack && (
-        <div style={{ position: 'absolute', left: `${centerX - 12 * scale}px`, top: `${faceTop + 18 * scale}px`, width: `${24 * scale}px`, height: `${16 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '50% 50% 4px 4px', zIndex: 1 }} />
+      {hair.tail === 'bun' && (
+        <div style={{ position: 'absolute', left: `${centerX - 12 * scale}px`, top: `${faceTop + (facingBack ? 12 : 18) * scale}px`, width: `${24 * scale}px`, height: `${16 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '50% 50% 4px 4px', zIndex: 1 }} />
       )}
-      {hair.tail === 'braids' && !facingBack && (
+      {hair.tail === 'braids' && (
         <>
-          <div style={{ position: 'absolute', left: `${centerX - 28 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
-          <div style={{ position: 'absolute', left: `${centerX + 18 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX - 26 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
+          <div style={{ position: 'absolute', left: `${centerX + 16 * scale}px`, top: `${faceTop + 52 * scale}px`, width: `${10 * scale}px`, height: `${40 * scale}px`, backgroundColor: appearance.hairColor, borderRadius: '4px', zIndex: 1, backgroundImage: 'linear-gradient(45deg, rgba(0,0,0,0.15) 25%, transparent 25%)', backgroundSize: '4px 4px' }} />
         </>
       )}
 
@@ -459,6 +458,8 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const skinToneOptions = SKIN_TONES_BY_RACE[race];
   const lastNameOptions = LAST_NAMES_BY_RACE[race];
   const hairStyleOptions = HAIR_STYLES_BY_GENDER[gender];
+  const badgeName = `${title} ${lastName}`;
+  const rosterName = `${firstName} ${lastName}`;
 
   useEffect(() => {
     if (gender === 'Male') {
@@ -551,7 +552,9 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
 
   const handleFinishCustomization = () => {
     onSaveAvatar({
-      name: `${title} ${lastName}`,
+      name: badgeName,
+      badgeName,
+      rosterName,
       firstName,
       lastName,
       title,
@@ -616,7 +619,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
               </select>
             </div>
             <div style={{ marginTop: '14px', fontSize: '0.8rem', color: '#9acb92', letterSpacing: '0.5px' }}>
-              BADGE NAME: {title} {lastName} | ROSTER NAME: {firstName} {lastName}
+              BADGE NAME: {badgeName} | ROSTER NAME: {rosterName}
             </div>
           </div>
         </div>
