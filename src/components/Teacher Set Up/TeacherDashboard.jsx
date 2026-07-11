@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep.jsx';
-import GradeConfigStep from './GradeConfigStep.jsx';
-import ClassSelectionStep from './ClassSelectionStep.jsx';
-import HighSchoolScheduleStep from './HighSchoolScheduleStep.jsx';
+import GradeConfigStep from './2. GradeConfigStep.jsx';
+import ClassSelectionStep from './4. ClassSelectionStep.jsx';
+import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
 import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
 
