@@ -1,13 +1,29 @@
 import React, { useMemo, useState } from 'react';
 
-const SUBJECTS = [
-  { id: 'math', name: '📐 Mathematics', course: 'Math Foundations' },
-  { id: 'science', name: '🧪 General Science', course: 'Earth & Life Science' },
-  { id: 'history', name: '📜 Social Studies', course: 'Early Civilizations' },
-  { id: 'english', name: '📝 Language Arts', course: 'Grammar & Composition' },
-  { id: 'reading', name: '📚 Reading', course: 'Literature Circles' },
-  { id: 'spanish', name: '🗣️ Spanish', course: 'Introductory Spanish' }
-];
+// Middle school courses aligned precisely with ClassSelectionStep.jsx pool structure
+const SUBJECT_POOL = {
+  6: [
+    { id: 'mid_reading_g6', name: '📖 Reading', course: 'Narrative Literacy & Reading Workshop' },
+    { id: 'mid_ela_g6', name: '📝 ELA', course: 'Introductory Composition & Grammar Mechanics' },
+    { id: 'mid_math_g6', name: '📐 Mathematics', course: 'Foundations of Mathematics VI' },
+    { id: 'mid_science_g6', name: '🧪 Science', course: 'Introductory Earth & Space Science' },
+    { id: 'mid_social_studies_g6', name: '📜 Social Studies', course: 'Ancient World History & Geography' }
+  ],
+  7: [
+    { id: 'mid_reading_g7', name: '📖 Reading', course: 'Critical Reading & Literary Analysis' },
+    { id: 'mid_ela_g7', name: '📝 ELA', course: 'Intermediate Writing & Rhetoric' },
+    { id: 'mid_math_g7', name: '📐 Mathematics', course: 'Intermediate Mathematical Concepts' },
+    { id: 'mid_science_g7', name: '🧪 Science', course: 'Life Science & Microscopic Worlds' },
+    { id: 'mid_social_studies_g7', name: '📜 Social Studies', course: 'Global Cultures & World Geography' }
+  ],
+  8: [
+    { id: 'mid_spanish_g8', name: '🗣️ Spanish', course: 'Introductory Spanish' },
+    { id: 'mid_ela_g8', name: '📝 ELA', course: 'Pre-English' },
+    { id: 'mid_math_g8', name: '📐 Mathematics', course: 'Pre-Algebra' },
+    { id: 'mid_science_g8', name: '🧪 Science', course: 'Introductory Physical Science & Physics Foundations' },
+    { id: 'mid_social_studies_g8', name: '📜 Social Studies', course: 'Early American History & Civics Foundations' }
+  ]
+};
 
 const BLOCK_TIMES = [
   { id: 'block1', label: 'Block 1', time: '8:00 AM - 9:00 AM', type: 'class' },
@@ -24,15 +40,17 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
   const [selectedSubjectId, setSelectedSubjectId] = useState(null);
 
   const resolvedGrade = middleGrade || 6;
+  
+  // Dynamically pull the correct subjects for the specific grade configuration
   const effectiveSubjects = useMemo(() => {
-    return resolvedGrade === 8 ? SUBJECTS.filter(s => s.id !== 'reading') : SUBJECTS.filter(s => s.id !== 'spanish');
+    return SUBJECT_POOL[resolvedGrade] || SUBJECT_POOL[6];
   }, [resolvedGrade]);
 
   const selectedSubject = effectiveSubjects.find(s => s.id === selectedSubjectId) || null;
 
   const autoScheduleRows = useMemo(() => {
     if (!selectedSubject) return [];
-    let sectionCounter = 601;
+    let sectionCounter = resolvedGrade * 100 + 1; // Generates 601+, 701+, or 801+ based on grade context
     return BLOCK_TIMES.map(block => {
       if (block.type === 'prep') {
         return { block, entry: { name: '☕ Teacher Prep Block', sec: null, isPrep: true } };
@@ -41,13 +59,13 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       sectionCounter += 1;
       return { block, entry };
     });
-  }, [selectedSubject]);
+  }, [selectedSubject, resolvedGrade]);
 
   if (!selectedSubject) {
     return (
       <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
         <h2 style={styles.heading}>🏫 MIDDLE SCHOOL SUBJECTS</h2>
-        <p style={styles.subtitle}>Select your primary block teaching core:</p>
+        <p style={styles.subtitle}>Select your primary block teaching core (Grade {resolvedGrade}):</p>
         
         <div style={{ ...styles.menuColumn, maxWidth: '550px', margin: '0 auto' }}>
           {effectiveSubjects.map(subject => (
