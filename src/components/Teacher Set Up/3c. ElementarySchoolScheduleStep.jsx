@@ -7,16 +7,10 @@ const ELEMENTARY_SUBJECTS = [
   { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS' }
 ];
 
-export default function ElementarySchoolScheduleStep({ elementaryGrade, assignedClass, onLaunchGame, onBack, onExit, styles }) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState(assignedClass?.id || null);
+export default function ElementarySchoolScheduleStep({ elementaryGrade, onLaunchGame, onBack, onExit, styles }) {
   
   const isLowerElem = elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2;
   const displayGradeName = elementaryGrade === 0 ? 'Kindergarten' : `Grade ${elementaryGrade}`;
-
-  const currentSubject = useMemo(() => {
-    const subjectId = assignedClass?.id || selectedSubjectId;
-    return ELEMENTARY_SUBJECTS.find(s => s.id === subjectId) || null;
-  }, [assignedClass, selectedSubjectId]);
 
   // Generate permanent Grade-to-Grade pairs and their specific Mid-Day order for the school year
   const elementaryMasterSetup = useMemo(() => {
@@ -49,20 +43,19 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
         { time: '1:30 PM - 2:00 PM', label: 'Pack Up', display: 'Reflection, family notes, and dismissal routines.', isSpecial: true }
       ];
     } else {
-      if (!currentSubject) return [];
       let baseSectionNum = 301 + (elementaryGrade - 3) * 100;
 
       return [
-        { time: '8:00 AM - 8:55 AM', label: 'Session 1', display: `${currentSubject.course} - Departmental Section #${baseSectionNum}`, isSpecial: false },
-        { time: '9:00 AM - 9:50 AM', label: 'Session 2', display: `${currentSubject.course} - Departmental Section #${baseSectionNum + 1}`, isSpecial: false },
+        { time: '8:00 AM - 8:55 AM', label: 'Session 1', display: `Upper Elementary Core Rotation - Section #${baseSectionNum}`, isSpecial: false },
+        { time: '9:00 AM - 9:50 AM', label: 'Session 2', display: `Upper Elementary Core Rotation - Section #${baseSectionNum + 1}`, isSpecial: false },
         { time: '9:55 AM - 10:55 AM', label: 'WIN / Intervention', display: 'Targeted reteach, acceleration, and student conferencing.', isSpecial: true },
         { time: currentSetup.time, label: midDayLabel, display: midDayDisplay, isSpecial: true },
-        { time: '11:45 AM - 12:40 PM', label: 'Session 3', display: `${currentSubject.course} - Departmental Section #${baseSectionNum + 2}`, isSpecial: false },
+        { time: '11:45 AM - 12:40 PM', label: 'Session 3', display: `Upper Elementary Core Rotation - Section #${baseSectionNum + 2}`, isSpecial: false },
         { time: '12:45 PM - 1:30 PM', label: 'Planning Block', display: 'Lesson prep, grading, and team alignment.', isSpecial: true },
         { time: '1:30 PM - 2:00 PM', label: 'Closure / Dismissal', display: 'Student wrap-up, hall coverage, and dismissal support.', isSpecial: true }
       ];
     }
-  }, [isLowerElem, currentSubject, elementaryGrade, currentSetup]);
+  }, [isLowerElem, elementaryGrade, currentSetup]);
 
   const alertStyle = {
     backgroundColor: '#221c11',
@@ -75,23 +68,6 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
     textAlign: 'center',
     lineHeight: '1.5'
   };
-
-  if (!isLowerElem && !currentSubject) {
-    return (
-      <div style={styles.setupBox}>
-        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="teacher" /> UPPER ELEMENTARY CORE</h2>
-        <p style={styles.subtitle}>Select your primary block teaching core:</p>
-        <div style={{ ...styles.menuColumn, maxWidth: '500px', margin: '0 auto' }}>
-          {ELEMENTARY_SUBJECTS.map(subj => (
-            <button key={subj.id} onClick={() => setSelectedSubjectId(subj.id)} style={styles.menuButton}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind={subj.icon} /> {subj.name}</span>
-            </button>
-          ))}
-          <button style={{ ...styles.exitButton, marginTop: '20px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
@@ -130,10 +106,10 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, assigned
       </div>
 
       <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={assignedClass ? onBack : isLowerElem ? onBack : () => setSelectedSubjectId(null)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup.wave, lunchWindow: currentSetup.time })}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>FINALIZE SCHEDULE <RetroArrow color="#0a0a0a" /></span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CLASS ASSIGNMENT <RetroArrow color="#0a0a0a" /></span>
         </button>
       </div>
     </div>

@@ -8,7 +8,7 @@ const ELEMENTARY_OPTIONS = [
   { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
-export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, onSelectClass, onBack, onExit, styles }) {
+export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, highSchoolDept, onSelectClass, onBack, onExit, styles }) {
   
   // Rule: Grades K-2 are fully locked as general core blocks
   const isLockedGeneral = schoolType === 'Elementary' && (elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2);
@@ -51,6 +51,38 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
         ];
       }
     }
+
+    if (schoolType === 'High') {
+      const highSchoolPools = {
+        math: [
+          { id: 'high_alg1', name: 'Algebra I', icon: 'math', desc: 'Foundational algebraic reasoning, equations, and graphing systems.' },
+          { id: 'high_geometry', name: 'Geometry', icon: 'math', desc: 'Geometric proof, spatial reasoning, and measurement concepts.' },
+          { id: 'high_alg2', name: 'Algebra II', icon: 'math', desc: 'Advanced functions, polynomial work, and modeling.' }
+        ],
+        science: [
+          { id: 'high_earth', name: 'Earth Science', icon: 'science', desc: 'Earth systems, weather, geology, and environmental patterns.' },
+          { id: 'high_bio', name: 'Biology', icon: 'science', desc: 'Life systems, cells, genetics, and ecosystems.' },
+          { id: 'high_chem', name: 'Chemistry', icon: 'science', desc: 'Matter, reactions, and laboratory analysis.' }
+        ],
+        history: [
+          { id: 'high_world_hist', name: 'World History', icon: 'history', desc: 'Global civilizations, movements, and historical change.' },
+          { id: 'high_us_hist', name: 'US History', icon: 'history', desc: 'American development, institutions, and turning points.' },
+          { id: 'high_civics', name: 'Civics and Economics', icon: 'history', desc: 'Government systems, citizenship, and economic structures.' }
+        ],
+        english: [
+          { id: 'high_eng1', name: 'English I', icon: 'book', desc: 'Literature, close reading, and composition fundamentals.' },
+          { id: 'high_eng2', name: 'English II', icon: 'book', desc: 'Research writing, rhetoric, and literary analysis.' },
+          { id: 'high_writing', name: 'Creative Writing', icon: 'pencil', desc: 'Narrative craft, workshop routines, and revision.' }
+        ],
+        language: [
+          { id: 'high_spanish1', name: 'Spanish I', icon: 'language', desc: 'Introductory communication, vocabulary, and culture.' },
+          { id: 'high_spanish2', name: 'Spanish II', icon: 'language', desc: 'Intermediate speaking, grammar, and reading skills.' },
+          { id: 'high_french1', name: 'French I', icon: 'language', desc: 'Introductory French language and cultural foundations.' }
+        ]
+      };
+
+      return highSchoolPools[highSchoolDept] || [];
+    }
     return [];
   };
 
@@ -90,31 +122,16 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
     );
   }
 
-  // Fallthrough block for High School (where schedules are mapped on Step 2)
-  if (schoolType === 'High') {
-    return (
-      <div style={styles.setupBox}>
-        <div style={centeredContainerStyle}>
-          <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SCHEDULE CONFIRMED</h2>
-          <p style={{ ...styles.subtitle, maxWidth: '500px' }}>Your customized 4-Period high school block configuration is loaded into the system.</p>
-          <div style={styles.footerActions}>
-            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
-            <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-            <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'high_matrix', name: '4-Period Matrix Track' })}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>START GAME <RetroArrow color="#0a0a0a" /></span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={styles.setupBox}>
       <div style={centeredContainerStyle}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="book" /> SELECT ASSIGNED COURSE</h2>
         <p style={styles.subtitle}>
-          {schoolType === 'Elementary' ? `Grade ${elementaryGrade} Track Selection` : `${middleGrade}th Grade Department Selection`}
+          {schoolType === 'Elementary'
+            ? `Grade ${elementaryGrade} Track Selection`
+            : schoolType === 'Middle'
+              ? `${middleGrade}th Grade Department Selection`
+              : `${(highSchoolDept || 'selected').toUpperCase()} Department Selection`}
         </p>
 
         <div style={{ ...styles.menuColumn, width: '100%', maxWidth: '500px' }}>

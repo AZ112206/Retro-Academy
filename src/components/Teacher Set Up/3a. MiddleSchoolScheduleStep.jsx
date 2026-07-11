@@ -45,20 +45,10 @@ const LUNCH_WINDOWS = {
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, onLaunchGame, onBack, onExit, styles }) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState(null);
-
   const resolvedGrade = middleGrade || 6;
-  
-  // Dynamically pull the correct subjects for the specific grade configuration
-  const effectiveSubjects = useMemo(() => {
-    return SUBJECT_POOL[resolvedGrade] || SUBJECT_POOL[6];
-  }, [resolvedGrade]);
-
-  const selectedSubject = effectiveSubjects.find(s => s.id === selectedSubjectId) || null;
 
   const autoScheduleRows = useMemo(() => {
-    if (!selectedSubject) return [];
-    let sectionCounter = resolvedGrade * 100 + 1; // Generates 601+, 701+, or 801+ based on grade context
+    let sectionCounter = resolvedGrade * 100 + 1;
     return BLOCK_TIMES.map(block => {
       if (block.type === 'lunch') {
         return {
@@ -77,38 +67,16 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       if (block.type === 'prep') {
         return { block, entry: { name: 'Teacher Prep Block', sec: null, isPrep: true, isLunch: false } };
       }
-      const entry = { name: selectedSubject.course, sec: `#${sectionCounter}`, isPrep: false, isLunch: false };
+      const entry = { name: `Grade ${resolvedGrade} Core Block`, sec: `#${sectionCounter}`, isPrep: false, isLunch: false };
       sectionCounter += 1;
       return { block, entry };
     });
-  }, [middleLunchWave, selectedSubject, resolvedGrade]);
-
-  if (!selectedSubject) {
-    return (
-      <div style={{ ...styles.setupBox, maxWidth: '850px' }}>
-        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="school" /> MIDDLE SCHOOL SUBJECTS</h2>
-        <p style={styles.subtitle}>Select your primary block teaching core (Grade {resolvedGrade}):</p>
-        
-        <div style={{ ...styles.menuColumn, maxWidth: '550px', margin: '0 auto' }}>
-          {effectiveSubjects.map(subject => (
-            <button key={subject.id} style={{ ...styles.menuButton, textAlign: 'center' }} onClick={() => setSelectedSubjectId(subject.id)}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind={subject.icon} /> {subject.name}</span>
-            </button>
-          ))}
-        </div>
-
-        <div style={styles.footerActions}>
-          <button style={{ ...styles.backButton, flex: '1 1 220px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
-          <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-        </div>
-      </div>
-    );
-  }
+  }, [middleLunchWave, resolvedGrade]);
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '900px' }}>
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="grid" /> MASTER WEEKLY SCHEDULE</h2>
-      <p style={styles.subtitle}>Review your unchangeable annual block timeline registration:</p>
+      <p style={styles.subtitle}>Review your grade-wide middle school bell schedule before choosing a class assignment.</p>
 
       <div style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
@@ -138,10 +106,10 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       </div>
 
       <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setSelectedSubjectId(null)}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: middleLunchWave })}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CONFIRM AND START <RetroArrow color="#0a0a0a" /></span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CLASS ASSIGNMENT <RetroArrow color="#0a0a0a" /></span>
         </button>
       </div>
     </div>

@@ -135,16 +135,14 @@ export default function TeacherDashboard({ onExit }) {
   };
 
   const handleGradeConfigNext = () => {
-    if (schoolType === 'Elementary') {
-      setStep('CLASS_SELECT');
-    } else if (schoolType === 'Middle') {
+    if (schoolType === 'Elementary' || schoolType === 'Middle') {
       setStep('SCHEDULE_MATRIX');
     }
   };
 
   const handleClassSelectNext = (selectedCourse) => {
     setAssignedClass(selectedCourse);
-    setStep('SCHEDULE_MATRIX');
+    setStep('AVATAR_CUSTOMIZE');
   };
 
   const handleScheduleLaunch = (data) => {
@@ -156,7 +154,7 @@ export default function TeacherDashboard({ onExit }) {
     } else if (schoolType === 'Elementary') {
       setLunchWave(data.lunchWave);
     }
-    setStep('AVATAR_CUSTOMIZE'); // Routing straight to badge tracking
+    setStep('CLASS_SELECT');
   };
 
   const handleFinishCustomization = (profileData) => {
@@ -195,8 +193,9 @@ export default function TeacherDashboard({ onExit }) {
         schoolType={schoolType}
         elementaryGrade={elementaryGrade}
         middleGrade={middleGrade}
+        highSchoolDept={highSchoolDept}
         onSelectClass={handleClassSelectNext}
-        onBack={() => setStep('GRADE_CONFIG')}
+        onBack={() => setStep('SCHEDULE_MATRIX')}
         onExit={onExit}
         styles={retroStyles}
       />
@@ -224,9 +223,8 @@ export default function TeacherDashboard({ onExit }) {
       return (
         <ElementarySchoolScheduleStep
           elementaryGrade={elementaryGrade}
-          assignedClass={assignedClass}
           onLaunchGame={handleScheduleLaunch}
-          onBack={() => setStep('CLASS_SELECT')}
+          onBack={() => setStep('GRADE_CONFIG')}
           onExit={onExit}
           styles={retroStyles}
         />
