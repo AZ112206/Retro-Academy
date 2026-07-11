@@ -61,6 +61,7 @@ const LUNCH_WAVE_TIMES = {
 
 export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles }) {
   const [selectedDept, setSelectedDept] = useState(null);
+  const [confirmedDept, setConfirmedDept] = useState(false); // Tracks if player hit NEXT
   const [currentTokens, setCurrentTokens] = useState([]);
   const [shuffleCount, setShuffleCount] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
@@ -103,8 +104,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
     }
   };
 
+  // Handles clicking a department slot (Updates visuals only)
   const handleSelectDept = (deptId) => {
     setSelectedDept(deptId);
+  };
+
+  // Triggered when hitting the action confirmation button
+  const handleConfirmNextStep = () => {
+    if (!selectedDept) return;
     setShuffleCount(0);
     setSchedule({
       period1: null,
@@ -112,7 +119,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
       period3: null,
       period4: null
     });
-    handleShuffleCatalog(deptId, true);
+    handleShuffleCatalog(selectedDept, true);
+    setConfirmedDept(true); // Transitions to interactive matrix step
   };
 
   const checkDuplicateLimit = (itemData, targetPeriod) => {
@@ -166,51 +174,92 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
     setReviewMode(true);
   };
 
-  // Helper sequence shifter for 4x4 matrix block rotation tracking
   const getRotatedClass = (dayIndex, displayPeriodIndex) => {
     const sequenceKeys = ['period1', 'period2', 'period3', 'period4'];
     const targetedIndex = (displayPeriodIndex - dayIndex + 4) % 4;
     return schedule[sequenceKeys[targetedIndex]];
   };
 
-  // Dynamic tracks background color selector mapping directly from Phase 2 builder configuration colors
   const getLevelColor = (level) => {
     if (level === 'Advanced') return '#FF3333';
     if (level === 'Honors') return '#00FFFF';
-    return '#39FF14'; // Default 'Standard' track asset color
+    return '#39FF14'; 
   };
 
   // ----------------------------------------------------------------
   // PHASE 1: DEPARTMENT GRID
   // ----------------------------------------------------------------
-  if (!selectedDept) {
+  if (!confirmedDept) {
     return (
       <div style={styles.setupBox}>
         <h2 style={styles.heading}>🎓 HIGH SCHOOL DEPARTMENTS</h2>
         <p style={styles.subtitle}>Select your specialization branch to load into the dashboard.</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center', marginTop: '20px' }}>
-          <div style={{ display: 'flex', gap: '15px', width: '100%', justifyContent: 'center' }}>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center', marginTop: '20px', width: '100%' }}>
+          <div style={{ display: 'flex', gap: '15px', width: '100%', maxWidth: '500px', justifyContent: 'center' }}>
             {DEPARTMENTS.slice(0, 3).map(dept => (
-              <button key={dept.id} style={{ ...styles.menuButton, flex: 1, textAlign: 'center', padding: '20px' }} onClick={() => handleSelectDept(dept.id)}>
+              <button 
+                key={dept.id} 
+                style={{ 
+                  ...styles.menuButton, 
+                  flex: 1, 
+                  textAlign: 'center', 
+                  padding: '20px',
+                  borderColor: selectedDept === dept.id ? '#fff' : '#39FF14',
+                  backgroundColor: selectedDept === dept.id ? '#2d2d2d' : '#222',
+                  color: selectedDept === dept.id ? '#fff' : '#39FF14'
+                }} 
+                onClick={() => handleSelectDept(dept.id)}
+              >
                 {dept.name}
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: '15px', width: '66.6%', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '15px', width: '100%', maxWidth: '500px', justifyContent: 'center' }}>
             {DEPARTMENTS.slice(3, 5).map(dept => (
-              <button key={dept.id} style={{ ...styles.menuButton, flex: 1, textAlign: 'center', padding: '20px' }} onClick={() => handleSelectDept(dept.id)}>
+              <button 
+                key={dept.id} 
+                style={{ 
+                  ...styles.menuButton, 
+                  flex: 1, 
+                  textAlign: 'center', 
+                  padding: '20px',
+                  borderColor: selectedDept === dept.id ? '#fff' : '#39FF14',
+                  backgroundColor: selectedDept === dept.id ? '#2d2d2d' : '#222',
+                  color: selectedDept === dept.id ? '#fff' : '#39FF14'
+                }} 
+                onClick={() => handleSelectDept(dept.id)}
+              >
                 {dept.name}
               </button>
             ))}
           </div>
         </div>
-        <button style={{ ...styles.exitButton, marginTop: '40px', width: '100%', maxWidth: '300px' }} onClick={onBack}>← BACK</button>
+
+        {/* Dynamic validation button built identically to GradeConfigStep structure */}
+        <button 
+          style={{ 
+            ...styles.actionButton, 
+            marginTop: '25px', 
+            width: '100%',
+            maxWidth: '500px', 
+            opacity: !selectedDept ? 0.5 : 1 
+          }}
+          disabled={!selectedDept}
+          onClick={handleConfirmNextStep}
+        >
+          NEXT: GENERATE SCHEDULE ➡️
+        </button>
+
+        <button style={{ ...styles.exitButton, marginTop: '20px', width: '100%', maxWidth: '500px' }} onClick={onBack}>
+          ← BACK
+        </button>
       </div>
     );
   }
 
   // ----------------------------------------------------------------
-  // PHASE 3: FINAL CONTRACT REVIEW - MATRIX SYNCED LEVEL COLORS
+  // PHASE 3: FINAL CONTRACT REVIEW
   // ----------------------------------------------------------------
   if (reviewMode) {
     return (
@@ -241,7 +290,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
 
                 return (
                   <tr key={pKey} style={{ borderBottom: '1px solid #222', backgroundColor: isP3 ? '#162510' : 'transparent' }}>
-                    {/* Block Info Display Cell */}
                     <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
                       <div style={{ fontWeight: 'bold', color: isP3 ? '#39FF14' : '#fff' }}>{details.label}</div>
                       <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{details.time}</div>
@@ -250,7 +298,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
                       </div>
                     </td>
 
-                    {/* Dynamic Synchronized Level Color Generation Days Mapping Loop */}
                     {['Day 1', 'Day 2', 'Day 3', 'Day 4'].map((day, dayIdx) => {
                       const rotatingItem = getRotatedClass(dayIdx, pIdx);
 
@@ -325,7 +372,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'left' }}>
-        {/* LEFT COLUMN: SOURCE LIST */}
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0' }}>📦 DRAGGABLE TOKENS (6 Available)</h3>
           
@@ -334,7 +380,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
             onDragStart={(e) => handleDragStart(e, { name: '☕ Teacher Prep Block', isPrep: true })}
             style={{ padding: '10px', backgroundColor: '#333', border: '2px dashed #aaa', borderRadius: '4px', cursor: 'grab', marginBottom: '15px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}
           >
-            ☕ TEACHER PREP BLOCK (Required)
+            move block
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -361,7 +407,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
           </div>
         </div>
 
-        {/* RIGHT COLUMN: TARGET MATRIX DROP BOXES */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {['period1', 'period2', 'period3', 'period4'].map((pKey, idx) => {
             const isP3 = pKey === 'period3';
@@ -408,7 +453,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, styles })
       </div>
 
       <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
-        <button style={{ ...styles.exitButton, flex: 1 }} onClick={() => setSelectedDept(null)}>CHANGE DEPT</button>
+        <button style={{ ...styles.exitButton, flex: 1 }} onClick={() => setConfirmedDept(false)}>CHANGE DEPT</button>
         <button 
           style={{ ...styles.actionButton, flex: 2 }}
           onClick={handleProceedToReview}

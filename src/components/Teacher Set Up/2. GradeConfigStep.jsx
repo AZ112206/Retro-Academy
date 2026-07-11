@@ -55,7 +55,8 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
                     ...styles.menuButton, 
                     textAlign: 'center',
                     borderColor: elementaryGrade === num ? '#fff' : '#39FF14',
-                    backgroundColor: elementaryGrade === num ? '#2d2d2d' : '#222'
+                    backgroundColor: elementaryGrade === num ? '#2d2d2d' : '#222',
+                    color: elementaryGrade === num ? '#fff' : '#39FF14'
                   }} 
                   onClick={() => setElementaryGrade(num)}
                 >
@@ -83,8 +84,9 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
                   style={{ 
                     ...styles.menuButton, 
                     textAlign: 'center',
-                    backgroundColor: middleGrade === num ? '#39FF14' : '#222',
-                    color: middleGrade === num ? '#000' : '#39FF14'
+                    borderColor: middleGrade === num ? '#fff' : '#39FF14',
+                    backgroundColor: middleGrade === num ? '#2d2d2d' : '#222',
+                    color: middleGrade === num ? '#fff' : '#39FF14'
                   }} 
                   onClick={() => handleMiddleGradeSelect(num)}
                 >
@@ -99,7 +101,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
                 <p style={{ margin: '0 0 8px 0', color: '#fff', fontSize: '0.85rem' }}>
                   Courses: {middleGrade === 8 ? 'Spanish, ELA, Math, Science, Social Studies' : 'Reading, ELA, Math, Science, Social Studies'}
                 </p>
-                <p style={{ margin: 0, color: '#ff9f43', fontSize: '#0.85rem', fontWeight: 'bold' }}>
+                <p style={{ margin: 0, color: '#ff9f43', fontSize: '0.85rem', fontWeight: 'bold' }}>
                   Lunch Wave: {middleLunchWave}
                 </p>
               </div>
@@ -110,7 +112,7 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
               disabled={!middleGrade}
               onClick={onNext}
             >
-              NEXT: SCHEDULE MATRIX ➡️
+              NEXT: GENERATE SCHEDULE ➡️
             </button>
           </div>
         )}
