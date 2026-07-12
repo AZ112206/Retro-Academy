@@ -1,7 +1,7 @@
 import React from 'react';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
-export default function SchoolTypeStep({ onSelect, onSelectType, onBack, onExit, styles }) {
+export default function SchoolTypeStep({ onSelect, onSelectType, onBack, onExit, onSaveGame, styles }) {
   const handleSelect = onSelectType || onSelect;
 
   return (
@@ -28,6 +28,9 @@ export default function SchoolTypeStep({ onSelect, onSelectType, onBack, onExit,
         </button>
         <button style={{ ...styles.exitButton, flex: '1 1 200px' }} onClick={onExit}>
           RETURN TO MAIN MENU
+        </button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>
+          SAVE GAME
         </button>
       </div>
     </div>

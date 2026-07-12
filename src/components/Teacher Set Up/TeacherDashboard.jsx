@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep.jsx';
 import GradeConfigStep from './2. GradeConfigStep.jsx';
 import HighSchoolScheduleStep from './3b. HighSchoolScheduleStep.jsx';
@@ -74,6 +74,18 @@ const retroStyles = {
     fontFamily: 'inherit',
     transition: 'opacity 0.2s ease'
   },
+  saveButton: {
+    backgroundColor: '#00FFFF',
+    color: '#0a0a0a',
+    border: 'none',
+    padding: '14px 24px',
+    borderRadius: '4px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontFamily: 'inherit',
+    transition: 'opacity 0.2s ease'
+  },
   backButton: {
     backgroundColor: 'transparent',
     color: '#39FF14',
@@ -105,24 +117,68 @@ const retroStyles = {
   }
 };
 
-export default function TeacherDashboard({ onExit }) {
+export default function TeacherDashboard({ onExit, initialData = null, onStateChange = null, onSaveGame = null, activeSlotLabel = '', saveMessage = '' }) {
   // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECTION' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'SCHOOL_DIRECTORY' | 'WORLD_MAP'
-  const [step, setStep] = useState('SCHOOL_TYPE');
+  const [step, setStep] = useState(initialData?.step || 'SCHOOL_TYPE');
   
   // Track unified setup states configurations
-  const [schoolType, setSchoolType] = useState(null);
-  const [elementaryGrade, setElementaryGrade] = useState(null);
-  const [middleGrade, setMiddleGrade] = useState(null);
-  const [middleLunchWave, setMiddleLunchWave] = useState('');
+  const [schoolType, setSchoolType] = useState(initialData?.schoolType || null);
+  const [elementaryGrade, setElementaryGrade] = useState(initialData?.elementaryGrade ?? null);
+  const [middleGrade, setMiddleGrade] = useState(initialData?.middleGrade ?? null);
+  const [middleLunchWave, setMiddleLunchWave] = useState(initialData?.middleLunchWave || '');
   
-  const [highSchoolDept, setHighSchoolDept] = useState(null);
-  const [lunchWave, setLunchWave] = useState('');
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [highScheduleContract, setHighScheduleContract] = useState(null);
+  const [highSchoolDept, setHighSchoolDept] = useState(initialData?.highSchoolDept || null);
+  const [lunchWave, setLunchWave] = useState(initialData?.lunchWave || '');
+  const [selectedClass, setSelectedClass] = useState(initialData?.selectedClass || null);
+  const [highScheduleContract, setHighScheduleContract] = useState(initialData?.highScheduleContract || null);
   
   // Finalized teacher operational properties payload
-  const [teacherProfile, setTeacherProfile] = useState(null);
-  const [schoolDirectoryData, setSchoolDirectoryData] = useState(null);
+  const [teacherProfile, setTeacherProfile] = useState(initialData?.teacherProfile || null);
+  const [schoolDirectoryData, setSchoolDirectoryData] = useState(initialData?.schoolDirectoryData || null);
+
+  useEffect(() => {
+    if (!initialData) return;
+    setStep(initialData.step || 'SCHOOL_TYPE');
+    setSchoolType(initialData.schoolType || null);
+    setElementaryGrade(initialData.elementaryGrade ?? null);
+    setMiddleGrade(initialData.middleGrade ?? null);
+    setMiddleLunchWave(initialData.middleLunchWave || '');
+    setHighSchoolDept(initialData.highSchoolDept || null);
+    setLunchWave(initialData.lunchWave || '');
+    setSelectedClass(initialData.selectedClass || null);
+    setHighScheduleContract(initialData.highScheduleContract || null);
+    setTeacherProfile(initialData.teacherProfile || null);
+    setSchoolDirectoryData(initialData.schoolDirectoryData || null);
+  }, [initialData]);
+
+  useEffect(() => {
+    onStateChange?.({
+      step,
+      schoolType,
+      elementaryGrade,
+      middleGrade,
+      middleLunchWave,
+      highSchoolDept,
+      lunchWave,
+      selectedClass,
+      highScheduleContract,
+      teacherProfile,
+      schoolDirectoryData
+    });
+  }, [
+    step,
+    schoolType,
+    elementaryGrade,
+    middleGrade,
+    middleLunchWave,
+    highSchoolDept,
+    lunchWave,
+    selectedClass,
+    highScheduleContract,
+    teacherProfile,
+    schoolDirectoryData,
+    onStateChange
+  ]);
 
   // Structural wrappers for components that share global hooks
   const stateVars = { middleGrade, middleLunchWave, elementaryGrade };
@@ -205,7 +261,7 @@ export default function TeacherDashboard({ onExit }) {
   
   // 1. Initial configuration path choice
   if (step === 'SCHOOL_TYPE') {
-    return <SchoolTypeStep onSelectType={handleSelectSchoolType} onBack={onExit} onExit={onExit} styles={retroStyles} />;
+    return <SchoolTypeStep onSelectType={handleSelectSchoolType} onBack={onExit} onExit={onExit} onSaveGame={onSaveGame} styles={retroStyles} />;
   }
 
   // 2. Class tracks setup stage
@@ -218,6 +274,7 @@ export default function TeacherDashboard({ onExit }) {
         onNext={handleGradeConfigNext} 
         onBack={() => setStep('SCHOOL_TYPE')} 
         onExit={onExit}
+        onSaveGame={onSaveGame}
         styles={retroStyles} 
       />
     );
@@ -231,6 +288,7 @@ export default function TeacherDashboard({ onExit }) {
           onLaunchGame={handleScheduleLaunch}
           onBack={() => setStep('SCHOOL_TYPE')}
           onExit={onExit}
+          onSaveGame={onSaveGame}
           styles={retroStyles}
           resumeData={highScheduleContract}
         />
@@ -245,6 +303,7 @@ export default function TeacherDashboard({ onExit }) {
           onLaunchGame={handleScheduleLaunch} 
           onBack={() => setStep('CLASS_SELECTION')} 
           onExit={onExit}
+          onSaveGame={onSaveGame}
           styles={retroStyles} 
         />
       );
@@ -257,6 +316,7 @@ export default function TeacherDashboard({ onExit }) {
           onLaunchGame={handleScheduleLaunch}
           onBack={() => (elementaryGrade >= 3 ? setStep('CLASS_SELECTION') : setStep('GRADE_CONFIG'))}
           onExit={onExit}
+          onSaveGame={onSaveGame}
           styles={retroStyles}
         />
       );
@@ -273,6 +333,7 @@ export default function TeacherDashboard({ onExit }) {
         onSelectClass={handleClassSelectionNext}
         onBack={() => setStep('GRADE_CONFIG')}
         onExit={onExit}
+        onSaveGame={onSaveGame}
         styles={retroStyles}
       />
     );
@@ -285,6 +346,7 @@ export default function TeacherDashboard({ onExit }) {
         onSaveAvatar={handleFinishCustomization} 
         onBack={() => setStep('SCHEDULE_MATRIX')} 
         onExit={onExit}
+        onSaveGame={onSaveGame}
         styles={retroStyles} 
       />
     );
@@ -300,6 +362,7 @@ export default function TeacherDashboard({ onExit }) {
         playerGrade={schoolType === 'Middle' ? middleGrade : schoolType === 'Elementary' ? elementaryGrade : null}
         onProceed={handleSchoolDirectoryProceed}
         onBack={() => setStep('AVATAR_CUSTOMIZE')}
+        onSaveGame={onSaveGame}
         styles={retroStyles}
       />
     );
@@ -316,6 +379,11 @@ export default function TeacherDashboard({ onExit }) {
         {/* Your custom map and navigation layout code goes right here! */}
         <h2 style={retroStyles.heading}>WORLD MAP LOADING</h2>
         <p style={retroStyles.subtitle}>Faculty directory synced: {totalStaff} staff records loaded.</p>
+        <div style={{ ...retroStyles.footerActions, marginTop: '24px' }}>
+          <button style={{ ...retroStyles.backButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+          <button style={{ ...retroStyles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
+        </div>
+        {saveMessage ? <p style={{ margin: '6px 0 0', color: '#00FFFF', fontSize: '0.76rem' }}>{saveMessage}</p> : null}
       </div>
     );
   }

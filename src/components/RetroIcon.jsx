@@ -212,6 +212,14 @@ export default function RetroIcon({ kind, size = 28 }) {
       <span key="stem" style={pixel(dark, '13px', '11px', '2px', '8px')} />,
       <span key="dot" style={pixel(dark, '13px', '8px', '2px', '2px')} />,
     ],
+    trash: [
+      <span key="handle" style={pixel(cream, '11px', '4px', '6px', '2px')} />,
+      <span key="lid" style={pixel(cream, '8px', '7px', '12px', '2px')} />,
+      <span key="bin" style={pixel(coral, '9px', '10px', '10px', '11px')} />,
+      <span key="line1" style={pixel(dark, '11px', '12px', '1px', '7px')} />,
+      <span key="line2" style={pixel(dark, '14px', '12px', '1px', '7px')} />,
+      <span key="line3" style={pixel(dark, '17px', '12px', '1px', '7px')} />,
+    ],
     class: [
       <span key="board" style={pixel(neon, '5px', '7px', '18px', '10px')} />,
       <span key="stand" style={pixel(paper, '13px', '17px', '2px', '7px')} />,

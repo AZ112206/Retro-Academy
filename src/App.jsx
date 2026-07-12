@@ -1,19 +1,112 @@
 // src/App.jsx
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import MainMenu from './components/MainMenu';
 import TeacherDashboard from './components/Teacher Set Up/TeacherDashboard';
 import StudentDashboard from './components/Student Mode/StudentDashboard'; // Placeholder for next step
 
-function App() {
-  const [currentRole, setCurrentRole] = useState(null);
+const SAVE_STORAGE_KEY = 'retro_academy_save_slots_v1';
+const ACTIVE_SESSION_KEY = 'retro_academy_active_session_v1';
 
-  const handleSelectRole = (role) => {
-    setCurrentRole(role); 
+function createEmptySaveSlots() {
+  return {
+    Teacher: Array(4).fill(null),
+    Student: Array(4).fill(null)
+  };
+}
+
+function loadSaveSlots() {
+  return createEmptySaveSlots();
+}
+
+function persistSaveSlots() {}
+
+function loadActiveSession() { return null; }
+
+function persistActiveSession() {}
+
+function App() {
+  const initialSlots = useMemo(() => loadSaveSlots(), []);
+  const initialSession = useMemo(() => loadActiveSession(initialSlots), [initialSlots]);
+  const [currentRole, setCurrentRole] = useState(initialSession?.role || null);
+  const [saveSlots, setSaveSlots] = useState(initialSlots);
+  const [activeSlot, setActiveSlot] = useState(initialSession?.activeSlot || null);
+  const [sessionSnapshot, setSessionSnapshot] = useState(initialSession?.sessionSnapshot || null);
+  const [saveMessage, setSaveMessage] = useState('');
+
+  useEffect(() => {
+    try {
+      window.localStorage.removeItem(SAVE_STORAGE_KEY);
+      window.localStorage.removeItem(ACTIVE_SESSION_KEY);
+    } catch {
+      // Ignore storage cleanup failures; runtime state remains the source of truth.
+    }
+  }, []);
+
+  const handleStartSlot = ({ role, slotIndex, slotName, saveData = null }) => {
+    const nextSlotEntry = {
+      slotName,
+      role,
+      updatedAt: new Date().toISOString(),
+      saveData: saveSlots?.[role]?.[slotIndex]?.saveData || saveData || null
+    };
+    const nextSlots = {
+      ...saveSlots,
+      [role]: saveSlots[role].map((entry, index) => (index === slotIndex ? nextSlotEntry : entry))
+    };
+    setSaveSlots(nextSlots);
+
+    const nextActiveSlot = { role, slotIndex, slotName };
+    setActiveSlot(nextActiveSlot);
+    setSessionSnapshot(saveData);
+    setCurrentRole(role);
+    setSaveMessage('');
+    persistActiveSession(nextActiveSlot);
   };
 
   const handleExitGame = () => {
     setCurrentRole(null);
+    setActiveSlot(null);
+    setSessionSnapshot(null);
+    setSaveMessage('');
+    persistActiveSession(null);
   };
+
+  const handleDeleteSlot = (role, slotIndex) => {
+    const nextSlots = {
+      ...saveSlots,
+      [role]: saveSlots[role].map((entry, index) => (index === slotIndex ? null : entry))
+    };
+    setSaveSlots(nextSlots);
+    persistSaveSlots(nextSlots);
+  };
+
+  const handleSaveGame = () => {
+    if (!activeSlot || !currentRole) return;
+
+    const nextSlots = {
+      ...saveSlots,
+      [activeSlot.role]: saveSlots[activeSlot.role].map((entry, index) => {
+        if (index !== activeSlot.slotIndex) return entry;
+        return {
+          slotName: activeSlot.slotName,
+          role: activeSlot.role,
+          updatedAt: new Date().toISOString(),
+          saveData: sessionSnapshot
+        };
+      })
+    };
+
+    setSaveSlots(nextSlots);
+    persistActiveSession(activeSlot);
+    setSaveMessage(`Saved to ${activeSlot.slotName}`);
+    window.setTimeout(() => setSaveMessage(''), 1800);
+  };
+
+  useEffect(() => {
+    persistSaveSlots(saveSlots);
+  }, [saveSlots]);
+
+  const currentSlotLabel = useMemo(() => activeSlot?.slotName || '', [activeSlot]);
 
   // Cross-platform styling overlay wrapper ensuring clean centering on windows + touch devices
   const appWrapperStyle = {
@@ -33,13 +126,13 @@ function App() {
     <div style={appWrapperStyle}>
       {!currentRole ? (
         /* 1. Show Main Menu if no role is chosen */
-        <MainMenu onSelectRole={handleSelectRole} />
+        <MainMenu onStartSlot={handleStartSlot} onDeleteSlot={handleDeleteSlot} saveSlots={saveSlots} />
       ) : currentRole === 'Teacher' ? (
         /* 2. Show the Teacher Setup / Dashboard / 2D Moving Engine Overworld */
-        <TeacherDashboard onExit={handleExitGame} />
+        <TeacherDashboard onExit={handleExitGame} initialData={sessionSnapshot} onStateChange={setSessionSnapshot} onSaveGame={handleSaveGame} activeSlotLabel={currentSlotLabel} saveMessage={saveMessage} />
       ) : currentRole === 'Student' ? (
         /* 3. Show Student Gameplay Loop */
-        <StudentDashboard onExit={handleExitGame} />
+        <StudentDashboard onExit={handleExitGame} initialData={sessionSnapshot} onStateChange={setSessionSnapshot} onSaveGame={handleSaveGame} activeSlotLabel={currentSlotLabel} saveMessage={saveMessage} />
       ) : (
         /* Fallback safety net */
         <div style={{ color: '#FF3333', fontFamily: 'monospace', textAlign: 'center' }}>

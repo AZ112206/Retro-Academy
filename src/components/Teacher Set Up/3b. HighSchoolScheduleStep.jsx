@@ -217,7 +217,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
   return { rows, lunchByDay };
 }
 
-export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles, resumeData = null }) {
+export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, onSaveGame, styles, resumeData = null }) {
   const [selectedDept, setSelectedDept] = useState(null);
   const [confirmedDept, setConfirmedDept] = useState(false);
   const [currentTokens, setCurrentTokens] = useState([]);
@@ -652,6 +652,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU
           </button>
+          <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         </div>
       </div>
     );
@@ -788,6 +789,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
           <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+          <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
           <button
             style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
             onClick={() =>
@@ -933,7 +935,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             onDrop={handleTrashDrop}
             style={{ marginTop: '10px', padding: '10px', borderRadius: '6px', border: '1px dashed #ff3333', backgroundColor: '#1a1010', color: '#ff7777', textAlign: 'center', fontWeight: 'bold' }}
           >
-            DROP HERE TO TRASH A CLASS OR PREP SLOT
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+              <RetroIcon kind="trash" /> DROP HERE TO TRASH A CLASS OR PREP SLOT
+            </span>
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
@@ -955,6 +959,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>
           RETURN TO MAIN MENU
         </button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         <button 
           style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
           onClick={handleProceedToReview}

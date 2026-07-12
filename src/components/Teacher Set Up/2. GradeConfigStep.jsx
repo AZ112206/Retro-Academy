@@ -1,7 +1,7 @@
 import React from 'react';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
-export default function GradeConfigStep({ schoolType, stateVars, stateSetters, onNext, onBack, onExit, styles }) {
+export default function GradeConfigStep({ schoolType, stateVars, stateSetters, onNext, onBack, onExit, onSaveGame, styles }) {
   const { middleGrade, middleLunchWave, elementaryGrade } = stateVars;
   const { setElementaryGrade, setMiddleGrade, setMiddleLunchWave } = stateSetters;
 
@@ -124,6 +124,9 @@ export default function GradeConfigStep({ schoolType, stateVars, stateSetters, o
           </button>
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU
+          </button>
+          <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>
+            SAVE GAME
           </button>
         </div>
       </div>

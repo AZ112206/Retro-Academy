@@ -442,7 +442,7 @@ function buildDefaultBirthdayFromAge(ageValue) {
   return `${birthYear}-01-01`;
 }
 
-export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, styles }) {
+export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, onSaveGame, styles }) {
   const [gender, setGender] = useState('Male');
   const [race, setRace] = useState('Black');
   const [title, setTitle] = useState('Mr.');
@@ -755,6 +755,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           <RetroArrow direction="left" /> BACK
         </button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>MAIN MENU</button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={onSaveGame}>SAVE GAME</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={handleFinishCustomization}>
           VALIDATE BADGE <RetroArrow color="#0a0a0a" />
         </button>

@@ -7,7 +7,7 @@ const ELEMENTARY_SUBJECTS = [
   { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS' }
 ];
 
-export default function ElementarySchoolScheduleStep({ elementaryGrade, selectedClass, onLaunchGame, onBack, onExit, styles }) {
+export default function ElementarySchoolScheduleStep({ elementaryGrade, selectedClass, onLaunchGame, onBack, onExit, onSaveGame, styles }) {
   
   const isLowerElem = elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2;
   const displayGradeName = elementaryGrade === 0 ? 'Kindergarten' : `Grade ${elementaryGrade}`;
@@ -119,6 +119,7 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, selected
       <div style={styles.footerActions}>
         <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ gradeType: isLowerElem ? 'Self-Contained Core' : '3-Session Departmental', lunchWave: currentSetup.wave, lunchWindow: currentSetup.time })}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" /></span>
         </button>

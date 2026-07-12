@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import RetroIcon, { RetroArrow } from './RetroIcon';
 import { generateFacultyRoster } from '../../services/staffGenerator';
+import { generateRoster } from '../../services/studentGenerator';
 import { PixelAvatar } from './Teacher Set Up/TeacherAvatarCustomizer.jsx';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -267,6 +268,260 @@ function buildHighLevelSequence(courseSequence, random) {
     if (isStandardOnlyHighCourse(courseName)) return 'Standard';
     return balancedLevels[(idx + levelOffset) % balancedLevels.length];
   });
+}
+
+function deriveStudentAgeFromGrade(gradeLabel = '9th') {
+  const text = String(gradeLabel).toLowerCase();
+  if (text.includes('kindergarten') || text === 'k') return 5 + Math.floor(Math.random() * 2);
+  if (text.includes('1')) return 6 + Math.floor(Math.random() * 2);
+  if (text.includes('2')) return 7 + Math.floor(Math.random() * 2);
+  if (text.includes('3')) return 8 + Math.floor(Math.random() * 2);
+  if (text.includes('4')) return 9 + Math.floor(Math.random() * 2);
+  if (text.includes('5')) return 10 + Math.floor(Math.random() * 2);
+  if (text.includes('6')) return 11 + Math.floor(Math.random() * 2);
+  if (text.includes('7')) return 12 + Math.floor(Math.random() * 2);
+  if (text.includes('8')) return 13 + Math.floor(Math.random() * 2);
+  if (text.includes('9')) return 14 + Math.floor(Math.random() * 2);
+  if (text.includes('10')) return 15 + Math.floor(Math.random() * 2);
+  if (text.includes('11')) return 16 + Math.floor(Math.random() * 2);
+  if (text.includes('12')) return 17 + Math.floor(Math.random() * 2);
+  return 14 + Math.floor(Math.random() * 5);
+}
+
+function buildStudentVitals(seedStudent) {
+  return {
+    health: clamp(Math.round((seedStudent.behavior + seedStudent.attendance) / 2), 0, 100),
+    stress: clamp(100 - seedStudent.behavior + Math.floor(Math.random() * 12), 0, 100),
+    energy: clamp(seedStudent.attendance + Math.floor(Math.random() * 15) - 5, 0, 100),
+    morale: clamp(seedStudent.behavior + Math.floor(Math.random() * 10) - 4, 0, 100),
+    focus: clamp(seedStudent.grades + Math.floor(Math.random() * 12) - 6, 0, 100)
+  };
+}
+
+function buildStudentPersonality(seedStudent) {
+  return {
+    strictness: clamp(35 + Math.floor(Math.random() * 35), 0, 100),
+    kindness: clamp(45 + Math.floor(Math.random() * 40), 0, 100),
+    patience: clamp(seedStudent.behavior + Math.floor(Math.random() * 12) - 6, 0, 100),
+    humor: clamp(40 + Math.floor(Math.random() * 45), 0, 100),
+    organization: clamp(seedStudent.grades + Math.floor(Math.random() * 10) - 5, 0, 100)
+  };
+}
+
+function buildStudentAvatarAppearance(seedStudent, sectionKey, studentIndex) {
+  const seed = hashString(`${sectionKey}|${seedStudent?.id || seedStudent?.name || 'student'}|${studentIndex}`);
+  const random = createSeededRandom(seed);
+  const gender = random() > 0.5 ? 'Male' : 'Female';
+  const skinToneGroups = [
+    ['#8B5A3C', '#6F432B', '#55301F'],
+    ['#D39A73', '#B97D57', '#9A6142'],
+    ['#F3D9C7', '#EBC4AF', '#D9AA8D'],
+    ['#F0D2B3', '#D9B089', '#C28F69'],
+    ['#D7AC7E', '#BE8C5E', '#9A6945'],
+    ['#E3BF9D', '#C68F69', '#8C5D40']
+  ];
+  const hairStylesByGender = {
+    Male: ['Side Part', 'Crop', 'Waves', 'Slick Back', 'Fade'],
+    Female: ['Long Straight', 'Curly Long', 'Ponytail', 'Bun', 'Braids']
+  };
+  const hairColors = ['#20140F', '#4A3728', '#6D4C41', '#8E6B3F', '#0A0A0A'];
+  const faceShapes = ['Oval', 'Round', 'Square', 'Heart'];
+  const eyeShapes = ['Focused', 'Round', 'Narrow', 'Soft'];
+  const browStyles = ['Straight', 'Arched', 'Soft', 'Bold'];
+  const noseShapes = ['Short', 'Straight', 'Wide', 'Sharp'];
+  const mouthStyles = ['Calm', 'Smile', 'Smirk', 'Focused'];
+  const eyeColors = ['#201A17', '#4B3428', '#2A5B8A', '#3A7D44', '#6B6F72'];
+  const lipColors = ['#542423', '#8B3A62', '#B85C7D', '#D8788A'];
+  const wardrobeColors = ['#1F3A5F', '#2D6A4F', '#7A3E2B', '#5B3F8C', '#6E4B2A', '#3C3C3C', '#9A2D2D', '#E8E1D4'];
+  const shoeColors = ['#111111', '#3C3C3C', '#5B3F2A', '#E8E1D4', '#7F8C8D'];
+
+  const pickFrom = (items) => items[Math.floor(random() * items.length)] || items[0];
+  const skinTone = pickFrom(pickFrom(skinToneGroups));
+
+  return {
+    gender,
+    hairStyle: pickFrom(hairStylesByGender[gender]),
+    hairColor: pickFrom(hairColors),
+    skinTone,
+    faceShape: pickFrom(faceShapes),
+    eyeShape: pickFrom(eyeShapes),
+    eyeColor: pickFrom(eyeColors),
+    browStyle: pickFrom(browStyles),
+    noseShape: pickFrom(noseShapes),
+    mouthStyle: pickFrom(mouthStyles),
+    lipColor: pickFrom(lipColors),
+    topColor: pickFrom(wardrobeColors),
+    bottomColor: pickFrom(wardrobeColors),
+    shoeColor: pickFrom(shoeColors)
+  };
+}
+
+function formatPeriodLabel(periodLabel) {
+  const normalized = String(periodLabel || '').trim().toUpperCase();
+  if (!normalized) return 'Period';
+  return `Period ${normalized}`;
+}
+
+function buildStudentRosterFromSections(sections) {
+  const rosterCache = new Map();
+  return sections.reduce((acc, section, sectionIndex) => {
+    const size = Math.min(section.maxStudents || 24, 18 + ((sectionIndex * 3) % 7));
+    const rosterGroup = section.rosterGroup || section.key;
+    let seededStudents = rosterCache.get(rosterGroup);
+    if (!seededStudents) {
+      seededStudents = generateRoster(size).map((student, studentIndex) => {
+        const age = deriveStudentAgeFromGrade(section.gradeLabel);
+        return {
+          ...student,
+          sharedRosterId: `${rosterGroup}-${student.id}`,
+          age,
+          appearance: buildStudentAvatarAppearance(student, rosterGroup, studentIndex),
+          vitals: buildStudentVitals(student),
+          personality: buildStudentPersonality(student)
+        };
+      });
+      rosterCache.set(rosterGroup, seededStudents);
+    }
+    acc[section.key] = seededStudents.map((student, studentIndex) => {
+      return {
+        ...student,
+        id: `${section.key}-${student.sharedRosterId || student.id || studentIndex}`,
+        grade: section.gradeLabel,
+        classGrade: section.courseLevel || 'Standard',
+        className: section.courseName,
+        sectionCode: section.sectionCode,
+        courseNumber: section.courseNumber,
+        blockLabel: section.blockLabel,
+        rosterLabel: section.label,
+        currentGradeLetter: 'A+',
+        currentGradeNumber: 100,
+        homeroom: 'Homeroom & Attendance',
+        profile: {
+          age: student.age,
+          occupation: 'Student',
+          yearsTeaching: 0,
+          birthday: `Grade ${section.gradeLabel} Student`,
+          previousPositions: [{ position: section.courseName, years: 1 }],
+          vitals: student.vitals,
+          personality: student.personality
+        }
+      };
+    });
+    return acc;
+  }, {});
+}
+
+function buildElementaryStudentRoster(playerDepartment, playerGrade) {
+  const numericGrade = Number(playerGrade);
+  const isPrimaryElementary = !Number.isFinite(numericGrade) || numericGrade <= 2;
+  const gradeLabel = numericGrade === 0 ? 'Kindergarten' : `${numericGrade}th`;
+  const baseCourseName = playerDepartment?.course || playerDepartment?.name || (numericGrade >= 3 ? 'Elementary Core' : 'General Classroom Block');
+  const normalizedCourseName = numericGrade >= 3 ? baseCourseName : 'General Classroom Block';
+  const gradeCode = Number.isFinite(numericGrade) ? numericGrade : 'K';
+  const sections = [
+    {
+      key: 'homeroom',
+      label: `Homeroom | HR-E${gradeCode} | Period HR`,
+      sectionCode: `HR-E${gradeCode}`,
+      gradeLabel,
+      courseName: 'Homeroom & Attendance',
+      courseLevel: 'Standard',
+      courseNumber: `HR-E${gradeCode}`,
+      blockLabel: 'HR',
+      maxStudents: 22,
+      rosterGroup: 'elementary-homeroom'
+    }
+  ];
+
+  if (!isPrimaryElementary) {
+    const homeroomSectionNumber = String(Math.floor(Math.random() * 3) + 1);
+    ['1', '2', '3'].forEach((sessionNumber) => {
+      sections.push({
+        key: `session-${sessionNumber}`,
+        label: `${normalizedCourseName} | Sec E${gradeCode}${sessionNumber} | Period ${sessionNumber}`,
+        sectionCode: `Sec E${gradeCode}${sessionNumber}`,
+        gradeLabel,
+        courseName: normalizedCourseName,
+        courseLevel: 'Standard',
+        courseNumber: `Sec E${gradeCode}${sessionNumber}`,
+        blockLabel: sessionNumber,
+        maxStudents: 22,
+        rosterGroup: sessionNumber === homeroomSectionNumber ? 'elementary-homeroom' : `elementary-section-${sessionNumber}`
+      });
+    });
+  }
+
+  return buildStudentRosterFromSections(sections);
+}
+
+function buildMiddleStudentRoster(playerDepartment, playerGrade) {
+  const gradeLabel = `${playerGrade || 6}th`;
+  const courseName = playerDepartment?.name || 'Middle Core Instruction';
+  const sectionPrefix = `M${playerGrade || 6}`;
+  const sections = [
+    {
+      key: 'homeroom',
+      label: `Homeroom | HR-${sectionPrefix} | Period HR`,
+      sectionCode: `HR-${sectionPrefix}`,
+      gradeLabel,
+      courseName: 'Homeroom & Attendance',
+      courseLevel: 'Standard',
+      courseNumber: `HR-${sectionPrefix}`,
+      blockLabel: 'HR',
+      maxStudents: 24
+    },
+    ...['1', '2', '3', '5', '6'].map((blockLabel, index) => ({
+      key: `block-${blockLabel}`,
+      label: `${courseName} | Sec ${sectionPrefix}${index + 1} | Period ${blockLabel}`,
+      sectionCode: `Sec ${sectionPrefix}${index + 1}`,
+      gradeLabel,
+      courseName,
+      courseLevel: 'Standard',
+      courseNumber: `Sec ${sectionPrefix}${index + 1}`,
+      blockLabel,
+      maxStudents: 24
+    }))
+  ];
+
+  return buildStudentRosterFromSections(sections);
+}
+
+function buildHighStudentRoster(playerAvatar) {
+  const sections = [];
+  const seenSections = new Set();
+  const contractSchedule = playerAvatar?.contractSchedule || {};
+
+  sections.push({
+    key: 'homeroom',
+    label: 'Homeroom | HR-01 | Period HR',
+    sectionCode: 'HR-01',
+    gradeLabel: '9th-12th',
+    courseName: 'Homeroom & Attendance',
+    courseLevel: 'Standard',
+    courseNumber: 'HR-01',
+    blockLabel: 'HR',
+    maxStudents: 24
+  });
+
+  Object.entries(contractSchedule).forEach(([periodLetter, slot]) => {
+    if (!slot || slot.isPrep) return;
+    const sectionKey = `${periodLetter}|${slot.name}|${slot.sec || ''}`;
+    if (seenSections.has(sectionKey)) return;
+    seenSections.add(sectionKey);
+    sections.push({
+      key: sectionKey,
+      label: `${slot.name} | ${slot.sec || 'Sec #000'} | ${formatPeriodLabel(periodLetter)}`,
+      sectionCode: slot.sec || 'Sec #000',
+      gradeLabel: slot.grade || '9th',
+      courseName: slot.name,
+      courseLevel: slot.level || 'Standard',
+      courseNumber: slot.sec || 'Sec #000',
+      blockLabel: String(periodLetter || '').toUpperCase(),
+      maxStudents: 24
+    });
+  });
+
+  return buildStudentRosterFromSections(sections);
 }
 
 function buildHighScheduleFallbackToken(tokens) {
@@ -654,6 +909,8 @@ function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}, hi
   const isTeacherLike = roleText.includes('teacher') || roleText.includes('department head');
 
   let rows;
+  let lunchWave = null;
+  let lunchByDay = null;
   if (!isTeacherLike) {
     rows = buildSupportSchedule(schoolType, random);
   } else if (schoolType === 'Elementary') {
@@ -662,10 +919,12 @@ function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}, hi
     rows = buildMiddleProfileSchedule(staff, random);
   } else {
     const staffKey = staff?.id || staff?.name;
+    lunchWave = highCoverageMap[staffKey]?.lunchWave || staff?.contractLunchWave || 'Wave 1';
+    lunchByDay = staff?.contractLunchByDay || HIGH_LUNCH_WAVE_DAY_TIMES[lunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
     rows = buildHighProfileSchedule(staff, random, highCoverageMap[staffKey], highSchedulePreferences);
   }
 
-  return { academicYear, rows };
+  return { academicYear, rows, lunchWave, lunchByDay };
 }
 
 function StatBar({ label, value, color = '#39FF14' }) {
@@ -691,25 +950,32 @@ function DirectoryAvatarMini({ appearance }) {
   );
 }
 
+const directoryCardBaseStyle = {
+  width: '164px',
+  minWidth: '164px',
+  padding: '12px 8px',
+  color: '#fff',
+  borderRadius: '6px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  position: 'relative',
+  cursor: 'pointer',
+  userSelect: 'none'
+};
+
 // Reusable Faculty Grid Card matching the customization options UI panels
 function FacultyCard({ staff, onOpen, schoolType }) {
   return (
     <div
       onClick={() => onOpen(staff)}
       style={{
-        width: '150px',
-        padding: '12px 8px',
+        ...directoryCardBaseStyle,
         backgroundColor: staff.isPlayer ? '#222d15' : '#121212',
-        color: '#fff',
         border: `1px solid ${staff.isPlayer ? '#00FFFF' : '#39FF14'}`,
-        borderRadius: '6px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '8px',
         boxShadow: staff.isPlayer ? '0 0 8px rgba(0,255,255,0.2)' : 'none',
-        position: 'relative',
-        cursor: 'pointer'
+        scrollSnapAlign: 'start'
       }}
     >
       {staff.isPlayer && (
@@ -733,18 +999,53 @@ function FacultyCard({ staff, onOpen, schoolType }) {
   );
 }
 
-export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, onProceed, onBack, styles }) {
+function StudentCard({ student, onOpen }) {
+  return (
+    <div
+      onClick={() => onOpen(student)}
+      style={{
+        ...directoryCardBaseStyle,
+        backgroundColor: '#121212',
+        border: '1px solid #39FF14',
+        boxShadow: '0 0 8px rgba(57,255,20,0.08)',
+        scrollSnapAlign: 'start'
+      }}
+    >
+      <DirectoryAvatarMini appearance={student.appearance || student} />
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', textAlign: 'center', width: '100%' }}>
+        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+          {student.name}
+        </span>
+        <span style={{ fontSize: '0.62rem', color: '#39FF14', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+          {student.className}
+        </span>
+        <span style={{ fontSize: '0.58rem', color: '#f5f1dd', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+          {student.courseNumber} | {formatPeriodLabel(student.blockLabel)}
+        </span>
+        <span style={{ fontSize: '0.58rem', color: '#00FFFF', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+          Grade {student.currentGradeLetter} / {student.currentGradeNumber}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, onProceed, onBack, onSaveGame, styles }) {
+  const [viewMode, setViewMode] = useState('staff');
   const [activeTab, setActiveTab] = useState('administration');
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [liveProfile, setLiveProfile] = useState(null);
   const [selectedStaffSchedule, setSelectedStaffSchedule] = useState(null);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [playerActionEffects, setPlayerActionEffects] = useState({ health: 0, stress: 0, energy: 0, morale: 0, focus: 0, strictness: 0, kindness: 0, patience: 0, humor: 0, organization: 0 });
+  const [studentActiveTab, setStudentActiveTab] = useState('homeroom');
   const tabScrollRef = useRef(null);
   const dragStateRef = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
   const contentScrollRef = useRef(null);
-  const contentDragRef = useRef({ dragging: false, startY: 0, startScrollTop: 0 });
+  const studentTabScrollRef = useRef(null);
+  const studentDragStateRef = useRef({ dragging: false, lastX: 0, lastTime: 0 });
+  const contentDragRef = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
 
   // Procedurally seed the entire school grid dataset
   const facultyRoster = useMemo(() => {
@@ -761,6 +1062,25 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     return buildHighSchedulePreferences(facultyRoster);
   }, [schoolType, facultyRoster]);
 
+  const studentRoster = useMemo(() => {
+    if (schoolType === 'High') return buildHighStudentRoster(playerAvatar);
+    if (schoolType === 'Middle') return buildMiddleStudentRoster(playerDepartment, playerGrade);
+    if (schoolType === 'Elementary') return buildElementaryStudentRoster(playerDepartment, playerGrade);
+    return {};
+  }, [schoolType, playerAvatar, playerDepartment, playerGrade]);
+
+  const studentTabKeys = useMemo(() => Object.keys(studentRoster), [studentRoster]);
+  const studentSectionMap = useMemo(() => {
+    return Object.entries(studentRoster).reduce((acc, [key, students]) => {
+      const firstStudent = students?.[0];
+      acc[key] = {
+        label: firstStudent?.rosterLabel || (key === 'homeroom' ? 'Homeroom | HR-01 | Period HR' : key),
+        count: Array.isArray(students) ? students.length : 0
+      };
+      return acc;
+    }, {});
+  }, [studentRoster]);
+
   const tabKeys = useMemo(() => Object.keys(facultyRoster), [facultyRoster]);
 
   useEffect(() => {
@@ -769,7 +1089,28 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     }
   }, [activeTab, tabKeys]);
 
+  useEffect(() => {
+    if (!studentTabKeys.includes(studentActiveTab) && studentTabKeys.length > 0) {
+      setStudentActiveTab(studentTabKeys[0]);
+    }
+  }, [studentActiveTab, studentTabKeys]);
+
+  useEffect(() => {
+    if (!studentTabScrollRef.current || studentTabKeys.length === 0) return;
+    const frameId = window.requestAnimationFrame(() => {
+      const fallbackKey = studentTabKeys[0];
+      const currentKey = studentTabKeys.includes(studentActiveTab) ? studentActiveTab : fallbackKey;
+      const targetNode = studentTabScrollRef.current?.querySelector(`[data-student-tab-key="${currentKey}"]`);
+      if (!targetNode) return;
+      const centeredOffset = targetNode.offsetLeft - Math.max((studentTabScrollRef.current.clientWidth - targetNode.offsetWidth) / 2, 0);
+      studentTabScrollRef.current.scrollTo({ left: centeredOffset, behavior: 'auto' });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [studentTabKeys, viewMode]);
+
   const currentTabStaff = facultyRoster[activeTab] || [];
+  const currentTabStudents = studentRoster[studentActiveTab] || [];
 
   const toOrdinal = (value) => {
     const num = Number(value);
@@ -823,19 +1164,72 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     dragStateRef.current.dragging = false;
   };
 
-  const beginContentDrag = (clientY) => {
-    if (!contentScrollRef.current) return;
-    contentDragRef.current = {
+  const beginStudentTabDrag = (clientX) => {
+    if (!studentTabScrollRef.current) return;
+    studentDragStateRef.current = {
       dragging: true,
-      startY: clientY,
-      startScrollTop: contentScrollRef.current.scrollTop
+      lastX: clientX,
+      lastTime: Date.now()
     };
   };
 
-  const moveContentDrag = (clientY) => {
+  const moveStudentTabDrag = (clientX) => {
+    if (!studentDragStateRef.current.dragging || !studentTabScrollRef.current) return;
+    const now = Date.now();
+    const deltaX = clientX - studentDragStateRef.current.lastX;
+    const deltaTime = Math.max(now - studentDragStateRef.current.lastTime, 16);
+    const pointerSpeed = Math.abs(deltaX) / deltaTime;
+    const speedMultiplier = clamp(1 + (pointerSpeed * 0.9), 1, 2.35);
+
+    studentTabScrollRef.current.scrollLeft -= deltaX * speedMultiplier;
+    studentDragStateRef.current.lastX = clientX;
+    studentDragStateRef.current.lastTime = now;
+  };
+
+  const endStudentTabDrag = () => {
+    studentDragStateRef.current.dragging = false;
+  };
+
+  const syncStudentActiveTabFromScroll = () => {
+    if (!studentTabScrollRef.current || studentTabKeys.length === 0) return;
+    const tabNodes = Array.from(studentTabScrollRef.current.children);
+    if (tabNodes.length === 0) return;
+
+    const centerX = studentTabScrollRef.current.scrollLeft + (studentTabScrollRef.current.clientWidth / 2);
+    const nearestNode = tabNodes.reduce((nearest, node) => {
+      const nodeCenter = node.offsetLeft + (node.offsetWidth / 2);
+      if (!nearest) return { node, distance: Math.abs(nodeCenter - centerX) };
+      const distance = Math.abs(nodeCenter - centerX);
+      return distance < nearest.distance ? { node, distance } : nearest;
+    }, null);
+
+    const nextKey = nearestNode?.node?.dataset?.studentTabKey;
+    if (nextKey && nextKey !== studentActiveTab) {
+      setStudentActiveTab(nextKey);
+    }
+  };
+
+  const handleStudentTabWheel = (event) => {
+    if (!studentTabScrollRef.current) return;
+    const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+    if (delta === 0) return;
+    event.preventDefault();
+    studentTabScrollRef.current.scrollLeft += delta;
+  };
+
+  const beginContentDrag = (clientX) => {
+    if (!contentScrollRef.current) return;
+    contentDragRef.current = {
+      dragging: true,
+      startX: clientX,
+      startScrollLeft: contentScrollRef.current.scrollLeft
+    };
+  };
+
+  const moveContentDrag = (clientX) => {
     if (!contentDragRef.current.dragging || !contentScrollRef.current) return;
-    const delta = clientY - contentDragRef.current.startY;
-    contentScrollRef.current.scrollTop = contentDragRef.current.startScrollTop - delta;
+    const delta = clientX - contentDragRef.current.startX;
+    contentScrollRef.current.scrollLeft = contentDragRef.current.startScrollLeft - delta;
   };
 
   const endContentDrag = () => {
@@ -850,211 +1244,223 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     }
   }, [selectedStaff, schoolType, highDepartmentCoverage, highSchedulePreferences]);
 
-  useEffect(() => {
-    // Placeholder hook for future gameplay actions: call window.retroApplyPlayerAction({ stress: 10, morale: -5, ... })
-    // to affect player vitals after game start.
-    window.retroApplyPlayerAction = (effects = {}) => {
-      setPlayerActionEffects((current) => {
-        const next = { ...current };
-        Object.keys(next).forEach((key) => {
-          const delta = Number(effects[key] || 0);
-          next[key] = clamp(current[key] + delta, -35, 35);
-        });
-        return next;
-      });
-    };
-
-    return () => {
-      delete window.retroApplyPlayerAction;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!gameStarted || !liveProfile) return undefined;
-
-    const interval = setInterval(() => {
-      setLiveProfile((current) => {
-        if (!current) return current;
-
-        const mutate = (value, swing = 6) => clamp(value + (Math.random() * swing * 2 - swing), 0, 100);
-
-        if (selectedStaff?.isPlayer) {
-          const drift = (value, effect, randomSwing = 1.8) => {
-            const randomDelta = (Math.random() * randomSwing * 2 - randomSwing);
-            const effectDelta = effect * 0.22;
-            return clamp(value + randomDelta + effectDelta, 0, 100);
-          };
-
-          return {
-            ...current,
-            vitals: {
-              ...current.vitals,
-              health: drift(current.vitals.health, playerActionEffects.health, 1.1),
-              stress: drift(current.vitals.stress, playerActionEffects.stress, 1.4),
-              energy: drift(current.vitals.energy, playerActionEffects.energy, 1.5),
-              morale: drift(current.vitals.morale, playerActionEffects.morale, 1.3),
-              focus: drift(current.vitals.focus, playerActionEffects.focus, 1.2)
-            },
-            personality: {
-              ...current.personality,
-              strictness: drift(current.personality.strictness, playerActionEffects.strictness, 0.7),
-              kindness: drift(current.personality.kindness, playerActionEffects.kindness, 0.7),
-              patience: drift(current.personality.patience, playerActionEffects.patience, 0.9),
-              humor: drift(current.personality.humor, playerActionEffects.humor, 0.9),
-              organization: drift(current.personality.organization, playerActionEffects.organization, 0.6)
-            }
-          };
-        }
-
-        return {
-          ...current,
-          vitals: {
-            ...current.vitals,
-            health: mutate(current.vitals.health, 4),
-            stress: mutate(current.vitals.stress, 7),
-            energy: mutate(current.vitals.energy, 8),
-            morale: mutate(current.vitals.morale, 6),
-            focus: mutate(current.vitals.focus, 6)
-          },
-          personality: {
-            ...current.personality,
-            strictness: mutate(current.personality.strictness, 3),
-            kindness: mutate(current.personality.kindness, 3),
-            patience: mutate(current.personality.patience, 4),
-            humor: mutate(current.personality.humor, 4),
-            organization: mutate(current.personality.organization, 3)
-          }
-        };
-      });
-    }, 1800);
-
-    return () => clearInterval(interval);
-  }, [gameStarted, liveProfile, playerActionEffects, selectedStaff]);
-
   const handleOpenStaff = (staff) => {
     setSelectedStaff(staff);
   };
 
-  const handleProceed = () => {
-    if (!gameStarted) {
-      setGameStarted(true);
-      return;
-    }
-
-    onProceed({ roster: facultyRoster, gameStarted: true });
+  const handleOpenStudent = (student) => {
+    setSelectedStudent(student);
   };
+
+  const handleProceed = () => {
+    onProceed({ roster: facultyRoster, studentRoster });
+  };
+
+  const renderLunchWaveMatrix = () => (
+    <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
+      <strong style={{ color: '#39FF14' }}>Lunch Waves (All Options):</strong>
+      <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: '120px repeat(5, minmax(0, 1fr))', gap: '6px', alignItems: 'stretch' }}>
+        <div style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#777', fontWeight: 'bold' }}>Wave</div>
+        {WEEK_DAYS.map((day) => (
+          <div key={day} style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#39FF14', fontWeight: 'bold', textAlign: 'center' }}>
+            {day}
+          </div>
+        ))}
+
+        {Object.entries(HIGH_LUNCH_WAVE_DAY_TIMES).flatMap(([wave, byDay]) => ([
+          <div key={`${wave}-label`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#ffa500', fontWeight: 'bold' }}>
+            {wave}
+          </div>,
+          ...WEEK_DAYS.map((day) => (
+            <div key={`${wave}-${day}`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#c8c8c8', fontSize: '0.72rem', textAlign: 'center' }}>
+              {byDay[day]}
+            </div>
+          ))
+        ]))}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '1000px' }}>
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-        <RetroIcon kind="contract" /> {schoolType.toUpperCase()} STAFF DIRECTORY
+        <RetroIcon kind="contract" /> {schoolType.toUpperCase()} {viewMode === 'staff' ? 'STAFF DIRECTORY' : 'STUDENT ROSTER'}
       </h2>
       <p style={styles.subtitle}>
-        Review your processed employment authorization roster. All faculty assignments have been verified by the district board.
+        {viewMode === 'staff'
+          ? 'Review your processed employment authorization roster. All faculty assignments have been verified by the district board.'
+          : 'Review your enrolled student roster by homeroom and class section. Each class section tops out at 24 students.'}
       </p>
 
-      {/* Directory Tab Selection Bar */}
-      <div
-        className="no-scrollbar"
-        ref={tabScrollRef}
-        style={{
-          display: 'flex',
-          gap: '10px',
-          justifyContent: 'flex-start',
-          marginBottom: '20px',
-          overflowX: 'auto',
-          paddingBottom: '6px',
-          cursor: dragStateRef.current.dragging ? 'grabbing' : 'grab',
-          userSelect: 'none',
-          WebkitOverflowScrolling: 'touch'
-        }}
-        onMouseDown={(e) => beginTabDrag(e.clientX)}
-        onMouseMove={(e) => moveTabDrag(e.clientX)}
-        onMouseUp={endTabDrag}
-        onMouseLeave={endTabDrag}
-        onTouchStart={(e) => beginTabDrag(e.touches[0].clientX)}
-        onTouchMove={(e) => moveTabDrag(e.touches[0].clientX)}
-        onTouchEnd={endTabDrag}
-      >
-        {tabKeys.map((tabKey) => (
-          <button
-            key={tabKey}
-            onClick={() => setActiveTab(tabKey)}
+      {viewMode === 'staff' ? (
+        <>
+          <div
+            ref={tabScrollRef}
             style={{
-              padding: '8px 16px',
-              fontSize: '0.75rem',
-              backgroundColor: activeTab === tabKey ? '#f5f1dd' : '#121212',
-              color: activeTab === tabKey ? '#111' : '#fff',
-              border: `1px solid ${activeTab === tabKey ? '#f5f1dd' : '#39FF14'}`,
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              letterSpacing: '0.5px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'center',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              paddingBottom: '6px',
+              userSelect: 'none',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
             }}
           >
-            {formatTabLabel(tabKey).toUpperCase()} ({facultyRoster[tabKey]?.length || 0})
-          </button>
-        ))}
-      </div>
-
-      {/* Main Grid View Area */}
-      <div
-        className="no-scrollbar"
-        ref={contentScrollRef}
-        style={{ 
-          backgroundColor: '#111', 
-          border: '1px solid #39FF14', 
-          borderRadius: '6px', 
-          padding: '24px', 
-          minHeight: '280px',
-          maxHeight: '440px', 
-          overflowY: 'auto',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '16px',
-          justifyContent: 'center',
-          alignContent: 'flex-start',
-          cursor: contentDragRef.current.dragging ? 'grabbing' : 'grab',
-          userSelect: 'none'
-        }}
-        onMouseDown={(e) => beginContentDrag(e.clientY)}
-        onMouseMove={(e) => moveContentDrag(e.clientY)}
-        onMouseUp={endContentDrag}
-        onMouseLeave={endContentDrag}
-        onTouchStart={(e) => beginContentDrag(e.touches[0].clientY)}
-        onTouchMove={(e) => moveContentDrag(e.touches[0].clientY)}
-        onTouchEnd={endContentDrag}
-      >
-        {currentTabStaff.length > 0 ? (
-          currentTabStaff.map((staffMember, index) => (
-            <FacultyCard key={staffMember.id || `${staffMember.name}-${index}`} staff={staffMember} onOpen={handleOpenStaff} schoolType={schoolType} />
-          ))
-        ) : (
-          <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', marginTop: '100px' }}>
-            No authorized records discovered in this department segment.
+            {tabKeys.map((tabKey) => (
+              <button
+                key={tabKey}
+                onClick={() => setActiveTab(tabKey)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '0.75rem',
+                  backgroundColor: activeTab === tabKey ? '#f5f1dd' : '#121212',
+                  color: activeTab === tabKey ? '#111' : '#fff',
+                  border: `1px solid ${activeTab === tabKey ? '#f5f1dd' : '#39FF14'}`,
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  letterSpacing: '0.5px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {formatTabLabel(tabKey).toUpperCase()} ({facultyRoster[tabKey]?.length || 0})
+              </button>
+            ))}
           </div>
-        )}
-      </div>
 
-      <div style={styles.footerActions}>
-        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-            <RetroArrow direction="left" /> BACK
-          </span>
-        </button>
-        <button 
-          style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} 
-          onClick={handleProceed}
-        >
-          {gameStarted ? 'ENTER WORLD MAP' : 'START GAME'} <RetroArrow color="#0a0a0a" />
-        </button>
-      </div>
+          <div
+            ref={contentScrollRef}
+            style={{
+              backgroundColor: '#111',
+              border: '1px solid #39FF14',
+              borderRadius: '6px',
+              padding: '24px',
+              minHeight: '280px',
+              maxHeight: '430px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '16px',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              justifyContent: 'center',
+              alignContent: 'flex-start',
+              userSelect: 'none',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            {currentTabStaff.length > 0 ? (
+              currentTabStaff.map((staffMember, index) => (
+                <FacultyCard key={staffMember.id || `${staffMember.name}-${index}`} staff={staffMember} onOpen={handleOpenStaff} schoolType={schoolType} />
+              ))
+            ) : (
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', marginTop: '100px' }}>
+                No authorized records discovered in this department segment.
+              </div>
+            )}
+          </div>
+
+          <div style={styles.footerActions}>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                <RetroArrow direction="left" /> BACK
+              </span>
+            </button>
+            <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
+            <button
+              style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              onClick={() => setViewMode('students')}
+            >
+              VIEW ROSTER <RetroArrow color="#0a0a0a" />
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div
+            ref={studentTabScrollRef}
+            onScroll={syncStudentActiveTabFromScroll}
+            onWheel={handleStudentTabWheel}
+            onMouseDown={(event) => beginStudentTabDrag(event.clientX)}
+            onMouseMove={(event) => moveStudentTabDrag(event.clientX)}
+            onMouseUp={endStudentTabDrag}
+            onMouseLeave={endStudentTabDrag}
+            onTouchStart={(event) => beginStudentTabDrag(event.touches[0]?.clientX || 0)}
+            onTouchMove={(event) => moveStudentTabDrag(event.touches[0]?.clientX || 0)}
+            onTouchEnd={endStudentTabDrag}
+            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start', marginBottom: '10px', padding: '4px 10px 12px', overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', userSelect: 'none', cursor: studentDragStateRef.current.dragging ? 'grabbing' : 'grab', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {studentTabKeys.map((tabKey) => (
+              <div
+                key={tabKey}
+                data-student-tab-key={tabKey}
+                style={{
+                  flex: '0 0 min(280px, 78vw)',
+                  minHeight: '78px',
+                  padding: '12px 16px',
+                  fontSize: '0.78rem',
+                  backgroundColor: studentActiveTab === tabKey ? '#f5f1dd' : '#121212',
+                  color: studentActiveTab === tabKey ? '#111' : '#fff',
+                  border: `1px solid ${studentActiveTab === tabKey ? '#f5f1dd' : '#39FF14'}`,
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  letterSpacing: '0.5px',
+                  whiteSpace: 'normal',
+                  scrollSnapAlign: 'center',
+                  boxShadow: studentActiveTab === tabKey ? '0 0 18px rgba(245, 241, 221, 0.18)' : 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <div style={{ color: studentActiveTab === tabKey ? '#333' : '#9acb92', fontSize: '0.7rem' }}>SCROLL TO SELECT</div>
+                <div>{studentSectionMap[tabKey]?.label?.toUpperCase() || (tabKey === 'homeroom' ? 'HOMEROOM' : tabKey.toUpperCase())}</div>
+                <div style={{ color: studentActiveTab === tabKey ? '#111' : '#39FF14' }}>{studentSectionMap[tabKey]?.count || 0} STUDENTS</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginBottom: '18px', color: '#9acb92', fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center' }}>
+            CLICK AND DRAG LEFT OR RIGHT TO SWITCH BETWEEN HOMEROOM AND CLASS ROSTERS.
+          </div>
+
+          <div
+            ref={contentScrollRef}
+            style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '24px', minHeight: '280px', maxHeight: '430px', display: 'flex', flexWrap: 'wrap', gap: '16px', overflowY: 'auto', overflowX: 'hidden', justifyContent: 'center', alignContent: 'flex-start', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {currentTabStudents.length > 0 ? (
+              currentTabStudents.map((student) => (
+                <StudentCard key={student.id} student={student} onOpen={handleOpenStudent} />
+              ))
+            ) : (
+              <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', marginTop: '100px' }}>
+                No enrolled students were generated for this section.
+              </div>
+            )}
+          </div>
+
+          <div style={styles.footerActions}>
+            <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setViewMode('staff')}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                <RetroArrow direction="left" /> BACK TO STAFF
+              </span>
+            </button>
+            <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
+            <button
+              style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+              onClick={handleProceed}
+            >
+              ENTER GAME <RetroArrow color="#0a0a0a" />
+            </button>
+          </div>
+        </>
+      )}
 
       {selectedStaff && liveProfile && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 60, padding: '20px' }}>
-          <div className="no-scrollbar" style={{ width: '100%', maxWidth: showSchedule ? '1140px' : '760px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: showSchedule ? '24px' : '20px' }}>
+          <div style={{ width: '100%', maxWidth: showSchedule ? '1140px' : '760px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: showSchedule ? '24px' : '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStaff.name.toUpperCase()} {showSchedule ? 'CONTRACT SCREEN' : 'PROFILE'}</h3>
               <button style={styles.backButton} onClick={() => (showSchedule ? setShowSchedule(false) : setSelectedStaff(null))}>{showSchedule ? 'BACK TO PROFILE' : 'CLOSE'}</button>
@@ -1067,11 +1473,19 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                   <span style={{ color: '#9acb92', fontSize: '0.76rem' }}>School Year {selectedStaffSchedule.academicYear} (Locked)</span>
                 </div>
 
+                {selectedStaffSchedule.lunchWave && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
+                    <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
+                      Lunch Assignment: <strong style={{ color: '#ffa500' }}>{selectedStaffSchedule.lunchWave}</strong>
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px', color: '#ddd', fontSize: '0.78rem' }}>
                   <strong style={{ color: '#39FF14' }}>Role:</strong> {simplifyTeacherRoleLabel(selectedStaff.role, schoolType)} | <strong style={{ color: '#39FF14' }}>School:</strong> {schoolType}
                 </div>
 
-                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', overflow: 'auto', flex: 1, minHeight: '420px', backgroundColor: '#111' }}>
+                <div style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.86rem', textAlign: 'center' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #39FF14' }}>
@@ -1136,9 +1550,22 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                   </table>
                 </div>
 
+                {selectedStaffSchedule.lunchByDay && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: '8px', marginTop: '12px' }}>
+                    {WEEK_DAYS.map((day) => (
+                      <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#ffa500', marginTop: '2px' }}>{selectedStaffSchedule.lunchByDay[day]}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.76rem', color: '#8f8f8f', textAlign: 'center' }}>
                   Weekly contract matrix stays fully covered Monday-Friday, mirrors the player contract format, and keeps randomized prep blocks within the school-wide high school pattern.
                 </div>
+
+                {schoolType === 'High' && renderLunchWaveMatrix()}
 
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '14px' }}>
                   <button style={{ ...styles.backButton, minWidth: '180px' }} onClick={() => setShowSchedule(false)}>
@@ -1206,15 +1633,55 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                   <StatBar label="Organization" value={liveProfile.personality.organization} color="#7b9acc" />
                 </div>
 
-                <p style={{ margin: '14px 0 0', color: gameStarted ? '#39FF14' : '#888', fontSize: '0.82rem' }}>
-                  {gameStarted
-                    ? (selectedStaff?.isPlayer
-                      ? 'Game mode is active: your vitals/personality now react to action effects (action system integration is TBD).'
-                      : 'Game mode is active: this NPC profile is fluctuating in real time.')
-                    : 'Game mode is inactive: stats stay fixed until you press START GAME.'}
+                <p style={{ margin: '14px 0 0', color: '#888', fontSize: '0.82rem' }}>
+                  Profile vitals stay locked in this directory preview until you enter the world map.
                 </p>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {selectedStudent && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 60, padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '760px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStudent.name.toUpperCase()} PROFILE</h3>
+              <button style={styles.backButton} onClick={() => setSelectedStudent(null)}>CLOSE</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+              <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <PixelAvatar appearance={selectedStudent.appearance || selectedStudent} size="small" direction="Front" motion={{ blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairX: 0, hairY: 0 }} />
+              </div>
+
+              <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px' }}>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Grade:</strong> {selectedStudent.grade}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Age:</strong> {selectedStudent.age}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class:</strong> {selectedStudent.className}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class Grade:</strong> {selectedStudent.classGrade}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Course Number:</strong> {selectedStudent.courseNumber}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Period:</strong> {formatPeriodLabel(selectedStudent.blockLabel).replace('Period Period', 'Period')}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Current Grade:</strong> {selectedStudent.currentGradeLetter} / {selectedStudent.currentGradeNumber}</p>
+                <p style={{ margin: 0, color: '#fff' }}><strong>Section:</strong> {selectedStudent.sectionCode}</p>
+              </div>
+
+              <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <StatBar label="Health" value={selectedStudent.profile.vitals.health} color="#39FF14" />
+                <StatBar label="Stress" value={selectedStudent.profile.vitals.stress} color="#FF3333" />
+                <StatBar label="Energy" value={selectedStudent.profile.vitals.energy} color="#00FFFF" />
+                <StatBar label="Morale" value={selectedStudent.profile.vitals.morale} color="#F7F7F7" />
+                <StatBar label="Focus" value={selectedStudent.profile.vitals.focus} color="#FFA500" />
+              </div>
+
+              <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <StatBar label="Strictness" value={selectedStudent.profile.personality.strictness} color="#ff6b6b" />
+                <StatBar label="Kindness" value={selectedStudent.profile.personality.kindness} color="#4ecdc4" />
+                <StatBar label="Patience" value={selectedStudent.profile.personality.patience} color="#ffe66d" />
+                <StatBar label="Humor" value={selectedStudent.profile.personality.humor} color="#c7f464" />
+                <StatBar label="Organization" value={selectedStudent.profile.personality.organization} color="#7b9acc" />
+              </div>
+            </div>
           </div>
         </div>
       )}

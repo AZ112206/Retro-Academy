@@ -8,7 +8,7 @@ const ELEMENTARY_OPTIONS = [
   { id: 'elem_sci_ss', name: 'Science & Social Studies', icon: 'globe', course: 'Integrated Science/SS', desc: 'Exploring natural ecosystems, physical forces, and history timelines.' }
 ];
 
-export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, highSchoolDept, onSelectClass, onBack, onExit, styles }) {
+export default function ClassSelectionStep({ schoolType, elementaryGrade, middleGrade, highSchoolDept, onSelectClass, onBack, onExit, onSaveGame, styles }) {
   
   // Rule: Grades K-2 are fully locked as general core blocks
   const isLockedGeneral = schoolType === 'Elementary' && (elementaryGrade === 0 || elementaryGrade === 1 || elementaryGrade === 2);
@@ -123,6 +123,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
           <div style={styles.footerActions}>
             <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}><span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span></button>
             <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+            <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
             <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onSelectClass({ id: 'general_core', name: 'General Classroom Block' })}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>START GAME <RetroArrow color="#0a0a0a" /></span>
             </button>
@@ -160,6 +161,7 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
           <button style={{ ...styles.exitButton, flex: '1 1 220px' }} onClick={onExit}>
             RETURN TO MAIN MENU
           </button>
+          <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         </div>
       </div>
     </div>

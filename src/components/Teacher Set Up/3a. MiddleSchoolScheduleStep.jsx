@@ -44,7 +44,7 @@ const BELL_TIMELINE = [
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, styles }) {
+export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, onSaveGame, styles }) {
   const resolvedGrade = Number(middleGrade) || 6;
   const prepBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
   const prepBlockId = prepBlockByGrade[resolvedGrade] || 'block2';
@@ -199,6 +199,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           </span>
         </button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: actualWaveOutput })}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
             CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
