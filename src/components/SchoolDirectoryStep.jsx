@@ -42,11 +42,73 @@ const HIGH_CLASS_OPTIONS = {
   'Foreign Language': ['Spanish I', 'French I', 'Spanish II', 'French II', 'Conversational Fluency']
 };
 const HIGH_LUNCH_WAVE_TIMES = {
-  'Wave 1': '10:20 AM - 10:55 AM',
-  'Wave 2': '10:55 AM - 11:30 AM',
-  'Wave 3': '11:30 AM - 12:05 PM',
-  'Wave 4': '12:05 PM - 12:40 PM'
+  'Wave 1': '10:30 AM - 11:10 AM',
+  'Wave 2': '11:10 AM - 11:50 AM',
+  'Wave 3': '11:50 AM - 12:30 PM',
+  'Wave 4': '12:30 PM - 1:10 PM'
 };
+const HIGH_SLOT_KEYS = Array.from({ length: 12 }, (_, idx) => `slot${idx + 1}`);
+const HIGH_PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const HIGH_DAY_PATTERNS = [
+  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [10, 11]] },
+  { day: 'Tuesday', offset: 2, doublePairs: [[2, 3], [8, 9]] },
+  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5], [6, 7]] },
+  { day: 'Thursday', offset: 6, doublePairs: [[2, 3], [8, 9]] },
+  { day: 'Friday', offset: 8, doublePairs: [[0, 1], [10, 11]] }
+];
+const HIGH_LUNCH_WAVE_DAY_TIMES = {
+  'Wave 1': {
+    Monday: '10:30 AM - 11:10 AM',
+    Tuesday: '10:35 AM - 11:15 AM',
+    Wednesday: '10:40 AM - 11:20 AM',
+    Thursday: '10:45 AM - 11:25 AM',
+    Friday: '10:50 AM - 11:30 AM'
+  },
+  'Wave 2': {
+    Monday: '11:10 AM - 11:50 AM',
+    Tuesday: '11:15 AM - 11:55 AM',
+    Wednesday: '11:20 AM - 12:00 PM',
+    Thursday: '11:25 AM - 12:05 PM',
+    Friday: '11:30 AM - 12:10 PM'
+  },
+  'Wave 3': {
+    Monday: '11:50 AM - 12:30 PM',
+    Tuesday: '11:55 AM - 12:35 PM',
+    Wednesday: '12:00 PM - 12:40 PM',
+    Thursday: '12:05 PM - 12:45 PM',
+    Friday: '12:10 PM - 12:50 PM'
+  },
+  'Wave 4': {
+    Monday: '12:30 PM - 1:10 PM',
+    Tuesday: '12:35 PM - 1:15 PM',
+    Wednesday: '12:40 PM - 1:20 PM',
+    Thursday: '12:45 PM - 1:25 PM',
+    Friday: '12:50 PM - 1:30 PM'
+  }
+};
+const HIGH_PERIOD_SLOT_TIMES = [
+  '6:30 AM - 7:10 AM',
+  '7:10 AM - 7:50 AM',
+  '7:50 AM - 8:30 AM',
+  '8:30 AM - 9:10 AM',
+  '9:10 AM - 9:50 AM',
+  '9:50 AM - 10:30 AM',
+  '10:30 AM - 11:10 AM',
+  '11:10 AM - 11:50 AM',
+  '11:50 AM - 12:30 PM',
+  '12:30 PM - 1:10 PM',
+  '1:10 PM - 1:50 PM',
+  '1:50 PM - 2:30 PM'
+];
+
+function simplifyTeacherRoleLabel(roleText, schoolType) {
+  const role = String(roleText || '');
+  const lower = role.toLowerCase();
+  if (schoolType === 'High' && (lower.includes('teacher') || lower.includes('department head'))) {
+    return 'Teacher';
+  }
+  return role;
+}
 
 function getLevelColor(level) {
   if (level === 'Advanced') return '#FF3333';
@@ -221,6 +283,76 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
   return coverageMap;
 }
 
+function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
+  const buildDayPeriodSequence = (offset, doublePairs) => {
+    const sequence = Array(12).fill('A');
+    const doubleStartSet = new Set(doublePairs.map((pair) => pair[0]));
+    let letterCursor = 0;
+
+    for (let slotIdx = 0; slotIdx < 12; slotIdx += 1) {
+      const periodLetter = HIGH_PERIOD_LETTERS[(offset + letterCursor) % HIGH_PERIOD_LETTERS.length];
+      sequence[slotIdx] = periodLetter;
+
+      if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 12) {
+        sequence[slotIdx + 1] = periodLetter;
+        slotIdx += 1;
+      }
+
+      letterCursor += 1;
+    }
+
+    return sequence;
+  };
+
+  const lunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[lunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
+  const periodSequenceByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
+    acc[pattern.day] = buildDayPeriodSequence(pattern.offset, pattern.doublePairs);
+    return acc;
+  }, {});
+  const doubleSlotsByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
+    acc[pattern.day] = new Set(pattern.doublePairs.flat());
+    return acc;
+  }, {});
+  const continuationSlotsByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
+    acc[pattern.day] = new Set(pattern.doublePairs.map((pair) => pair[1]));
+    return acc;
+  }, {});
+
+  return HIGH_SLOT_KEYS.map((slotKey, slotIdx) => {
+    const entries = WEEK_DAYS.map((dayName, dayIdx) => {
+      const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || HIGH_PERIOD_LETTERS[(dayIdx + slotIdx) % HIGH_PERIOD_LETTERS.length];
+      const token = tokens[periodLabel] || buildSpecialEntry('Unscheduled', 'support');
+      const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
+      const detailParts = [`Period ${periodLabel}`, isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'];
+
+      if (slotIdx === 5 || slotIdx === 6) {
+        detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
+      }
+
+      const detail = detailParts.join(' | ');
+      if (token.kind === 'class') {
+        return {
+          ...buildClassEntry(token.name, token.level || 'Standard', token.sec || null, detail),
+          isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx))
+        };
+      }
+
+      const prepKind = token.kind === 'prep' ? 'prep' : 'support';
+      return {
+        ...buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', prepKind, { detail }),
+        isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx))
+      };
+    });
+
+    return {
+      block: `Period ${slotIdx + 1}`,
+      slotIndex: slotIdx,
+      time: HIGH_PERIOD_SLOT_TIMES[slotIdx] || 'Assigned by District',
+      entries
+    };
+  });
+}
+
 function buildElementaryProfileSchedule(staff, random) {
   const grade = parseGradeFromRole(staff.role);
   const isLower = grade === 'K' || grade === 1 || grade === 2;
@@ -316,9 +448,42 @@ function buildMiddleProfileSchedule(staff, random) {
 function buildHighProfileSchedule(staff, random, coverageEntry) {
   const subject = resolveSubjectFromRole(staff.role);
   const lunchWave = coverageEntry?.lunchWave || staff?.contractLunchWave || pickWithSeed(['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'], random);
-  const lunchWindow = HIGH_LUNCH_WAVE_TIMES[lunchWave] || 'Assigned by Admin';
-  const levels = ['Standard', 'Honors', 'Advanced'];
   const sectionBase = 100 + Math.floor(random() * 800);
+
+  if (staff?.isPlayer && staff?.contractScheduleVersion === 2 && Array.isArray(staff?.contractWeeklyRows)) {
+    const lunchByDay = staff?.contractLunchByDay || {};
+    const upgradedRows = staff.contractWeeklyRows.map((row) => {
+      const entries = WEEK_DAYS.map((day, dayIdx) => {
+        const token = row?.entries?.[dayIdx];
+        if (!token) return buildSpecialEntry('Unscheduled', 'support');
+
+        const detailParts = [];
+        if (token.periodLabel) detailParts.push(`Period ${token.periodLabel}`);
+        if (typeof token.isDouble === 'boolean') detailParts.push(token.isDouble ? 'Double Block' : 'Single Block');
+        if ((row.slotIndex === 5 || row.slotIndex === 6) && lunchByDay[day]) {
+          detailParts.push(`Lunch: ${lunchByDay[day]}`);
+        }
+
+        const detail = token.detail || detailParts.join(' | ') || null;
+        if (token.isPrep) {
+          return buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', 'prep', { detail });
+        }
+
+        return buildClassEntry(token.name || 'Class Assignment', token.level || 'Standard', token.sec || null, detail);
+      });
+
+      return {
+        block: row.block || 'Block',
+        time: row.time || 'Rotating Window (Day remains 8:20 AM - 2:30 PM)',
+        entries
+      };
+    });
+
+    return [
+      { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      ...upgradedRows
+    ];
+  }
 
   if (staff?.isPlayer && staff?.contractSchedule) {
     const periodKeys = ['period1', 'period2', 'period3', 'period4', 'period5'];
@@ -331,77 +496,63 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     });
 
     const rotateToken = (baseIndex, dayIdx) => periodTokens[(baseIndex - dayIdx + periodTokens.length) % periodTokens.length];
-    const buildPeriodEntries = (periodIndex) => WEEK_DAYS.map((_, dayIdx) => {
+    const buildPeriodEntries = (periodIndex) => WEEK_DAYS.map((dayName, dayIdx) => {
       const token = rotateToken(periodIndex, dayIdx);
+      const dayLunchWindow = HIGH_LUNCH_WAVE_DAY_TIMES[lunch]?.[dayName] || HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned';
       if (periodIndex === 2 && token.kind === 'class') {
-        return { ...token, detail: `Class Time: 10:20 AM - 12:50 PM | Lunch: ${lunch} (${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned'})` };
+        return { ...token, detail: `Class Time: Period Schedule | Lunch: ${lunch} (${dayLunchWindow})` };
       }
       if (periodIndex === 2 && token.name?.toLowerCase().includes('prep')) {
-        return { ...token, detail: `Class Time: 10:20 AM - 12:50 PM | Lunch: ${lunch} (${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned'})` };
+        return { ...token, detail: `Class Time: Period Schedule | Lunch: ${lunch} (${dayLunchWindow})` };
       }
       return token;
     });
 
     return [
-      { block: 'Homeroom', time: '8:00 AM - 8:15 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
-      { block: 'Period 1', time: '8:20 AM - 9:15 AM', entries: buildPeriodEntries(0) },
-      { block: 'Period 2', time: '9:20 AM - 10:15 AM', entries: buildPeriodEntries(1) },
-      { block: `Period 3 (${lunch})`, time: `Class: 10:20 AM - 12:50 PM | Lunch: ${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned by Admin'}`, entries: buildPeriodEntries(2) },
-      { block: 'Period 4', time: '12:55 PM - 1:40 PM', entries: buildPeriodEntries(3) },
-      { block: 'Period 5', time: '1:45 PM - 2:30 PM', entries: buildPeriodEntries(4) }
+      { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      { block: 'Period 1', time: 'Period Schedule Window', entries: buildPeriodEntries(0) },
+      { block: 'Period 2', time: 'Period Schedule Window', entries: buildPeriodEntries(1) },
+      { block: `Period 3 (${lunch})`, time: `Class: Period Schedule | Lunch: ${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned by Admin'}`, entries: buildPeriodEntries(2) },
+      { block: 'Period 4', time: 'Period Schedule Window', entries: buildPeriodEntries(3) },
+      { block: 'Period 5', time: 'Period Schedule Window', entries: buildPeriodEntries(4) }
     ];
   }
-  const prepPeriod = Math.floor(random() * 5); // 0-4 => Period 1-5
-
   const subjectKey = subject === 'Social Studies' ? 'History' : subject;
   const pool = HIGH_CLASS_OPTIONS[subjectKey] || [`${subjectKey} Seminar`, `${subjectKey} Foundations`, `${subjectKey} Lab`];
-  const teachingPeriodCount = 4;
   const shuffledCourses = [...pool].sort(() => random() - 0.5);
-  const shuffledLevels = [...levels].sort(() => random() - 0.5);
+  const balancedLevels = ['Standard', 'Honors', 'Advanced', 'Standard', 'Honors', 'Advanced', 'Standard', 'Honors'];
+  const levelOffset = Math.floor(random() * balancedLevels.length);
 
-  const courseSequence = Array.from({ length: teachingPeriodCount }, (_, idx) => shuffledCourses[idx % shuffledCourses.length]);
-  const levelSequence = Array.from({ length: teachingPeriodCount }, (_, idx) => shuffledLevels[idx % shuffledLevels.length]);
+  const courseSequence = Array.from({ length: HIGH_PERIOD_LETTERS.length }, (_, idx) => shuffledCourses[idx % shuffledCourses.length]);
+  const levelSequence = Array.from({ length: HIGH_PERIOD_LETTERS.length }, (_, idx) => balancedLevels[(idx + levelOffset) % balancedLevels.length]);
 
   if (coverageEntry?.primaryCourse && pool.includes(coverageEntry.primaryCourse)) {
     courseSequence[0] = coverageEntry.primaryCourse;
   }
 
-  const periodTokens = [];
-  let teachIndex = 0;
-  for (let periodIndex = 0; periodIndex < 5; periodIndex += 1) {
-    if (periodIndex === prepPeriod) {
-      periodTokens.push(buildSpecialEntry('Teacher Prep / Study Hall', 'support'));
-      continue;
-    }
-
-    const chosenCourse = courseSequence[teachIndex];
-    const chosenLevel = levelSequence[teachIndex];
-    periodTokens.push(buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + periodIndex}`));
-    teachIndex += 1;
+  const prepCount = random() < 0.5 ? 1 : 2;
+  const prepIndexes = new Set();
+  while (prepIndexes.size < prepCount) {
+    prepIndexes.add(Math.floor(random() * HIGH_PERIOD_LETTERS.length));
   }
 
-  const rotateToken = (baseIndex, dayIdx) => periodTokens[(baseIndex - dayIdx + periodTokens.length) % periodTokens.length];
+  const periodTokens = {};
+  HIGH_PERIOD_LETTERS.forEach((periodLetter, idx) => {
+    if (prepIndexes.has(idx)) {
+      periodTokens[periodLetter] = buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+      return;
+    }
 
-  const buildPeriodEntries = (periodIndex) => {
-    return WEEK_DAYS.map((_, dayIdx) => {
-      const token = rotateToken(periodIndex, dayIdx);
-      if (periodIndex === 2 && token.kind === 'class') {
-        return { ...token, detail: `Class Time: 10:20 AM - 12:50 PM | Lunch: ${lunchWave} (${lunchWindow})` };
-      }
-      if (periodIndex === 2 && token.name?.toLowerCase().includes('prep')) {
-        return { ...token, detail: `Class Time: 10:20 AM - 12:50 PM | Lunch: ${lunchWave} (${lunchWindow})` };
-      }
-      return token;
-    });
-  };
+    const chosenCourse = courseSequence[idx];
+    const chosenLevel = levelSequence[idx];
+    periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
+  });
+
+  const weeklyRows = buildHighWeeklyRowsFromTokens(periodTokens, lunchWave);
 
   return [
-    { block: 'Homeroom', time: '8:00 AM - 8:15 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
-    { block: 'Period 1', time: '8:20 AM - 9:15 AM', entries: buildPeriodEntries(0) },
-    { block: 'Period 2', time: '9:20 AM - 10:15 AM', entries: buildPeriodEntries(1) },
-    { block: `Period 3 (${lunchWave})`, time: `Class: 10:20 AM - 12:50 PM | Lunch: ${lunchWindow}`, entries: buildPeriodEntries(2) },
-    { block: 'Period 4', time: '12:55 PM - 1:40 PM', entries: buildPeriodEntries(3) },
-    { block: 'Period 5', time: '1:45 PM - 2:30 PM', entries: buildPeriodEntries(4) }
+    { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+    ...weeklyRows
   ];
 }
 
@@ -470,7 +621,7 @@ function DirectoryAvatarMini({ appearance }) {
 }
 
 // Reusable Faculty Grid Card matching the customization options UI panels
-function FacultyCard({ staff, onOpen }) {
+function FacultyCard({ staff, onOpen, schoolType }) {
   return (
     <div
       onClick={() => onOpen(staff)}
@@ -504,7 +655,7 @@ function FacultyCard({ staff, onOpen }) {
           {staff.name}
         </span>
         <span style={{ fontSize: '0.62rem', color: '#39FF14', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-          {staff.role}
+          {simplifyTeacherRoleLabel(staff.role, schoolType)}
         </span>
       </div>
     </div>
@@ -802,7 +953,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       >
         {currentTabStaff.length > 0 ? (
           currentTabStaff.map((staffMember, index) => (
-            <FacultyCard key={staffMember.id || `${staffMember.name}-${index}`} staff={staffMember} onOpen={handleOpenStaff} />
+            <FacultyCard key={staffMember.id || `${staffMember.name}-${index}`} staff={staffMember} onOpen={handleOpenStaff} schoolType={schoolType} />
           ))
         ) : (
           <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', marginTop: '100px' }}>
@@ -841,7 +992,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                 </div>
 
                 <div style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px', color: '#ddd', fontSize: '0.78rem' }}>
-                  <strong style={{ color: '#39FF14' }}>Role:</strong> {selectedStaff.role} | <strong style={{ color: '#39FF14' }}>School:</strong> {schoolType}
+                  <strong style={{ color: '#39FF14' }}>Role:</strong> {simplifyTeacherRoleLabel(selectedStaff.role, schoolType)} | <strong style={{ color: '#39FF14' }}>School:</strong> {schoolType}
                 </div>
 
                 <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', overflow: 'auto', flex: 1, minHeight: '420px' }}>
@@ -863,15 +1014,19 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                           </td>
                           {(row.entries || WEEK_DAYS.map(() => '')).map((entry, entryIdx) => {
                             const normalized = entry && typeof entry === 'object' ? entry : buildSpecialEntry(String(entry || 'Unscheduled'), 'support');
+                            if (normalized.isDoubleContinuation) return null;
+
                             const primaryColor = getEntryColor(normalized);
                             const showClassMeta = normalized.kind === 'class' && (normalized.level || normalized.sec);
                             const showLunchTag = normalized.kind === 'lunch';
-                            const showPrepTag = normalized.kind === 'prep';
                             const showDetail = Boolean(normalized.detail);
+                            const cellRowSpan = normalized.isDouble ? 2 : 1;
 
                             return (
-                              <td key={`${row.block}-${entryIdx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'top' }}>
-                                <div style={{ fontWeight: 'bold', color: primaryColor, fontSize: '0.82rem' }}>{normalized.name}</div>
+                              <td key={`${row.block}-${entryIdx}`} rowSpan={cellRowSpan} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'top' }}>
+                                <div style={{ fontWeight: 'bold', color: primaryColor, fontSize: '0.82rem' }}>
+                                  {normalized.name}
+                                </div>
 
                                 {showClassMeta && (
                                   <div style={{ fontSize: '0.72rem', marginTop: '4px', color: primaryColor }}>
@@ -888,12 +1043,6 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                 {showLunchTag && (
                                   <span style={{ display: 'inline-block', marginTop: '5px', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px' }}>
                                     Splits for Lunch
-                                  </span>
-                                )}
-
-                                {showPrepTag && (
-                                  <span style={{ display: 'inline-block', marginTop: '5px', fontSize: '0.65rem', backgroundColor: '#2a2a2a', color: '#ff9f43', padding: '1px 4px', borderRadius: '3px' }}>
-                                    Prep / Specialists
                                   </span>
                                 )}
                               </td>
@@ -923,7 +1072,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                   </div>
 
                   <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px' }}>
-                    <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Occupation:</strong> {liveProfile.occupation}</p>
+                    <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Occupation:</strong> {simplifyTeacherRoleLabel(selectedStaff.role, schoolType)}</p>
                     <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Age:</strong> {liveProfile.age}</p>
                     <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Birthday:</strong> {liveProfile.birthday}</p>
                     <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Years Teaching:</strong> {liveProfile.yearsTeaching}</p>

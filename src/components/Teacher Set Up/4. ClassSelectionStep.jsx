@@ -57,27 +57,37 @@ export default function ClassSelectionStep({ schoolType, elementaryGrade, middle
         math: [
           { id: 'high_alg1', name: 'Algebra I', icon: 'math', desc: 'Foundational algebraic reasoning, equations, and graphing systems.' },
           { id: 'high_geometry', name: 'Geometry', icon: 'math', desc: 'Geometric proof, spatial reasoning, and measurement concepts.' },
-          { id: 'high_alg2', name: 'Algebra II', icon: 'math', desc: 'Advanced functions, polynomial work, and modeling.' }
+          { id: 'high_alg2', name: 'Algebra II', icon: 'math', desc: 'Advanced functions, polynomial work, and modeling.' },
+          { id: 'high_trig', name: 'Trigonometry', icon: 'math', desc: 'Trigonometric identities, analytic triangles, and modeling.' },
+          { id: 'high_precalc', name: 'Pre-Calculus', icon: 'math', desc: 'Function behavior, limits, and advanced analytical prep.' }
         ],
         science: [
           { id: 'high_earth', name: 'Earth Science', icon: 'science', desc: 'Earth systems, weather, geology, and environmental patterns.' },
           { id: 'high_bio', name: 'Biology', icon: 'science', desc: 'Life systems, cells, genetics, and ecosystems.' },
-          { id: 'high_chem', name: 'Chemistry', icon: 'science', desc: 'Matter, reactions, and laboratory analysis.' }
+          { id: 'high_chem', name: 'Chemistry', icon: 'science', desc: 'Matter, reactions, and laboratory analysis.' },
+          { id: 'high_physics', name: 'Physics', icon: 'science', desc: 'Force, motion, energy transfer, and systems.' },
+          { id: 'high_env', name: 'Environmental Science', icon: 'science', desc: 'Ecology, resources, and sustainability problem solving.' }
         ],
         history: [
           { id: 'high_world_hist', name: 'World History', icon: 'history', desc: 'Global civilizations, movements, and historical change.' },
           { id: 'high_us_hist', name: 'US History', icon: 'history', desc: 'American development, institutions, and turning points.' },
-          { id: 'high_civics', name: 'Civics and Economics', icon: 'history', desc: 'Government systems, citizenship, and economic structures.' }
+          { id: 'high_civics', name: 'Civics and Economics', icon: 'history', desc: 'Government systems, citizenship, and economic structures.' },
+          { id: 'high_modern', name: 'Modern World History', icon: 'history', desc: 'Industrial era transformations and global modernity.' },
+          { id: 'high_geo', name: 'Human Geography', icon: 'history', desc: 'Population patterns, migration, culture, and mapping.' }
         ],
         english: [
           { id: 'high_eng1', name: 'English I', icon: 'book', desc: 'Literature, close reading, and composition fundamentals.' },
           { id: 'high_eng2', name: 'English II', icon: 'book', desc: 'Research writing, rhetoric, and literary analysis.' },
+          { id: 'high_eng3', name: 'English III', icon: 'book', desc: 'American literature, argument writing, and discourse.' },
+          { id: 'high_eng4', name: 'English IV', icon: 'book', desc: 'College-ready composition, research, and synthesis.' },
           { id: 'high_writing', name: 'Creative Writing', icon: 'pencil', desc: 'Narrative craft, workshop routines, and revision.' }
         ],
         language: [
           { id: 'high_spanish1', name: 'Spanish I', icon: 'language', desc: 'Introductory communication, vocabulary, and culture.' },
           { id: 'high_spanish2', name: 'Spanish II', icon: 'language', desc: 'Intermediate speaking, grammar, and reading skills.' },
-          { id: 'high_french1', name: 'French I', icon: 'language', desc: 'Introductory French language and cultural foundations.' }
+          { id: 'high_french1', name: 'French I', icon: 'language', desc: 'Introductory French language and cultural foundations.' },
+          { id: 'high_french2', name: 'French II', icon: 'language', desc: 'Intermediate grammar and authentic language production.' },
+          { id: 'high_fluency', name: 'Conversational Fluency', icon: 'language', desc: 'Immersive discussion, listening, and live communication.' }
         ]
       };
 

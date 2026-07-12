@@ -183,7 +183,10 @@ export default function TeacherDashboard({ onExit }) {
         ...profileData,
         contractSchedule: highScheduleContract.contractSchedule,
         contractLunchWave: highScheduleContract.randomLunchWave || null,
-        contractSelectedDept: highScheduleContract.selectedDept || null
+        contractSelectedDept: highScheduleContract.selectedDept || null,
+        contractScheduleVersion: highScheduleContract.scheduleVersion || 1,
+        contractWeeklyRows: highScheduleContract.weeklyRows || null,
+        contractLunchByDay: highScheduleContract.lunchByDay || null
       });
     } else {
       setTeacherProfile(profileData);

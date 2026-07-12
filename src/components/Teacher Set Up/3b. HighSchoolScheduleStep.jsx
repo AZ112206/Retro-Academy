@@ -46,22 +46,164 @@ const POOL_EXPANSIONS = {
   ]
 };
 
-// High school timeline with 5 periods: 2 short, 1 long, then 2 short
-const PERIOD_TIMES = {
-  homeroom: { label: 'Homeroom', time: '8:00 AM - 8:15 AM', length: '15 Min Attendance' },
-  period1: { label: 'Period 1', time: '8:20 AM - 9:15 AM', length: 'Short Block' },
-  period2: { label: 'Period 2', time: '9:20 AM - 10:15 AM', length: 'Short Block' },
-  period3: { label: 'Period 3', time: '10:20 AM - 12:50 PM', length: 'Long Block (Lunch Split)' },
-  period4: { label: 'Period 4', time: '12:55 PM - 1:40 PM', length: 'Short Block' },
-  period5: { label: 'Period 5', time: '1:45 PM - 2:30 PM', length: 'Short Block' }
+const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const SLOT_KEYS = Array.from({ length: 12 }, (_, idx) => `slot${idx + 1}`);
+const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
+
+const DAY_PATTERNS = [
+  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [10, 11]] },
+  { day: 'Tuesday', offset: 2, doublePairs: [[2, 3], [8, 9]] },
+  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5], [6, 7]] },
+  { day: 'Thursday', offset: 6, doublePairs: [[2, 3], [8, 9]] },
+  { day: 'Friday', offset: 8, doublePairs: [[0, 1], [10, 11]] }
+];
+
+const LUNCH_WAVE_DAY_TIMES = {
+  'Wave 1': {
+    Monday: '10:30 AM - 11:10 AM',
+    Tuesday: '10:35 AM - 11:15 AM',
+    Wednesday: '10:40 AM - 11:20 AM',
+    Thursday: '10:45 AM - 11:25 AM',
+    Friday: '10:50 AM - 11:30 AM'
+  },
+  'Wave 2': {
+    Monday: '11:10 AM - 11:50 AM',
+    Tuesday: '11:15 AM - 11:55 AM',
+    Wednesday: '11:20 AM - 12:00 PM',
+    Thursday: '11:25 AM - 12:05 PM',
+    Friday: '11:30 AM - 12:10 PM'
+  },
+  'Wave 3': {
+    Monday: '11:50 AM - 12:30 PM',
+    Tuesday: '11:55 AM - 12:35 PM',
+    Wednesday: '12:00 PM - 12:40 PM',
+    Thursday: '12:05 PM - 12:45 PM',
+    Friday: '12:10 PM - 12:50 PM'
+  },
+  'Wave 4': {
+    Monday: '12:30 PM - 1:10 PM',
+    Tuesday: '12:35 PM - 1:15 PM',
+    Wednesday: '12:40 PM - 1:20 PM',
+    Thursday: '12:45 PM - 1:25 PM',
+    Friday: '12:50 PM - 1:30 PM'
+  }
 };
 
-const LUNCH_WAVE_TIMES = {
-  'Wave 1': '10:20 AM - 10:55 AM',
-  'Wave 2': '10:55 AM - 11:30 AM',
-  'Wave 3': '11:30 AM - 12:05 PM',
-  'Wave 4': '12:05 PM - 12:40 PM'
-};
+const PERIOD_SLOT_TIMES = [
+  '6:30 AM - 7:10 AM',
+  '7:10 AM - 7:50 AM',
+  '7:50 AM - 8:30 AM',
+  '8:30 AM - 9:10 AM',
+  '9:10 AM - 9:50 AM',
+  '9:50 AM - 10:30 AM',
+  '10:30 AM - 11:10 AM',
+  '11:10 AM - 11:50 AM',
+  '11:50 AM - 12:30 PM',
+  '12:30 PM - 1:10 PM',
+  '1:10 PM - 1:50 PM',
+  '1:50 PM - 2:30 PM'
+];
+
+const createEmptySchedule = () => ({
+  periodA: null,
+  periodB: null,
+  periodC: null,
+  periodD: null,
+  periodE: null,
+  periodF: null,
+  periodG: null,
+  periodH: null,
+  periodI: null,
+  periodJ: null
+});
+
+const periodKeyForLetter = (letter) => `period${letter}`;
+
+function buildDayPeriodSequence(offset, doublePairs) {
+  const sequence = Array(12).fill('A');
+  const doubleStartSet = new Set(doublePairs.map((pair) => pair[0]));
+  let letterCursor = 0;
+
+  for (let slotIdx = 0; slotIdx < 12; slotIdx += 1) {
+    const periodLetter = PERIOD_LETTERS[(offset + letterCursor) % PERIOD_LETTERS.length];
+    sequence[slotIdx] = periodLetter;
+
+    if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 12) {
+      sequence[slotIdx + 1] = periodLetter;
+      slotIdx += 1;
+    }
+
+    letterCursor += 1;
+  }
+
+  return sequence;
+}
+
+function buildWeeklyContract(baseSchedule, lunchWave) {
+  const normalizedTokens = PERIOD_LETTERS.map((letter) => {
+    const key = periodKeyForLetter(letter);
+    return (
+      baseSchedule[key] || {
+        name: `Unassigned Period ${letter}`,
+        grade: '9th',
+        level: 'Standard',
+        sec: null,
+        isPrep: false
+      }
+    );
+  });
+
+  const lunchByDay = LUNCH_WAVE_DAY_TIMES[lunchWave] || LUNCH_WAVE_DAY_TIMES['Wave 1'];
+  const periodSequenceByDay = DAY_PATTERNS.reduce((acc, pattern) => {
+    acc[pattern.day] = buildDayPeriodSequence(pattern.offset, pattern.doublePairs);
+    return acc;
+  }, {});
+  const doubleSlotsByDay = DAY_PATTERNS.reduce((acc, pattern) => {
+    const slots = new Set(pattern.doublePairs.flat());
+    acc[pattern.day] = slots;
+    return acc;
+  }, {});
+  const continuationSlotsByDay = DAY_PATTERNS.reduce((acc, pattern) => {
+    const continuations = new Set(pattern.doublePairs.map((pair) => pair[1]));
+    acc[pattern.day] = continuations;
+    return acc;
+  }, {});
+
+  const rows = SLOT_KEYS.map((slotKey, slotIdx) => {
+    const entries = WEEK_DAYS.map((dayName, dayIdx) => {
+      const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || PERIOD_LETTERS[(dayIdx + slotIdx) % PERIOD_LETTERS.length];
+      const sourceToken = baseSchedule[periodKeyForLetter(periodLabel)] || normalizedTokens[0];
+      const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
+      const detailParts = [
+        `Period ${periodLabel}`,
+        isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'
+      ];
+
+      if (slotIdx === 5 || slotIdx === 6) {
+        detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
+      }
+
+      return {
+        ...sourceToken,
+        periodLabel,
+        isDouble,
+        isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx)),
+        detail: detailParts.join(' | ')
+      };
+    });
+
+    return {
+      block: `Period ${slotIdx + 1}`,
+      blockKey: slotKey,
+      slotIndex: slotIdx,
+      time: PERIOD_SLOT_TIMES[slotIdx] || 'Assigned by District',
+      entries
+    };
+  });
+
+  return { rows, lunchByDay };
+}
 
 export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles, resumeData = null }) {
   const [selectedDept, setSelectedDept] = useState(null);
@@ -70,23 +212,29 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   const [shuffleCount, setShuffleCount] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
   const [randomLunchWave, setRandomLunchWave] = useState('');
+  const [lunchByDay, setLunchByDay] = useState({});
+  const [weeklyRows, setWeeklyRows] = useState([]);
 
-  const [schedule, setSchedule] = useState({
-    period1: null,
-    period2: null,
-    period3: null, 
-    period4: null,
-    period5: null
-  });
+  const [schedule, setSchedule] = useState(createEmptySchedule());
 
   useEffect(() => {
     if (!resumeData?.selectedDept || !resumeData?.contractSchedule) return;
 
+    const restoredSchedule = createEmptySchedule();
+    PERIOD_KEYS.forEach((key) => {
+      if (resumeData.contractSchedule[key]) restoredSchedule[key] = resumeData.contractSchedule[key];
+    });
+
+    const restoredWave = resumeData.randomLunchWave || 'Wave 1';
+    const rebuiltContract = buildWeeklyContract(restoredSchedule, restoredWave);
+
     setSelectedDept(resumeData.selectedDept);
     setConfirmedDept(true);
     setReviewMode(true);
-    setRandomLunchWave(resumeData.randomLunchWave || 'Wave 1');
-    setSchedule(resumeData.contractSchedule);
+    setRandomLunchWave(restoredWave);
+    setSchedule(restoredSchedule);
+    setWeeklyRows(rebuiltContract.rows);
+    setLunchByDay(rebuiltContract.lunchByDay);
     setCurrentTokens([]);
     setShuffleCount(0);
   }, [resumeData]);
@@ -110,7 +258,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       return candidate;
     };
 
-    const generatedTokens = Array.from({ length: 3 }).map((_, idx) => {
+    const generatedTokens = Array.from({ length: 5 }).map((_, idx) => {
       const base = shuffledBase[idx % Math.max(shuffledBase.length, 1)] || { name: 'General Elective', grade: '9th' };
       const level = levelPool[Math.floor(Math.random() * levelPool.length)];
       return {
@@ -133,7 +281,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       setShuffleCount(0);
       setReviewMode(false);
       setRandomLunchWave('');
-      setSchedule({ period1: null, period2: null, period3: null, period4: null, period5: null });
+      setLunchByDay({});
+      setWeeklyRows([]);
+      setSchedule(createEmptySchedule());
     }
     setSelectedDept(deptId);
   };
@@ -141,13 +291,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   const handleConfirmNextStep = () => {
     if (!selectedDept) return;
     setShuffleCount(0);
-    setSchedule({
-      period1: null,
-      period2: null,
-      period3: null,
-      period4: null,
-      period5: null
-    });
+    setSchedule(createEmptySchedule());
     handleShuffleCatalog(selectedDept, true);
     setConfirmedDept(true);
   };
@@ -159,78 +303,15 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         matches++;
       }
     });
-    return matches >= 2;
+    return matches >= 4;
   };
 
   const countPrepBlocks = () => {
     return Object.values(schedule).filter(slot => slot?.isPrep).length;
   };
 
-  const autoFillRemainingPeriods = (baseSchedule, deptId) => {
-    const periodKeys = ['period1', 'period2', 'period3', 'period4', 'period5'];
-    const finalized = { ...baseSchedule };
-    const deptPool = POOL_EXPANSIONS[deptId] || [];
-    const fallbackPool = deptPool.length ? deptPool : [{ name: 'General Elective', grade: '9th' }];
-    const availableLevels = ['Standard', 'Honors', 'Advanced'];
-
-    const alreadyPlacedClasses = Object.values(finalized).filter((slot) => slot && !slot.isPrep);
-    const preferredNames = alreadyPlacedClasses.map((slot) => slot.name).filter(Boolean);
-    const preferredLevels = alreadyPlacedClasses.map((slot) => slot.level).filter(Boolean);
-    const usedSections = new Set(alreadyPlacedClasses.map((slot) => slot.sec).filter(Boolean));
-
-    const buildRandomSection = () => {
-      let candidate = '';
-      do {
-        candidate = `#${Math.floor(Math.random() * 900) + 100}`;
-      } while (usedSections.has(candidate));
-      usedSections.add(candidate);
-      return candidate;
-    };
-
-    const pickRandom = (items) => items[Math.floor(Math.random() * items.length)];
-
-    const countInSchedule = (name, level) => {
-      return Object.values(finalized).filter((slot) => slot && !slot.isPrep && slot.name === name && slot.level === level).length;
-    };
-
-    periodKeys.forEach((periodKey) => {
-      if (finalized[periodKey]) return;
-
-      let candidate = null;
-      for (let attempt = 0; attempt < 20; attempt += 1) {
-        const usePreferredName = preferredNames.length > 0 && Math.random() < 0.6;
-        const chosenName = usePreferredName ? pickRandom(preferredNames) : pickRandom(fallbackPool).name;
-        const matchedCourse = fallbackPool.find((course) => course.name === chosenName);
-        const grade = matchedCourse?.grade || pickRandom(fallbackPool).grade;
-
-        const usePreferredLevel = preferredLevels.length > 0 && Math.random() < 0.6;
-        const level = usePreferredLevel ? pickRandom(preferredLevels) : pickRandom(availableLevels);
-
-        if (countInSchedule(chosenName, level) >= 2) continue;
-
-        candidate = {
-          name: chosenName,
-          grade,
-          level,
-          sec: buildRandomSection()
-        };
-        break;
-      }
-
-      if (!candidate) {
-        const forcedCourse = pickRandom(fallbackPool);
-        candidate = {
-          name: forcedCourse.name,
-          grade: forcedCourse.grade,
-          level: pickRandom(availableLevels),
-          sec: buildRandomSection()
-        };
-      }
-
-      finalized[periodKey] = candidate;
-    });
-
-    return finalized;
+  const hasAllBlocksAssigned = () => {
+    return PERIOD_KEYS.every((key) => Boolean(schedule[key]));
   };
 
   const handleDragStart = (e, itemData) => {
@@ -243,13 +324,13 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       const itemData = JSON.parse(e.dataTransfer.getData('application/json'));
 
       if (itemData.isPrep) {
-        if (countPrepBlocks() >= 1 && !schedule[targetPeriod]?.isPrep) {
-          alert('Administrative Block: You can only have 1 designated Prep Block!');
+        if (countPrepBlocks() >= 2 && !schedule[targetPeriod]?.isPrep) {
+          alert('Administrative Block: You can only have up to 2 designated Prep / Study Hall periods!');
           return;
         }
       } else {
         if (checkDuplicateLimit(itemData, targetPeriod)) {
-          alert(`Administrative Block: You cannot exceed 2 concurrent sections of ${itemData.name} (${itemData.level})!`);
+          alert(`Administrative Block: You cannot exceed 4 concurrent sections of ${itemData.name} (${itemData.level})!`);
           return;
         }
       }
@@ -261,24 +342,23 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   };
 
   const handleProceedToReview = () => {
-    if (countPrepBlocks() !== 1) {
-      alert('Mandatory Warning: Your schedule is invalid. You must include exactly 1 Teacher Prep Block.');
+    if (!hasAllBlocksAssigned()) {
+      alert('Mandatory Warning: Assign a class or prep token to every period A-J before review.');
       return;
     }
 
-    const finalizedSchedule = autoFillRemainingPeriods(schedule, selectedDept);
-    setSchedule(finalizedSchedule);
+    if (countPrepBlocks() > 2) {
+      alert('Mandatory Warning: You can include up to 2 Teacher Prep / Study Hall periods.');
+      return;
+    }
 
     const rolledWave = `Wave ${Math.floor(Math.random() * 4) + 1}`;
-    setRandomLunchWave(rolledWave);
-    setReviewMode(true);
-  };
+    const contract = buildWeeklyContract(schedule, rolledWave);
 
-  const getRotatedClass = (dayIndex, displayPeriodIndex) => {
-    const sequenceKeys = ['period1', 'period2', 'period3', 'period4', 'period5'];
-    // Offset calculation accounts for skipped index 0 (Homeroom)
-    const targetedIndex = (displayPeriodIndex - 1 - dayIndex + 5) % 5;
-    return schedule[sequenceKeys[targetedIndex]];
+    setRandomLunchWave(rolledWave);
+    setLunchByDay(contract.lunchByDay);
+    setWeeklyRows(contract.rows);
+    setReviewMode(true);
   };
 
   const getLevelColor = (level) => {
@@ -382,82 +462,134 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SIGN OFFICIAL COVENANT MATRIX</h2>
-        <p style={styles.subtitle}>Review your rotating 5-day / 5-period matrix profile below.</p>
+        <p style={styles.subtitle}>Review your 5-day high school pattern with 4 singles + 2 doubles each day.</p>
         
         <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
-            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 5x5 Rotational Matrix</h3>
+            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> A-J Weekly Rotation Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> ({LUNCH_WAVE_TIMES[randomLunchWave] || ''})</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Lunch Assignment: <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> (matched to weekday wave table)</span>
             </div>
+          </div>
+
+          <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
+            Day Pattern Rules: Mon/Fri doubles at slots 1-2 and 11-12, Tue/Thu doubles at slots 3-4 and 9-10, Wed doubles at slots 5-6 and 7-8. Class picks are assigned by Period A-J.
           </div>
           
           <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
-                <th style={{ padding: '10px', color: '#888', width: '24%' }}>BLOCK DETAILS</th>
-                {['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'].map(day => (
+                <th style={{ padding: '10px', color: '#888', width: '24%' }}>PERIOD / TIME</th>
+                {WEEK_DAYS.map(day => (
                   <th key={day} style={{ padding: '10px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(PERIOD_TIMES).map(([pKey, details], pIdx) => {
-                const isP3 = pKey === 'period3';
-                const isHR = pKey === 'homeroom';
+              <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
+                <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
+                  <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
+                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>6:10 AM - 6:30 AM</div>
+                  <div style={{ fontSize: '0.7rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
+                </td>
+                {WEEK_DAYS.map((day) => (
+                  <td key={day} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#00FFFF' }}>Homeroom & Attendance</div>
+                  </td>
+                ))}
+              </tr>
 
-                return (
-                  <tr key={pKey} style={{ borderBottom: '1px solid #222', backgroundColor: isP3 ? '#162510' : 'transparent' }}>
-                    <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
-                      <div style={{ fontWeight: 'bold', color: isHR ? '#00FFFF' : isP3 ? '#39FF14' : '#fff' }}>{details.label}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{details.time}</div>
-                      <div style={{ fontSize: '0.7rem', color: isP3 ? '#ffa500' : '#666', fontStyle: 'italic', marginTop: '2px' }}>
-                        {isP3 ? `Midday: ${LUNCH_WAVE_TIMES[randomLunchWave]}` : details.length}
+              {weeklyRows.map((row) => (
+                <tr key={row.blockKey} style={{ borderBottom: '1px solid #222' }}>
+                  <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
+                    <div style={{ fontWeight: 'bold', color: '#39FF14' }}>{row.block}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{row.time}</div>
+                  </td>
+
+                  {row.entries.map((entry, dayIdx) => {
+                    if (entry.isDoubleContinuation) return null;
+                    const cellRowSpan = entry.isDouble ? 2 : 1;
+
+                    return (
+                    <td
+                      key={`${row.blockKey}-${WEEK_DAYS[dayIdx]}`}
+                      rowSpan={cellRowSpan}
+                      style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}
+                    >
+                      <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: entry.isPrep ? '#ff9f43' : '#fff' }}>
+                        {entry.name}
                       </div>
+
+                      {!entry.isPrep && !entry.isDoubleContinuation && (
+                        <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: '500', color: getLevelColor(entry.level) }}>
+                          [{entry.level}] - {entry.grade}
+                        </div>
+                      )}
+
+                      {!entry.isDoubleContinuation && (
+                        <div style={{ marginTop: '4px', fontSize: '0.68rem', color: '#b6d9b1' }}>
+                          {entry.detail}
+                        </div>
+                      )}
+
+                      {entry.isDouble && !entry.isDoubleContinuation && (
+                        <span style={{ display: 'inline-block', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px', marginTop: '5px' }}>
+                          Double Period
+                        </span>
+                      )}
                     </td>
-
-                    {['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'].map((day, dayIdx) => {
-                      const rotatingItem = isHR ? { name: 'Homeroom & Attendance', isPrep: false } : getRotatedClass(dayIdx, pIdx);
-
-                      return (
-                        <td key={day} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
-                          {rotatingItem ? (
-                            <div>
-                              <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: isHR ? '#00FFFF' : rotatingItem.isPrep ? '#aaa' : '#fff' }}>
-                                {rotatingItem.name}
-                              </div>
-                              {!rotatingItem.isPrep && !isHR && (
-                                <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: '500', color: getLevelColor(rotatingItem.level) }}>
-                                  [{rotatingItem.level}] - {rotatingItem.grade}
-                                </div>
-                              )}
-                              {isP3 && (
-                                <span style={{ display: 'inline-block', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px', marginTop: '4px' }}>
-                                  Splits for Lunch
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span style={{ color: '#444', fontStyle: 'italic', fontSize: '0.8rem' }}>Unscheduled</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                  )})}
+                </tr>
+              ))}
             </tbody>
           </table>
 
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: '8px', marginTop: '12px' }}>
+            {WEEK_DAYS.map((day) => (
+              <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
+                <div style={{ fontSize: '0.72rem', color: '#ffa500', marginTop: '2px' }}>{lunchByDay[day]}</div>
+              </div>
+            ))}
+          </div>
+
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> Class assets cycle positions forward each successive instructional day across the 5x5 matrix. Your assigned designated room window remains localized to <strong style={{ color: '#ffa500' }}>{randomLunchWave}</strong> during the fixed middle block time window from day to day.</span></span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-J throughout the week with the requested double/single day pattern.</span></span>
+          </div>
+
+          <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
+            <strong style={{ color: '#39FF14' }}>Lunch Waves (All Options):</strong>
+            <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {Object.entries(LUNCH_WAVE_DAY_TIMES).map(([wave, byDay]) => (
+                <div key={wave} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px' }}>
+                  <div><span style={{ color: '#ffa500', fontWeight: 'bold' }}>{wave}</span></div>
+                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8', marginTop: '3px' }}>Mon: {byDay.Monday}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Tue: {byDay.Tuesday}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Wed: {byDay.Wednesday}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Thu: {byDay.Thursday}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Fri: {byDay.Friday}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
           <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-          <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave, contractSchedule: schedule })}>
+          <button
+            style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+            onClick={() =>
+              onLaunchGame({
+                selectedDept,
+                randomLunchWave,
+                lunchByDay,
+                contractSchedule: schedule,
+                weeklyRows,
+                scheduleVersion: 2
+              })
+            }
+          >
             CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
           </button>
         </div>
@@ -492,7 +624,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> DRAGGABLE SET (3 AVAILABLE)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK FOR EACH PERIOD (A-J)</h3>
           
           <div 
             draggable 
@@ -532,8 +664,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
             <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED ASSIGNMENT</span>
           </div>
 
-          {['period1', 'period2', 'period3', 'period4', 'period5'].map((pKey, idx) => {
-            const isP3 = pKey === 'period3';
+          {PERIOD_LETTERS.map((letter) => {
+            const pKey = periodKeyForLetter(letter);
             const filledItem = schedule[pKey];
 
             return (
@@ -542,9 +674,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDrop(e, pKey)}
                 style={{
-                  minHeight: isP3 ? '95px' : '65px',
-                  backgroundColor: isP3 ? '#1b2d14' : '#1a1a1a',
-                  border: isP3 ? '2px dashed #39FF14' : '1px solid #444',
+                  minHeight: '65px',
+                  backgroundColor: '#1a1a1a',
+                  border: '1px solid #444',
                   borderRadius: '6px',
                   padding: '10px',
                   position: 'relative',
@@ -554,14 +686,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 }}
               >
                 <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px' }}>
-                  PERIOD {idx + 1} {isP3 ? 'FIXED LONG BLOCK (LUNCH SPLIT)' : '(SHORT BLOCK)'}
+                  PERIOD {letter}
                 </span>
 
                 {filledItem ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '18px' }}>
                     <div>
                       <strong style={{ color: '#fff' }}>{filledItem.name}</strong>
-                      {!filledItem.isPrep && <div style={{ fontSize: '0.8rem', color: '#39FF14', marginTop: '4px' }}>[{filledItem.level}] - {filledItem.grade}</div>}
+                      {!filledItem.isPrep && <div style={{ fontSize: '0.8rem', color: '#fff', marginTop: '4px' }}>[{filledItem.level}] - {filledItem.grade}</div>}
                     </div>
                     <button onClick={() => setSchedule(prev => ({ ...prev, [pKey]: null }))} style={{ background: 'transparent', color: '#FF3333', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><RetroClose /></button>
                   </div>
@@ -573,6 +705,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
               </div>
             );
           })}
+
+          <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
+            Fill all periods A-J manually. Limit is up to 2 Prep/Study Hall periods and up to 4 simultaneous sections of the same class+level.
+          </div>
         </div>
       </div>
 
