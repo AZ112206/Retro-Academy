@@ -50,45 +50,43 @@ const HIGH_LUNCH_WAVE_TIMES = {
 const HIGH_SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
 const HIGH_PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const HIGH_DAY_PATTERNS = [
-  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [8, 9]] },
-  { day: 'Tuesday', offset: 1, doublePairs: [[1, 2], [6, 7]] },
-  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5]] },
-  { day: 'Thursday', offset: 2, doublePairs: [[2, 3], [7, 8]] },
-  { day: 'Friday', offset: 0, doublePairs: [[0, 1], [8, 9]] }
+  { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
+  { day: 'Tuesday', sequence: ['E', 'C', 'C', 'F', 'G', 'H', 'D', 'D', 'I', 'J'], doublePairs: [[1, 2], [6, 7]] },
+  { day: 'Wednesday', sequence: ['A', 'B', 'G', 'E', 'E', 'F', 'F', 'H', 'I', 'J'], doublePairs: [[3, 4], [5, 6]] },
+  { day: 'Thursday', sequence: ['A', 'B', 'C', 'G', 'G', 'D', 'I', 'H', 'H', 'J'], doublePairs: [[3, 4], [7, 8]] },
+  { day: 'Friday', sequence: ['I', 'I', 'A', 'B', 'C', 'D', 'E', 'F', 'J', 'J'], doublePairs: [[0, 1], [8, 9]] }
 ];
 const HIGH_LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
     Monday: '10:30 AM - 11:10 AM',
-    Tuesday: '10:35 AM - 11:15 AM',
-    Wednesday: '10:40 AM - 11:20 AM',
-    Thursday: '10:45 AM - 11:25 AM',
-    Friday: '10:50 AM - 11:30 AM'
+    Tuesday: '10:30 AM - 11:10 AM',
+    Wednesday: '10:30 AM - 11:10 AM',
+    Thursday: '10:30 AM - 11:10 AM',
+    Friday: '10:30 AM - 11:10 AM'
   },
   'Wave 2': {
     Monday: '11:10 AM - 11:50 AM',
-    Tuesday: '11:15 AM - 11:55 AM',
-    Wednesday: '11:20 AM - 12:00 PM',
-    Thursday: '11:25 AM - 12:05 PM',
-    Friday: '11:30 AM - 12:10 PM'
+    Tuesday: '11:10 AM - 11:50 AM',
+    Wednesday: '11:10 AM - 11:50 AM',
+    Thursday: '11:10 AM - 11:50 AM',
+    Friday: '11:10 AM - 11:50 AM'
   },
   'Wave 3': {
     Monday: '11:50 AM - 12:30 PM',
-    Tuesday: '11:55 AM - 12:35 PM',
-    Wednesday: '12:00 PM - 12:40 PM',
-    Thursday: '12:05 PM - 12:45 PM',
-    Friday: '12:10 PM - 12:50 PM'
+    Tuesday: '11:50 AM - 12:30 PM',
+    Wednesday: '11:50 AM - 12:30 PM',
+    Thursday: '11:50 AM - 12:30 PM',
+    Friday: '11:50 AM - 12:30 PM'
   },
   'Wave 4': {
     Monday: '12:30 PM - 1:10 PM',
-    Tuesday: '12:35 PM - 1:15 PM',
-    Wednesday: '12:40 PM - 1:20 PM',
-    Thursday: '12:45 PM - 1:25 PM',
-    Friday: '12:50 PM - 1:30 PM'
+    Tuesday: '12:30 PM - 1:10 PM',
+    Wednesday: '12:30 PM - 1:10 PM',
+    Thursday: '12:30 PM - 1:10 PM',
+    Friday: '12:30 PM - 1:10 PM'
   }
 };
 const HIGH_PERIOD_SLOT_TIMES = [
-  '6:30 AM - 7:10 AM',
-  '7:10 AM - 7:50 AM',
   '7:50 AM - 8:30 AM',
   '8:30 AM - 9:10 AM',
   '9:10 AM - 9:50 AM',
@@ -284,29 +282,13 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
 }
 
 function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
-  const buildDayPeriodSequence = (offset, doublePairs) => {
-    const sequence = Array(12).fill('A');
-    const doubleStartSet = new Set(doublePairs.map((pair) => pair[0]));
-    let letterCursor = 0;
-
-    for (let slotIdx = 0; slotIdx < 12; slotIdx += 1) {
-      const periodLetter = HIGH_PERIOD_LETTERS[(offset + letterCursor) % HIGH_PERIOD_LETTERS.length];
-      sequence[slotIdx] = periodLetter;
-
-      if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 10) {
-        sequence[slotIdx + 1] = periodLetter;
-        slotIdx += 1;
-      }
-
-      letterCursor += 1;
-    }
-
-    return sequence;
+  const buildDayPeriodSequence = (sequence) => {
+    return Array.isArray(sequence) ? sequence : Array(10).fill('A');
   };
 
   const lunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[lunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
   const periodSequenceByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
-    acc[pattern.day] = buildDayPeriodSequence(pattern.offset, pattern.doublePairs);
+    acc[pattern.day] = buildDayPeriodSequence(pattern.sequence);
     return acc;
   }, {});
   const doubleSlotsByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
@@ -325,7 +307,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
       const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
       const detailParts = [`Period ${periodLabel}`, isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'];
 
-      if (slotIdx === 5 || slotIdx === 6) {
+      if (slotIdx >= 4 && slotIdx <= 7) {
         detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
       }
 
@@ -450,7 +432,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
   const lunchWave = coverageEntry?.lunchWave || staff?.contractLunchWave || pickWithSeed(['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'], random);
   const sectionBase = 100 + Math.floor(random() * 800);
 
-  if (staff?.isPlayer && staff?.contractScheduleVersion === 2 && Array.isArray(staff?.contractWeeklyRows)) {
+  if (staff?.isPlayer && staff?.contractScheduleVersion >= 4 && Array.isArray(staff?.contractWeeklyRows)) {
     const lunchByDay = staff?.contractLunchByDay || {};
     const upgradedRows = staff.contractWeeklyRows.map((row) => {
       const entries = WEEK_DAYS.map((day, dayIdx) => {
@@ -460,7 +442,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
         const detailParts = [];
         if (token.periodLabel) detailParts.push(`Period ${token.periodLabel}`);
         if (typeof token.isDouble === 'boolean') detailParts.push(token.isDouble ? 'Double Block' : 'Single Block');
-        if ((row.slotIndex === 5 || row.slotIndex === 6) && lunchByDay[day]) {
+        if (row.slotIndex >= 4 && row.slotIndex <= 7 && lunchByDay[day]) {
           detailParts.push(`Lunch: ${lunchByDay[day]}`);
         }
 
@@ -480,7 +462,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     });
 
     return [
-      { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      { block: 'Homeroom', time: '7:35 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
       ...upgradedRows
     ];
   }
@@ -509,7 +491,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     });
 
     return [
-      { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      { block: 'Homeroom', time: '7:35 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
       { block: 'Period 1', time: 'Period Schedule Window', entries: buildPeriodEntries(0) },
       { block: 'Period 2', time: 'Period Schedule Window', entries: buildPeriodEntries(1) },
       { block: `Period 3 (${lunch})`, time: `Class: Period Schedule | Lunch: ${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned by Admin'}`, entries: buildPeriodEntries(2) },
@@ -551,7 +533,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
   const weeklyRows = buildHighWeeklyRowsFromTokens(periodTokens, lunchWave);
 
   return [
-    { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+    { block: 'Homeroom', time: '7:35 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
     ...weeklyRows
   ];
 }

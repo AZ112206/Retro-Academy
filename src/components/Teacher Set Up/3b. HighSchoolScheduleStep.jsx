@@ -52,41 +52,41 @@ const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 
 const DAY_PATTERNS = [
-  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [8, 9]] },
-  { day: 'Tuesday', offset: 1, doublePairs: [[1, 2], [6, 7]] },
-  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5]] },
-  { day: 'Thursday', offset: 2, doublePairs: [[2, 3], [7, 8]] },
-  { day: 'Friday', offset: 0, doublePairs: [[0, 1], [8, 9]] }
+  { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
+  { day: 'Tuesday', sequence: ['E', 'C', 'C', 'F', 'G', 'H', 'D', 'D', 'I', 'J'], doublePairs: [[1, 2], [6, 7]] },
+  { day: 'Wednesday', sequence: ['A', 'B', 'G', 'E', 'E', 'F', 'F', 'H', 'I', 'J'], doublePairs: [[3, 4], [5, 6]] },
+  { day: 'Thursday', sequence: ['A', 'B', 'C', 'G', 'G', 'D', 'I', 'H', 'H', 'J'], doublePairs: [[3, 4], [7, 8]] },
+  { day: 'Friday', sequence: ['I', 'I', 'A', 'B', 'C', 'D', 'E', 'F', 'J', 'J'], doublePairs: [[0, 1], [8, 9]] }
 ];
 
 const LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
     Monday: '10:30 AM - 11:10 AM',
-    Tuesday: '10:35 AM - 11:15 AM',
-    Wednesday: '10:40 AM - 11:20 AM',
-    Thursday: '10:45 AM - 11:25 AM',
-    Friday: '10:50 AM - 11:30 AM'
+    Tuesday: '10:30 AM - 11:10 AM',
+    Wednesday: '10:30 AM - 11:10 AM',
+    Thursday: '10:30 AM - 11:10 AM',
+    Friday: '10:30 AM - 11:10 AM'
   },
   'Wave 2': {
     Monday: '11:10 AM - 11:50 AM',
-    Tuesday: '11:15 AM - 11:55 AM',
-    Wednesday: '11:20 AM - 12:00 PM',
-    Thursday: '11:25 AM - 12:05 PM',
-    Friday: '11:30 AM - 12:10 PM'
+    Tuesday: '11:10 AM - 11:50 AM',
+    Wednesday: '11:10 AM - 11:50 AM',
+    Thursday: '11:10 AM - 11:50 AM',
+    Friday: '11:10 AM - 11:50 AM'
   },
   'Wave 3': {
     Monday: '11:50 AM - 12:30 PM',
-    Tuesday: '11:55 AM - 12:35 PM',
-    Wednesday: '12:00 PM - 12:40 PM',
-    Thursday: '12:05 PM - 12:45 PM',
-    Friday: '12:10 PM - 12:50 PM'
+    Tuesday: '11:50 AM - 12:30 PM',
+    Wednesday: '11:50 AM - 12:30 PM',
+    Thursday: '11:50 AM - 12:30 PM',
+    Friday: '11:50 AM - 12:30 PM'
   },
   'Wave 4': {
     Monday: '12:30 PM - 1:10 PM',
-    Tuesday: '12:35 PM - 1:15 PM',
-    Wednesday: '12:40 PM - 1:20 PM',
-    Thursday: '12:45 PM - 1:25 PM',
-    Friday: '12:50 PM - 1:30 PM'
+    Tuesday: '12:30 PM - 1:10 PM',
+    Wednesday: '12:30 PM - 1:10 PM',
+    Thursday: '12:30 PM - 1:10 PM',
+    Friday: '12:30 PM - 1:10 PM'
   }
 };
 
@@ -123,24 +123,34 @@ const createEmptyStorage = () => (
 const periodKeyForLetter = (letter) => `period${letter}`;
 
 function buildDayPeriodSequence(offset, doublePairs) {
-  const sequence = Array(10).fill('A');
-  const doubleStartSet = new Set(doublePairs.map((pair) => pair[0]));
-  let letterCursor = 0;
-
-  for (let slotIdx = 0; slotIdx < 10; slotIdx += 1) {
-    const periodLetter = PERIOD_LETTERS[(offset + letterCursor) % PERIOD_LETTERS.length];
-    sequence[slotIdx] = periodLetter;
-
-    if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 10) {
-      sequence[slotIdx + 1] = periodLetter;
-      slotIdx += 1;
-    }
-
-    letterCursor += 1;
-  }
-
-  return sequence;
+  return Array.isArray(offset) ? offset : Array(10).fill('A');
 }
+
+function validateRotationCoverage(dayPatterns) {
+  const counts = PERIOD_LETTERS.reduce((acc, letter) => {
+    acc[letter] = { doubles: 0, singles: 0 };
+    return acc;
+  }, {});
+
+  dayPatterns.forEach((pattern) => {
+    const doubleStartSet = new Set(pattern.doublePairs.map((pair) => pair[0]));
+    const continuationSet = new Set(pattern.doublePairs.map((pair) => pair[1]));
+
+    pattern.sequence.forEach((letter, slotIdx) => {
+      if (continuationSet.has(slotIdx)) return;
+      if (!counts[letter]) return;
+      if (doubleStartSet.has(slotIdx)) {
+        counts[letter].doubles += 1;
+      } else {
+        counts[letter].singles += 1;
+      }
+    });
+  });
+
+  return PERIOD_LETTERS.every((letter) => counts[letter].doubles === 1 && counts[letter].singles === 3);
+}
+
+const HAS_VALID_ROTATION = validateRotationCoverage(DAY_PATTERNS);
 
 function buildWeeklyContract(baseSchedule, lunchWave) {
   const normalizedTokens = PERIOD_LETTERS.map((letter) => {
@@ -158,7 +168,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
 
   const lunchByDay = LUNCH_WAVE_DAY_TIMES[lunchWave] || LUNCH_WAVE_DAY_TIMES['Wave 1'];
   const periodSequenceByDay = DAY_PATTERNS.reduce((acc, pattern) => {
-    acc[pattern.day] = buildDayPeriodSequence(pattern.offset, pattern.doublePairs);
+    acc[pattern.day] = buildDayPeriodSequence(pattern.sequence, pattern.doublePairs);
     return acc;
   }, {});
   const doubleSlotsByDay = DAY_PATTERNS.reduce((acc, pattern) => {
@@ -182,7 +192,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
         isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'
       ];
 
-      if (slotIdx === 4 || slotIdx === 5) {
+      if (slotIdx >= 4 && slotIdx <= 7) {
         detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
       }
 
@@ -477,6 +487,11 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   };
 
   const handleProceedToReview = () => {
+    if (!HAS_VALID_ROTATION) {
+      alert('Administrative Warning: The high school rotation is out of balance. Reconfigure the weekly sequence before review.');
+      return;
+    }
+
     if (!hasAllBlocksAssigned()) {
       alert('Mandatory Warning: Assign a class or prep token to every period A-J before review.');
       return;
@@ -660,7 +675,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           </div>
 
           <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
-            Day Pattern Rules: Mon/Fri doubles at slots 1-2 and 11-12, Tue/Thu doubles at slots 3-4 and 9-10, Wed doubles at slots 5-6 and 7-8. Class picks are assigned by Period A-J.
+            Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks across the Monday-Friday rotation while school still ends at 2:30 PM.
           </div>
           
           <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center' }}>
@@ -676,7 +691,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
               <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
                 <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
                   <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>7:30 AM - 7:50 AM</div>
+                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
                   <div style={{ fontSize: '0.7rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                 </td>
                 {WEEK_DAYS.map((day) => (
@@ -746,17 +761,26 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
           <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
             <strong style={{ color: '#39FF14' }}>Lunch Waves (All Options):</strong>
-            <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
-              {Object.entries(LUNCH_WAVE_DAY_TIMES).map(([wave, byDay]) => (
-                <div key={wave} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px' }}>
-                  <div><span style={{ color: '#ffa500', fontWeight: 'bold' }}>{wave}</span></div>
-                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8', marginTop: '3px' }}>Mon: {byDay.Monday}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Tue: {byDay.Tuesday}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Wed: {byDay.Wednesday}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Thu: {byDay.Thursday}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#c8c8c8' }}>Fri: {byDay.Friday}</div>
+            <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: '120px repeat(5, minmax(0, 1fr))', gap: '6px', alignItems: 'stretch' }}>
+              <div style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#777', fontWeight: 'bold' }}>
+                Wave
+              </div>
+              {WEEK_DAYS.map((day) => (
+                <div key={day} style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#39FF14', fontWeight: 'bold', textAlign: 'center' }}>
+                  {day}
                 </div>
               ))}
+
+              {Object.entries(LUNCH_WAVE_DAY_TIMES).flatMap(([wave, byDay]) => ([
+                <div key={`${wave}-label`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#ffa500', fontWeight: 'bold' }}>
+                  {wave}
+                </div>,
+                ...WEEK_DAYS.map((day) => (
+                  <div key={`${wave}-${day}`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#c8c8c8', fontSize: '0.72rem', textAlign: 'center' }}>
+                    {byDay[day]}
+                  </div>
+                ))
+              ]))}
             </div>
           </div>
         </div>
@@ -773,7 +797,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 lunchByDay,
                 contractSchedule: schedule,
                 weeklyRows,
-                scheduleVersion: 3
+                scheduleVersion: 4
               })
             }
           >
@@ -841,7 +865,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:30 AM - 7:50 AM) - FIXED ASSIGNMENT</span>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED ASSIGNMENT</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {
