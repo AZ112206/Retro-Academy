@@ -180,6 +180,29 @@ function buildPlayerStaffCard(playerAvatar, fallbackRole) {
     : (playerAvatar?.rosterName || playerAvatar?.name || 'Player Teacher');
 
   const baseProfile = buildProfileSnapshot(fallbackRole);
+  const customAge = Number(playerAvatar?.age);
+  const customYearsTeaching = Number(playerAvatar?.yearsTeaching);
+  const normalizedBirthday = typeof playerAvatar?.birthday === 'string' ? playerAvatar.birthday.trim() : '';
+
+  const mergedProfile = {
+    ...baseProfile,
+    ...(playerAvatar?.profile || {})
+  };
+
+  if (Number.isFinite(customAge) && customAge >= 18) {
+    mergedProfile.age = customAge;
+  }
+
+  if (normalizedBirthday) {
+    mergedProfile.birthday = normalizedBirthday;
+  }
+
+  if (Number.isFinite(customYearsTeaching) && customYearsTeaching >= 0) {
+    const maxYearsFromAge = Number.isFinite(mergedProfile.age) ? Math.max(0, mergedProfile.age - 18) : customYearsTeaching;
+    const finalYearsTeaching = Math.min(customYearsTeaching, maxYearsFromAge);
+    mergedProfile.yearsTeaching = finalYearsTeaching;
+    mergedProfile.previousPositions = buildWorkExperience(fallbackRole, Math.max(1, finalYearsTeaching));
+  }
 
   return {
     name: playerName,
@@ -188,7 +211,7 @@ function buildPlayerStaffCard(playerAvatar, fallbackRole) {
     ...buildAppearance(),
     ...playerAvatar,
     name: playerName,
-    profile: playerAvatar?.profile || baseProfile
+    profile: mergedProfile
   };
 }
 
@@ -214,9 +237,46 @@ function buildMiddleSpecialists() {
   ];
 }
 
-function buildElementaryRoster(playerAvatar, playerGrade) {
-  const gradeLabel = normalizeElementaryGradeLabel(playerGrade);
+function getSelectionId(playerDepartment) {
+  if (typeof playerDepartment === 'string') return playerDepartment.toLowerCase();
+  if (playerDepartment && typeof playerDepartment === 'object' && typeof playerDepartment.id === 'string') {
+    return playerDepartment.id.toLowerCase();
+  }
+  return '';
+}
 
+function resolveElementaryPlayerRole(gradeLabel, gradeValue, playerDepartment) {
+  const selectionId = getSelectionId(playerDepartment);
+  if (!isUpperElementaryGrade(gradeValue)) {
+    return `${gradeLabel} Homeroom Teacher`;
+  }
+
+  if (selectionId.includes('elem_ela')) return `${gradeLabel} Reading & ELA Teacher`;
+  if (selectionId.includes('elem_sci_ss')) return `${gradeLabel} Science & Social Studies Teacher`;
+  return `${gradeLabel} Math Teacher`;
+}
+
+function resolveMiddlePlayerRole(gradeLabel, playerDepartment) {
+  const selectionId = getSelectionId(playerDepartment);
+  if (selectionId.includes('mid_reading')) return `${gradeLabel} Reading Teacher`;
+  if (selectionId.includes('mid_ela')) return `${gradeLabel} ELA Teacher`;
+  if (selectionId.includes('mid_science')) return `${gradeLabel} Science Teacher`;
+  if (selectionId.includes('mid_social_studies')) return `${gradeLabel} Social Studies Teacher`;
+  if (selectionId.includes('mid_spanish')) return `${gradeLabel} Spanish Teacher`;
+  return `${gradeLabel} Math Teacher`;
+}
+
+function buildGradeTeamWithPlayer(baseRoles, isPlayerGrade, playerRole, playerAvatar) {
+  const team = baseRoles.map((role) => makeStaff(role));
+  if (!isPlayerGrade) return team;
+
+  const matchIndex = baseRoles.findIndex((role) => role === playerRole);
+  const targetIndex = matchIndex >= 0 ? matchIndex : 0;
+  team[targetIndex] = buildPlayerStaffCard(playerAvatar, playerRole);
+  return team;
+}
+
+function buildElementaryRoster(playerAvatar, playerGrade, playerDepartment) {
   const administration = [
     makeStaff('Principal'),
     makeStaff('Assistant Principal')
@@ -226,44 +286,48 @@ function buildElementaryRoster(playerAvatar, playerGrade) {
   const counselors = [makeStaff('Counselor')];
   const cafeteriaWorkers = repeatStaff(5, 'Cafeteria Worker');
   const custodians = repeatStaff(1, 'Custodian');
+  const selectedGrade = (playerGrade === null || playerGrade === undefined || playerGrade === '' || playerGrade === 0 || playerGrade === '0' || String(playerGrade).toUpperCase() === 'K')
+    ? 'K'
+    : Number(playerGrade);
 
-  const playerRole = isUpperElementaryGrade(playerGrade)
-    ? `${gradeLabel} Math Teacher`
-    : `${gradeLabel} Homeroom Teacher`;
+  const elementaryGradeEntries = ['K', 1, 2, 3, 4, 5].map((gradeValue) => {
+    const gradeLabel = normalizeElementaryGradeLabel(gradeValue);
+    const gradeKey = gradeValue === 'K' ? 'kindergarten' : `grade_${String(gradeValue)}`;
+    const gradeIsUpper = isUpperElementaryGrade(gradeValue);
+    const isPlayerGrade = selectedGrade === gradeValue;
+    const playerRole = resolveElementaryPlayerRole(gradeLabel, gradeValue, playerDepartment);
+    const gradeRoles = gradeIsUpper
+      ? [
+        `${gradeLabel} Reading & ELA Teacher`,
+        `${gradeLabel} Math Teacher`,
+        `${gradeLabel} Science & Social Studies Teacher`
+      ]
+      : [
+        `${gradeLabel} Homeroom Teacher A`,
+        `${gradeLabel} Homeroom Teacher B`,
+        `${gradeLabel} Homeroom Teacher C`
+      ];
 
-  const player = buildPlayerStaffCard(playerAvatar, playerRole);
+    const teacherTeam = buildGradeTeamWithPlayer(gradeRoles, isPlayerGrade, playerRole, playerAvatar);
 
-  let peers;
-  if (isUpperElementaryGrade(playerGrade)) {
-    peers = [
-      makeStaff(`${gradeLabel} ELA Teacher`),
-      makeStaff(`${gradeLabel} Science Teacher`)
-    ];
-  } else {
-    peers = [
-      makeStaff(`${gradeLabel} Homeroom Teacher`),
-      makeStaff(`${gradeLabel} Homeroom Teacher`)
-    ];
-  }
+    return [gradeKey, teacherTeam];
+  });
 
-  const teachers = [player, ...peers];
-  const gradeKey = gradeLabel === 'Kindergarten' ? 'kindergarten' : `grade_${String(playerGrade)}`;
+  const gradeTabs = Object.fromEntries(elementaryGradeEntries);
   const specialists = buildElementarySpecialists();
 
   return {
     administration,
     counselors,
     nurses,
-    [gradeKey]: teachers,
+    ...gradeTabs,
     specialists,
     cafeteria_workers: cafeteriaWorkers,
     custodians
   };
 }
 
-function buildMiddleRoster(playerAvatar, playerGrade) {
-  const gradeLabel = playerGrade ? `Grade ${playerGrade}` : 'Middle Grade';
-
+function buildMiddleRoster(playerAvatar, playerGrade, playerDepartment) {
   const administration = [
     makeStaff('Principal'),
     makeStaff('Assistant Principal')
@@ -278,23 +342,41 @@ function buildMiddleRoster(playerAvatar, playerGrade) {
   const cafeteriaWorkers = repeatStaff(10, 'Cafeteria Worker');
   const custodians = repeatStaff(3, 'Custodian');
 
-  const coreTeachers = [
-    buildPlayerStaffCard(playerAvatar, `${gradeLabel} Math Teacher`),
-    makeStaff(`${gradeLabel} ELA Teacher`),
-    makeStaff(`${gradeLabel} Science Teacher`),
-    makeStaff(`${gradeLabel} Social Studies Teacher`),
-    makeStaff(`${gradeLabel} PE Teacher`)
-  ];
+  const selectedGrade = Number(playerGrade);
+  const middleGradeEntries = [6, 7, 8].map((gradeValue) => {
+    const gradeLabel = `Grade ${gradeValue}`;
+    const gradeKey = `grade_${gradeValue}`;
+    const playerRole = resolveMiddlePlayerRole(gradeLabel, playerDepartment);
+    const gradeRoles = gradeValue === 8
+      ? [
+        `${gradeLabel} Spanish Teacher`,
+        `${gradeLabel} ELA Teacher`,
+        `${gradeLabel} Math Teacher`,
+        `${gradeLabel} Science Teacher`,
+        `${gradeLabel} Social Studies Teacher`
+      ]
+      : [
+        `${gradeLabel} Reading Teacher`,
+        `${gradeLabel} ELA Teacher`,
+        `${gradeLabel} Math Teacher`,
+        `${gradeLabel} Science Teacher`,
+        `${gradeLabel} Social Studies Teacher`
+      ];
+
+    const teacherTeam = buildGradeTeamWithPlayer(gradeRoles, selectedGrade === gradeValue, playerRole, playerAvatar);
+
+    return [gradeKey, teacherTeam];
+  });
+
+  const gradeTabs = Object.fromEntries(middleGradeEntries);
 
   const specialistTeachers = buildMiddleSpecialists();
-
-  const gradeKey = playerGrade ? `grade_${String(playerGrade)}` : 'grade_middle';
 
   return {
     administration,
     counselors,
     nurses,
-    [gradeKey]: coreTeachers,
+    ...gradeTabs,
     specialists: specialistTeachers,
     cafeteria_workers: cafeteriaWorkers,
     custodians
@@ -366,11 +448,11 @@ function buildHighRoster(playerAvatar, playerDepartment) {
 
 export function generateFacultyRoster(schoolType, playerAvatar, playerDepartment, playerGrade) {
   if (schoolType === 'Elementary') {
-    return buildElementaryRoster(playerAvatar, playerGrade);
+    return buildElementaryRoster(playerAvatar, playerGrade, playerDepartment);
   }
 
   if (schoolType === 'Middle') {
-    return buildMiddleRoster(playerAvatar, playerGrade);
+    return buildMiddleRoster(playerAvatar, playerGrade, playerDepartment);
   }
 
   if (schoolType === 'High') {

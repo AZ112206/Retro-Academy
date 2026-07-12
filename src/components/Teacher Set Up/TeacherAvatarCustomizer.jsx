@@ -24,6 +24,14 @@ const SKIN_TONES_BY_RACE = {
   'Middle Eastern': ['#D7AC7E', '#BE8C5E', '#9A6945'],
   Multiracial: ['#E3BF9D', '#C68F69', '#8C5D40']
 };
+const NOSE_COLORS_BY_RACE = {
+  Black: ['#7B4A2E', '#6A3F27', '#59351F'],
+  Latino: ['#B3764F', '#9E6544', '#84543A'],
+  White: ['#D2A285', '#BF9175', '#A87E66'],
+  Asian: ['#C89A78', '#B38767', '#9C7458'],
+  'Middle Eastern': ['#B9875F', '#A57553', '#8F6248'],
+  Multiracial: ['#BC8A66', '#A77758', '#8F644B']
+};
 
 const HAIR_STYLES_BY_GENDER = {
   Male: ['Side Part', 'Crop', 'Waves', 'Mullet', 'Buzz', 'Fade', 'Slick Back', 'Spiky'],
@@ -158,7 +166,7 @@ function buildAppearance(state, overrides = {}) {
   return { ...state, ...overrides };
 }
 
-function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion = { blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairX: 0, hairY: 0 } }) {
+export function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion = { blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairX: 0, hairY: 0 } }) {
   const face = getFaceGeometry(appearance.faceShape);
   const hair = getHairGeometry(appearance.hairStyle, appearance.gender);
   const eyes = getEyeGeometry(appearance.eyeShape);
@@ -343,7 +351,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
                 
-                <div style={{ position: 'absolute', top: `${26 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)', zIndex: 7 }} />
+                <div style={{ position: 'absolute', top: `${26 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: appearance.noseColor || 'rgba(124,84,55,0.38)', zIndex: 7 }} />
                 <div style={{ position: 'absolute', top: `${36 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2 - mouth.offset * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: appearance.lipColor || '#542423', borderRadius: mouth.borderRadius, zIndex: 7 }} />
               </>
             )}
@@ -355,7 +363,7 @@ function PixelAvatar({ appearance, size = 'large', direction = 'Front', motion =
                   {!motion.blink && <div style={{ width: `${4 * scale}px`, height: `${4 * scale}px`, backgroundColor: appearance.eyeColor, margin: '1px auto 0' }} />}
                 </div>
                 
-                <div style={{ position: 'absolute', top: `${26 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px + ${(sideFeatureOffset + (facingLeft ? -4 : 4)) * scale}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: 'rgba(124,84,55,0.38)', zIndex: 7 }} />
+                <div style={{ position: 'absolute', top: `${26 * scale}px`, left: `calc(50% - ${(nose.width * scale) / 2}px + ${(sideFeatureOffset + (facingLeft ? -4 : 4)) * scale}px)`, width: `${nose.width * scale}px`, height: `${nose.height * scale}px`, backgroundColor: appearance.noseColor || 'rgba(124,84,55,0.38)', zIndex: 7 }} />
                 <div style={{ position: 'absolute', top: `${36 * scale}px`, left: `calc(50% - ${(mouth.width * scale) / 2}px + ${(sideFeatureOffset + (facingLeft ? -mouth.offset : mouth.offset)) * scale}px)`, width: `${mouth.width * scale}px`, height: `${mouthHeight * scale}px`, backgroundColor: appearance.lipColor || '#542423', borderRadius: mouth.borderRadius, zIndex: 7 }} />
               </>
             )}
@@ -427,6 +435,13 @@ function PreviewSelector({ label, options, activeValue, onSelect, buildOverride,
   );
 }
 
+function buildDefaultBirthdayFromAge(ageValue) {
+  const parsedAge = Number(ageValue);
+  const safeAge = Number.isFinite(parsedAge) && parsedAge >= 18 ? parsedAge : 30;
+  const birthYear = new Date().getFullYear() - safeAge;
+  return `${birthYear}-01-01`;
+}
+
 export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, styles }) {
   const [gender, setGender] = useState('Male');
   const [race, setRace] = useState('Black');
@@ -442,16 +457,21 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const [eyeColor, setEyeColor] = useState(EYE_COLOR_OPTIONS[0].value);
   const [browStyle, setBrowStyle] = useState(BROW_STYLES[0]);
   const [noseShape, setNoseShape] = useState(NOSE_SHAPES[0]);
+  const [noseColor, setNoseColor] = useState(NOSE_COLORS_BY_RACE.Black[0]);
   const [mouthStyle, setMouthStyle] = useState(MOUTH_STYLES[0]);
   const [lipColor, setLipColor] = useState(UNIVERSAL_LIP_COLORS[0]);
   const [topColor, setTopColor] = useState(WARDROBE_COLORS[0]);
   const [bottomColor, setBottomColor] = useState(WARDROBE_COLORS[5]);
   const [shoeColor, setShoeColor] = useState('#111111');
+  const [age, setAge] = useState('30');
+  const [birthday, setBirthday] = useState(buildDefaultBirthdayFromAge('30'));
+  const [workExperienceYears, setWorkExperienceYears] = useState('6');
   const [direction, setDirection] = useState('Front');
   
   const [motion, setMotion] = useState({ blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairX: 0, hairY: 0 });
 
   const skinToneOptions = SKIN_TONES_BY_RACE[race];
+  const noseColorOptions = NOSE_COLORS_BY_RACE[race];
   const lastNameOptions = LAST_NAMES_BY_RACE[race];
   const hairStyleOptions = HAIR_STYLES_BY_GENDER[gender];
   const badgeName = `${title} ${lastName}`;
@@ -485,6 +505,12 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   }, [race, skinTone, skinToneOptions]);
 
   useEffect(() => {
+    if (!noseColorOptions.includes(noseColor)) {
+      setNoseColor(noseColorOptions[0]);
+    }
+  }, [race, noseColor, noseColorOptions]);
+
+  useEffect(() => {
     let tick = 0;
     const idleInterval = setInterval(() => {
       tick += 0.2;
@@ -515,16 +541,27 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
     };
   }, []);
 
+  useEffect(() => {
+    const parsedAge = Number(age);
+    const maxExperience = Number.isFinite(parsedAge) ? Math.max(0, parsedAge - 18) : 0;
+    const parsedYears = Number(workExperienceYears);
+
+    if (Number.isFinite(parsedYears) && parsedYears > maxExperience) {
+      setWorkExperienceYears(String(maxExperience));
+    }
+  }, [age, workExperienceYears]);
+
   const appearance = useMemo(() => ({
-    gender, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, mouthStyle, lipColor, topColor, bottomColor, shoeColor
-  }), [gender, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, mouthStyle, lipColor, topColor, bottomColor, shoeColor]);
+    gender, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, noseColor, mouthStyle, lipColor, topColor, bottomColor, shoeColor
+  }), [gender, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, noseColor, mouthStyle, lipColor, topColor, bottomColor, shoeColor]);
 
   const panelStyle = { backgroundColor: '#1a1a1a', padding: '22px', borderRadius: '10px', border: '1px solid #39FF14', boxShadow: 'inset 0 0 0 1px rgba(57,255,20,0.12)' };
   const sectionStyle = { width: '100%', maxWidth: '520px', padding: '14px', borderRadius: '8px', backgroundColor: '#161616', border: '1px solid rgba(57,255,20,0.22)' };
   const swatchRowStyle = { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', justifyContent: 'center', alignItems: 'center' };
+  const profileInputStyle = { backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', width: '150px', fontSize: '0.85rem' };
 
   const handleFinishCustomization = () => {
-    onSaveAvatar({ name: badgeName, badgeName, rosterName, firstName, lastName, title, gender, race, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, mouthStyle, lipColor, topColor, bottomColor, shoeColor });
+    onSaveAvatar({ name: badgeName, badgeName, rosterName, firstName, lastName, title, gender, race, age, birthday, yearsTeaching: workExperienceYears, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, noseColor, mouthStyle, lipColor, topColor, bottomColor, shoeColor });
   };
 
   return (
@@ -593,7 +630,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           </div>
         </div>
 
-        <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '680px', overflowY: 'auto', alignItems: 'center' }}>
+        <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '680px', overflowY: 'auto', alignItems: 'stretch' }}>
           <div style={sectionStyle}>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>SKIN TONE</span>
             <div style={swatchRowStyle}>
@@ -608,6 +645,16 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           <PreviewSelector label="EYE COLOR" options={EYE_COLOR_OPTIONS.map((option) => ({ value: option.value, label: option.name }))} activeValue={eyeColor} onSelect={setEyeColor} appearance={appearance} buildOverride={(value) => ({ eyeColor: value })} />
           <PreviewSelector label="BROW STYLE" options={BROW_STYLES} activeValue={browStyle} onSelect={setBrowStyle} appearance={appearance} buildOverride={(value) => ({ browStyle: value })} />
           <PreviewSelector label="NOSE SHAPE" options={NOSE_SHAPES} activeValue={noseShape} onSelect={setNoseShape} appearance={appearance} buildOverride={(value) => ({ noseShape: value })} />
+
+          <div style={sectionStyle}>
+            <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>NOSE COLOR</span>
+            <div style={swatchRowStyle}>
+              {noseColorOptions.map((color) => (
+                <ColorButton key={color} color={color} active={noseColor === color} onClick={() => setNoseColor(color)} />
+              ))}
+              <input type="color" value={noseColor} onChange={(e) => setNoseColor(e.target.value)} style={{ width: '36px', height: '28px', background: 'transparent', border: '1px solid #39FF14', borderRadius: '4px', cursor: 'pointer', marginLeft: '6px' }} />
+            </div>
+          </div>
           <PreviewSelector label="MOUTH SHAPE" options={MOUTH_STYLES} activeValue={mouthStyle} onSelect={setMouthStyle} appearance={appearance} buildOverride={(value) => ({ mouthStyle: value })} />
           <PreviewSelector label="HAIR STYLE" options={hairStyleOptions} activeValue={hairStyle} onSelect={setHairStyle} appearance={appearance} buildOverride={(value) => ({ hairStyle: value, gender })} />
 
@@ -664,6 +711,40 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
                 <ColorButton key={`shoe-${color}`} color={color} active={shoeColor === color} onClick={() => setShoeColor(color)} />
               ))}
               <input type="color" value={shoeColor} onChange={(e) => setShoeColor(e.target.value)} style={{ width: '36px', height: '28px', background: 'transparent', border: '1px solid #39FF14', borderRadius: '4px', cursor: 'pointer' }} />
+            </div>
+
+            <div style={{ marginTop: '14px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#39FF14' }}>AGE</span>
+                <input
+                  type="number"
+                  min="18"
+                  max="100"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  style={profileInputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#39FF14' }}>BIRTHDAY</span>
+                <input
+                  type="date"
+                  value={birthday}
+                  onChange={(e) => setBirthday(e.target.value)}
+                  style={profileInputStyle}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#39FF14' }}>WORK EXPERIENCE (YEARS)</span>
+                <input
+                  type="number"
+                  min="0"
+                  max={Math.max(0, Number(age || 0) - 18)}
+                  value={workExperienceYears}
+                  onChange={(e) => setWorkExperienceYears(e.target.value)}
+                  style={profileInputStyle}
+                />
+              </div>
             </div>
           </div>
         </div>
