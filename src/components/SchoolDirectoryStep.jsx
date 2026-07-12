@@ -102,6 +102,9 @@ const HIGH_PERIOD_SLOT_TIMES = [
 function simplifyTeacherRoleLabel(roleText, schoolType) {
   const role = String(roleText || '');
   const lower = role.toLowerCase();
+  if (schoolType === 'High' && lower.startsWith('elective teacher - ')) {
+    return role.replace('Elective Teacher - ', '').trim() + ' Teacher';
+  }
   if (schoolType === 'High' && (lower.includes('teacher') || lower.includes('department head'))) {
     return 'Teacher';
   }
@@ -211,6 +214,61 @@ function resolveHighDepartmentKeyFromRole(role) {
   return null;
 }
 
+function resolveHighElectiveCourseFromRole(role) {
+  const text = String(role || '').toLowerCase();
+  if (!text.includes('elective teacher')) return null;
+  if (text.includes('art')) return 'Art';
+  if (text.includes('music')) return 'Music';
+  if (text.includes('theater')) return 'Theater';
+  if (text.includes('computer science')) return 'Computer Science';
+  if (text.includes('business')) return 'Business';
+  if (text.includes('pe')) return 'PE';
+  return 'Elective';
+}
+
+function isStandardOnlyHighCourse(courseName = '') {
+  const text = String(courseName).toLowerCase();
+  return [
+    'creative writing',
+    'conversational fluency',
+    'art',
+    'music',
+    'theater',
+    'computer science',
+    'business',
+    'pe'
+  ].some((label) => text === label || text.includes(label));
+}
+
+function buildHighCourseSequence(staff, coverageEntry, random) {
+  const electiveCourse = resolveHighElectiveCourseFromRole(staff?.role);
+  if (electiveCourse) {
+    return Array.from({ length: HIGH_PERIOD_LETTERS.length }, () => electiveCourse);
+  }
+
+  const subject = resolveSubjectFromRole(staff?.role);
+  const subjectKey = subject === 'Social Studies' ? 'History' : subject;
+  const pool = HIGH_CLASS_OPTIONS[subjectKey] || [`${subjectKey} Seminar`, `${subjectKey} Foundations`, `${subjectKey} Lab`];
+  const shuffledCourses = [...pool].sort(() => random() - 0.5);
+  const courseSequence = Array.from({ length: HIGH_PERIOD_LETTERS.length }, (_, idx) => shuffledCourses[idx % shuffledCourses.length]);
+
+  if (coverageEntry?.primaryCourse && pool.includes(coverageEntry.primaryCourse)) {
+    courseSequence[0] = coverageEntry.primaryCourse;
+  }
+
+  return courseSequence;
+}
+
+function buildHighLevelSequence(courseSequence, random) {
+  const balancedLevels = ['Standard', 'Honors', 'Advanced', 'Standard', 'Honors', 'Advanced', 'Standard', 'Honors'];
+  const levelOffset = Math.floor(random() * balancedLevels.length);
+
+  return courseSequence.map((courseName, idx) => {
+    if (isStandardOnlyHighCourse(courseName)) return 'Standard';
+    return balancedLevels[(idx + levelOffset) % balancedLevels.length];
+  });
+}
+
 function buildHighDepartmentCoverageMap(facultyRoster) {
   const coverageMap = {};
   if (!facultyRoster || typeof facultyRoster !== 'object') return coverageMap;
@@ -281,6 +339,20 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
   return coverageMap;
 }
 
+function buildHighSchedulePreferences(facultyRoster) {
+  if (!facultyRoster || typeof facultyRoster !== 'object') {
+    return { preferredPrepCount: 2 };
+  }
+
+  const allStaff = Object.values(facultyRoster).flatMap((members) => (Array.isArray(members) ? members : []));
+  const playerRecord = allStaff.find((member) => member?.isPlayer);
+  const playerPrepCount = Object.values(playerRecord?.contractSchedule || {}).filter((slot) => slot?.isPrep).length;
+
+  return {
+    preferredPrepCount: Number.isFinite(playerPrepCount) ? clamp(playerPrepCount, 0, 3) : 2
+  };
+}
+
 function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
   const buildDayPeriodSequence = (sequence) => {
     return Array.isArray(sequence) ? sequence : Array(10).fill('A');
@@ -303,7 +375,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
   return HIGH_SLOT_KEYS.map((slotKey, slotIdx) => {
     const entries = WEEK_DAYS.map((dayName, dayIdx) => {
       const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || HIGH_PERIOD_LETTERS[(dayIdx + slotIdx) % HIGH_PERIOD_LETTERS.length];
-      const token = tokens[periodLabel] || buildSpecialEntry('Unscheduled', 'support');
+      const token = tokens[periodLabel] || buildSpecialEntry('Teacher Coverage Block', 'support');
       const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
       const detailParts = [`Period ${periodLabel}`, isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'];
 
@@ -427,8 +499,7 @@ function buildMiddleProfileSchedule(staff, random) {
   ];
 }
 
-function buildHighProfileSchedule(staff, random, coverageEntry) {
-  const subject = resolveSubjectFromRole(staff.role);
+function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferences = {}) {
   const lunchWave = coverageEntry?.lunchWave || staff?.contractLunchWave || pickWithSeed(['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'], random);
   const sectionBase = 100 + Math.floor(random() * 800);
 
@@ -437,7 +508,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     const upgradedRows = staff.contractWeeklyRows.map((row) => {
       const entries = WEEK_DAYS.map((day, dayIdx) => {
         const token = row?.entries?.[dayIdx];
-        if (!token) return buildSpecialEntry('Unscheduled', 'support');
+        if (!token) return buildSpecialEntry('Teacher Coverage Block', 'support');
 
         const detailParts = [];
         if (token.periodLabel) detailParts.push(`Period ${token.periodLabel}`);
@@ -472,7 +543,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     const lunch = staff.contractLunchWave || lunchWave;
     const periodTokens = periodKeys.map((key) => {
       const token = staff.contractSchedule[key];
-      if (!token) return buildSpecialEntry('Unscheduled', 'support');
+      if (!token) return buildSpecialEntry('Teacher Coverage Block', 'support');
       if (token.isPrep) return buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', 'support');
       return buildClassEntry(token.name || 'Class Assignment', token.level || 'Standard', token.sec || null, token.grade || null);
     });
@@ -499,20 +570,23 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
       { block: 'Period 5', time: 'Period Schedule Window', entries: buildPeriodEntries(4) }
     ];
   }
-  const subjectKey = subject === 'Social Studies' ? 'History' : subject;
-  const pool = HIGH_CLASS_OPTIONS[subjectKey] || [`${subjectKey} Seminar`, `${subjectKey} Foundations`, `${subjectKey} Lab`];
-  const shuffledCourses = [...pool].sort(() => random() - 0.5);
-  const balancedLevels = ['Standard', 'Honors', 'Advanced', 'Standard', 'Honors', 'Advanced', 'Standard', 'Honors'];
-  const levelOffset = Math.floor(random() * balancedLevels.length);
+  const courseSequence = buildHighCourseSequence(staff, coverageEntry, random);
+  const levelSequence = buildHighLevelSequence(courseSequence, random);
 
-  const courseSequence = Array.from({ length: HIGH_PERIOD_LETTERS.length }, (_, idx) => shuffledCourses[idx % shuffledCourses.length]);
-  const levelSequence = Array.from({ length: HIGH_PERIOD_LETTERS.length }, (_, idx) => balancedLevels[(idx + levelOffset) % balancedLevels.length]);
+  const preferredPrepCount = clamp(Number(schedulePreferences?.preferredPrepCount ?? 2), 0, 3);
+  const prepRoll = random();
+  let prepCount = preferredPrepCount;
 
-  if (coverageEntry?.primaryCourse && pool.includes(coverageEntry.primaryCourse)) {
-    courseSequence[0] = coverageEntry.primaryCourse;
+  if (preferredPrepCount === 0) {
+    prepCount = prepRoll < 0.65 ? 0 : 1;
+  } else if (preferredPrepCount === 1) {
+    prepCount = prepRoll < 0.2 ? 0 : prepRoll < 0.8 ? 1 : 2;
+  } else if (preferredPrepCount === 2) {
+    prepCount = prepRoll < 0.2 ? 1 : prepRoll < 0.8 ? 2 : 3;
+  } else {
+    prepCount = prepRoll < 0.35 ? 2 : 3;
   }
 
-  const prepCount = random() < 0.5 ? 1 : 2;
   const prepIndexes = new Set();
   while (prepIndexes.size < prepCount) {
     prepIndexes.add(Math.floor(random() * HIGH_PERIOD_LETTERS.length));
@@ -557,7 +631,7 @@ function buildSupportSchedule(schoolType, random) {
   ];
 }
 
-function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}) {
+function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}, highSchedulePreferences = {}) {
   const academicYear = resolveAcademicYearLabel();
   const seed = hashString(`${staff?.id || staff?.name || 'staff'}|${schoolType}|${academicYear}`);
   const random = createSeededRandom(seed);
@@ -573,7 +647,7 @@ function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}) {
     rows = buildMiddleProfileSchedule(staff, random);
   } else {
     const staffKey = staff?.id || staff?.name;
-    rows = buildHighProfileSchedule(staff, random, highCoverageMap[staffKey]);
+    rows = buildHighProfileSchedule(staff, random, highCoverageMap[staffKey], highSchedulePreferences);
   }
 
   return { academicYear, rows };
@@ -667,6 +741,11 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     return buildHighDepartmentCoverageMap(facultyRoster);
   }, [schoolType, facultyRoster]);
 
+  const highSchedulePreferences = useMemo(() => {
+    if (schoolType !== 'High') return { preferredPrepCount: 2 };
+    return buildHighSchedulePreferences(facultyRoster);
+  }, [schoolType, facultyRoster]);
+
   const tabKeys = useMemo(() => Object.keys(facultyRoster), [facultyRoster]);
 
   useEffect(() => {
@@ -751,10 +830,10 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   useEffect(() => {
     if (selectedStaff) {
       setLiveProfile(selectedStaff.profile || null);
-      setSelectedStaffSchedule(generateLockedStaffSchedule(selectedStaff, schoolType, highDepartmentCoverage));
+      setSelectedStaffSchedule(generateLockedStaffSchedule(selectedStaff, schoolType, highDepartmentCoverage, highSchedulePreferences));
       setShowSchedule(false);
     }
-  }, [selectedStaff, schoolType, highDepartmentCoverage]);
+  }, [selectedStaff, schoolType, highDepartmentCoverage, highSchedulePreferences]);
 
   useEffect(() => {
     // Placeholder hook for future gameplay actions: call window.retroApplyPlayerAction({ stress: 10, morale: -5, ... })
@@ -959,15 +1038,15 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       </div>
 
       {selectedStaff && liveProfile && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 60, padding: '20px' }}>
-          <div className="no-scrollbar" style={{ width: '100%', maxWidth: '760px', maxHeight: '86vh', overflowY: 'auto', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 60, padding: '20px' }}>
+          <div className="no-scrollbar" style={{ width: '100%', maxWidth: showSchedule ? '1140px' : '760px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: showSchedule ? '24px' : '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStaff.name.toUpperCase()} PROFILE</h3>
-              <button style={styles.backButton} onClick={() => setSelectedStaff(null)}>CLOSE</button>
+              <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStaff.name.toUpperCase()} {showSchedule ? 'CONTRACT SCREEN' : 'PROFILE'}</h3>
+              <button style={styles.backButton} onClick={() => (showSchedule ? setShowSchedule(false) : setSelectedStaff(null))}>{showSchedule ? 'BACK TO PROFILE' : 'CLOSE'}</button>
             </div>
 
             {showSchedule && selectedStaffSchedule ? (
-              <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '16px', minHeight: '560px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ ...styles.setupBox, maxWidth: '100%', minHeight: 'unset', padding: '20px', justifyContent: 'flex-start', backgroundColor: '#111' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   <p style={{ margin: 0, color: '#39FF14', fontWeight: 'bold', letterSpacing: '0.5px' }}>CONTRACT SCHEDULE PREVIEW</p>
                   <span style={{ color: '#9acb92', fontSize: '0.76rem' }}>School Year {selectedStaffSchedule.academicYear} (Locked)</span>
@@ -977,25 +1056,25 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                   <strong style={{ color: '#39FF14' }}>Role:</strong> {simplifyTeacherRoleLabel(selectedStaff.role, schoolType)} | <strong style={{ color: '#39FF14' }}>School:</strong> {schoolType}
                 </div>
 
-                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', overflow: 'auto', flex: 1, minHeight: '420px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.83rem' }}>
+                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', overflow: 'auto', flex: 1, minHeight: '420px', backgroundColor: '#111' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.86rem', textAlign: 'center' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
-                        <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left', minWidth: '190px' }}>BLOCK / TIME</th>
+                      <tr style={{ borderBottom: '2px solid #39FF14' }}>
+                        <th style={{ padding: '10px 8px', color: '#39FF14', minWidth: '190px' }}>BLOCK / TIME</th>
                         {WEEK_DAYS.map((day) => (
-                          <th key={day} style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left', minWidth: '170px' }}>{day.toUpperCase()}</th>
+                          <th key={day} style={{ padding: '10px 8px', color: '#39FF14', minWidth: '170px' }}>{day.toUpperCase()}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {selectedStaffSchedule.rows.map((row, idx) => (
                         <tr key={`${row.block}-${idx}`} style={{ borderBottom: '1px solid #232323' }}>
-                          <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
-                            <div style={{ fontWeight: 'bold' }}>{row.block}</div>
+                          <td style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
+                            <div style={{ fontWeight: 'bold', color: row.block === 'Homeroom' ? '#00FFFF' : '#39FF14' }}>{row.block}</div>
                             <div style={{ color: '#9a9a9a', fontSize: '0.72rem' }}>{row.time}</div>
                           </td>
                           {(row.entries || WEEK_DAYS.map(() => '')).map((entry, entryIdx) => {
-                            const normalized = entry && typeof entry === 'object' ? entry : buildSpecialEntry(String(entry || 'Unscheduled'), 'support');
+                            const normalized = entry && typeof entry === 'object' ? entry : buildSpecialEntry(String(entry || 'Teacher Coverage Block'), 'support');
                             if (normalized.isDoubleContinuation) return null;
 
                             const primaryColor = getEntryColor(normalized);
@@ -1005,7 +1084,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                             const cellRowSpan = normalized.isDouble ? 2 : 1;
 
                             return (
-                              <td key={`${row.block}-${entryIdx}`} rowSpan={cellRowSpan} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'top' }}>
+                              <td key={`${row.block}-${entryIdx}`} rowSpan={cellRowSpan} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
                                 <div style={{ fontWeight: 'bold', color: primaryColor, fontSize: '0.82rem' }}>
                                   {normalized.name}
                                 </div>
@@ -1037,7 +1116,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                 </div>
 
                 <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.76rem', color: '#8f8f8f', textAlign: 'center' }}>
-                  Weekly contract matrix rotates class sections across Monday-Friday while non-academic blocks stay fixed by role.
+                  Weekly contract matrix stays fully covered Monday-Friday, mirrors the player contract format, and keeps randomized prep blocks within the school-wide high school pattern.
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '14px' }}>

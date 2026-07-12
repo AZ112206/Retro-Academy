@@ -497,8 +497,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       return;
     }
 
-    if (countPrepBlocks() > 2) {
-      alert('Mandatory Warning: You can include up to 2 Teacher Prep / Study Hall periods.');
+    if (countPrepBlocks() > 3) {
+      alert('Mandatory Warning: You can include up to 3 Teacher Prep / Study Hall periods.');
       return;
     }
 
@@ -937,7 +937,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill all periods A-J manually. Limit is up to 2 Prep/Study Hall periods and up to 4 simultaneous sections of the same class+level.
+            Fill all periods A-J manually. You can optionally carry up to 3 Prep/Study Hall periods, though 1-3 is recommended, and up to 4 simultaneous sections of the same class+level.
           </div>
         </div>
       </div>
