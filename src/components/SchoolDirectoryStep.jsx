@@ -269,6 +269,20 @@ function buildHighLevelSequence(courseSequence, random) {
   });
 }
 
+function buildHighScheduleFallbackToken(tokens) {
+  const firstClassToken = Object.values(tokens || {}).find((token) => token?.kind === 'class');
+  if (firstClassToken) {
+    return buildClassEntry(firstClassToken.name, firstClassToken.level || 'Standard', firstClassToken.sec || 'Sec #000');
+  }
+
+  const firstPrepToken = Object.values(tokens || {}).find((token) => token?.kind === 'prep');
+  if (firstPrepToken) {
+    return buildSpecialEntry(firstPrepToken.name || 'Teacher Prep / Study Hall', 'prep');
+  }
+
+  return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+}
+
 function buildHighDepartmentCoverageMap(facultyRoster) {
   const coverageMap = {};
   if (!facultyRoster || typeof facultyRoster !== 'object') return coverageMap;
@@ -359,6 +373,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
   };
 
   const lunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[lunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
+  const fallbackToken = buildHighScheduleFallbackToken(tokens);
   const periodSequenceByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
     acc[pattern.day] = buildDayPeriodSequence(pattern.sequence);
     return acc;
@@ -375,7 +390,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
   return HIGH_SLOT_KEYS.map((slotKey, slotIdx) => {
     const entries = WEEK_DAYS.map((dayName, dayIdx) => {
       const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || HIGH_PERIOD_LETTERS[(dayIdx + slotIdx) % HIGH_PERIOD_LETTERS.length];
-      const token = tokens[periodLabel] || buildSpecialEntry('Teacher Coverage Block', 'support');
+      const token = tokens[periodLabel] || fallbackToken;
       const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
       const detailParts = [`Period ${periodLabel}`, isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'];
 
@@ -508,7 +523,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
     const upgradedRows = staff.contractWeeklyRows.map((row) => {
       const entries = WEEK_DAYS.map((day, dayIdx) => {
         const token = row?.entries?.[dayIdx];
-        if (!token) return buildSpecialEntry('Teacher Coverage Block', 'support');
+        if (!token) return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
 
         const detailParts = [];
         if (token.periodLabel) detailParts.push(`Period ${token.periodLabel}`);
@@ -543,8 +558,8 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
     const lunch = staff.contractLunchWave || lunchWave;
     const periodTokens = periodKeys.map((key) => {
       const token = staff.contractSchedule[key];
-      if (!token) return buildSpecialEntry('Teacher Coverage Block', 'support');
-      if (token.isPrep) return buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', 'support');
+      if (!token) return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+      if (token.isPrep) return buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', 'prep');
       return buildClassEntry(token.name || 'Class Assignment', token.level || 'Standard', token.sec || null, token.grade || null);
     });
 
@@ -1075,16 +1090,15 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                           </td>
                           {(row.entries || WEEK_DAYS.map(() => '')).map((entry, entryIdx) => {
                             const normalized = entry && typeof entry === 'object' ? entry : buildSpecialEntry(String(entry || 'Teacher Coverage Block'), 'support');
-                            if (normalized.isDoubleContinuation) return null;
 
                             const primaryColor = getEntryColor(normalized);
                             const showClassMeta = normalized.kind === 'class' && (normalized.level || normalized.sec);
                             const showLunchTag = normalized.kind === 'lunch';
                             const showDetail = Boolean(normalized.detail);
-                            const cellRowSpan = normalized.isDouble ? 2 : 1;
+                            const isDoubleContinuation = Boolean(normalized.isDoubleContinuation);
 
                             return (
-                              <td key={`${row.block}-${entryIdx}`} rowSpan={cellRowSpan} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
+                              <td key={`${row.block}-${entryIdx}`} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle', backgroundColor: isDoubleContinuation ? '#161616' : 'transparent' }}>
                                 <div style={{ fontWeight: 'bold', color: primaryColor, fontSize: '0.82rem' }}>
                                   {normalized.name}
                                 </div>
@@ -1098,6 +1112,13 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                 {showDetail && (
                                   <div style={{ fontSize: '0.7rem', marginTop: '4px', color: '#b6d9b1' }}>
                                     {normalized.detail}
+                                    {isDoubleContinuation ? ' | Continuation' : ''}
+                                  </div>
+                                )}
+
+                                {isDoubleContinuation && !showDetail && (
+                                  <div style={{ fontSize: '0.7rem', marginTop: '4px', color: '#b6d9b1' }}>
+                                    Double Block Continuation
                                   </div>
                                 )}
 
