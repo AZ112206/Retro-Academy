@@ -28,6 +28,13 @@ const LIP_COLORS = ['#542423', '#8B3A62', '#B85C7D', '#D8788A'];
 const WARDROBE_COLORS = ['#1F3A5F', '#2D6A4F', '#7A3E2B', '#5B3F8C', '#6E4B2A', '#3C3C3C', '#9A2D2D', '#E8E1D4', '#F7F7F7', '#7F8C8D', '#0A0A0A'];
 const SHOE_COLORS = ['#111111', '#3C3C3C', '#5B3F2A', '#E8E1D4', '#F7F7F7', '#7F8C8D'];
 const HIGH_DEPARTMENTS = ['Math', 'Science', 'History', 'English', 'Foreign Language'];
+const HIGH_DEPARTMENT_COURSES = {
+  Math: ['Algebra I', 'Geometry', 'Algebra II', 'Trigonometry', 'Pre-Calculus', 'Calculus'],
+  Science: ['Earth Science', 'Biology', 'Chemistry', 'Physics'],
+  History: ['World History', 'Modern World History', 'US History', 'Civics & Econ'],
+  English: ['English I', 'English II', 'English III', 'English IV', 'Creative Writing'],
+  'Foreign Language': ['Spanish I', 'French I', 'Spanish II', 'French II', 'Conversational Fluency']
+};
 const BIRTH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -383,8 +390,19 @@ function buildMiddleRoster(playerAvatar, playerGrade, playerDepartment) {
   };
 }
 
+function normalizeHighDepartmentKey(value) {
+  if (value === null || value === undefined) return 'math';
+  const raw = String(value).toLowerCase().replace(/dept|department/gi, '').trim();
+  if (raw.includes('foreign') || raw.includes('lang') || raw === 'language') return 'foreign language';
+  if (raw.includes('math')) return 'math';
+  if (raw.includes('science')) return 'science';
+  if (raw.includes('history')) return 'history';
+  if (raw.includes('english')) return 'english';
+  return raw || 'math';
+}
+
 function buildHighRoster(playerAvatar, playerDepartment) {
-  const selectedDepartment = (playerDepartment || 'Math').replace(/ Dept$/i, '').trim();
+  const selectedDepartment = normalizeHighDepartmentKey(playerDepartment);
 
   const administration = [
     makeStaff('Principal'),
@@ -406,19 +424,21 @@ function buildHighRoster(playerAvatar, playerDepartment) {
   const custodians = repeatStaff(6, 'Custodian');
 
   const departmentTabs = HIGH_DEPARTMENTS.reduce((tabs, department) => {
-    const isPlayerDepartment = department.toLowerCase() === selectedDepartment.toLowerCase();
+    const isPlayerDepartment = normalizeHighDepartmentKey(department) === selectedDepartment;
+    const courses = HIGH_DEPARTMENT_COURSES[department] || [];
+    const courseAssignments = Array.from({ length: 6 }, (_, idx) => courses[idx % Math.max(courses.length, 1)] || `${department} Core`);
 
     const team = [
-      makeStaff(`${department} Department Head`),
-      makeStaff(`${department} Teacher`),
-      makeStaff(`${department} Teacher`),
-      makeStaff(`${department} Teacher`),
-      makeStaff(`${department} Teacher`),
-      makeStaff(`${department} Teacher`)
+      makeStaff(`${department} Department Head`, { courseSpecialty: courseAssignments[0] }),
+      makeStaff(`${department} Teacher - ${courseAssignments[1]}`, { courseSpecialty: courseAssignments[1] }),
+      makeStaff(`${department} Teacher - ${courseAssignments[2]}`, { courseSpecialty: courseAssignments[2] }),
+      makeStaff(`${department} Teacher - ${courseAssignments[3]}`, { courseSpecialty: courseAssignments[3] }),
+      makeStaff(`${department} Teacher - ${courseAssignments[4]}`, { courseSpecialty: courseAssignments[4] }),
+      makeStaff(`${department} Teacher - ${courseAssignments[5]}`, { courseSpecialty: courseAssignments[5] })
     ];
 
     if (isPlayerDepartment) {
-      team[1] = buildPlayerStaffCard(playerAvatar, `${department} Teacher`);
+      team[1] = buildPlayerStaffCard({ ...playerAvatar, courseSpecialty: courseAssignments[1] }, `${department} Teacher - ${courseAssignments[1]}`);
     }
 
     const key = `department_${department.toLowerCase().replace(/\s+/g, '_')}`;

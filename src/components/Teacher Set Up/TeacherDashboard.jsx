@@ -118,6 +118,7 @@ export default function TeacherDashboard({ onExit }) {
   const [highSchoolDept, setHighSchoolDept] = useState(null);
   const [lunchWave, setLunchWave] = useState('');
   const [selectedClass, setSelectedClass] = useState(null);
+  const [highScheduleContract, setHighScheduleContract] = useState(null);
   
   // Finalized teacher operational properties payload
   const [teacherProfile, setTeacherProfile] = useState(null);
@@ -130,6 +131,7 @@ export default function TeacherDashboard({ onExit }) {
   const handleSelectSchoolType = (type) => {
     setSchoolType(type);
     setSelectedClass(null);
+    setHighScheduleContract(null);
     if (type === 'High') {
       setStep('SCHEDULE_MATRIX'); // High school bypasses grade configuration steps
     } else {
@@ -166,6 +168,7 @@ export default function TeacherDashboard({ onExit }) {
     if (schoolType === 'High') {
       setHighSchoolDept(data.selectedDept);
       setLunchWave(data.randomLunchWave);
+      setHighScheduleContract(data);
     } else if (schoolType === 'Middle') {
       setLunchWave(data.wave);
     } else if (schoolType === 'Elementary') {
@@ -175,7 +178,16 @@ export default function TeacherDashboard({ onExit }) {
   };
 
   const handleFinishCustomization = (profileData) => {
-    setTeacherProfile(profileData);
+    if (schoolType === 'High' && highScheduleContract?.contractSchedule) {
+      setTeacherProfile({
+        ...profileData,
+        contractSchedule: highScheduleContract.contractSchedule,
+        contractLunchWave: highScheduleContract.randomLunchWave || null,
+        contractSelectedDept: highScheduleContract.selectedDept || null
+      });
+    } else {
+      setTeacherProfile(profileData);
+    }
     setStep('SCHOOL_DIRECTORY');
   };
 
@@ -211,7 +223,15 @@ export default function TeacherDashboard({ onExit }) {
   // 3. Structural schedule grids generation stages
   if (step === 'SCHEDULE_MATRIX') {
     if (schoolType === 'High') {
-      return <HighSchoolScheduleStep onLaunchGame={handleScheduleLaunch} onBack={() => setStep('SCHOOL_TYPE')} onExit={onExit} styles={retroStyles} />;
+      return (
+        <HighSchoolScheduleStep
+          onLaunchGame={handleScheduleLaunch}
+          onBack={() => setStep('SCHOOL_TYPE')}
+          onExit={onExit}
+          styles={retroStyles}
+          resumeData={highScheduleContract}
+        />
+      );
     }
     if (schoolType === 'Middle') {
       return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import RetroIcon, { RetroArrow, RetroClose } from '../RetroIcon';
 
 const DEPARTMENTS = [
@@ -63,7 +63,7 @@ const LUNCH_WAVE_TIMES = {
   'Wave 4': '12:05 PM - 12:40 PM'
 };
 
-export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles }) {
+export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, styles, resumeData = null }) {
   const [selectedDept, setSelectedDept] = useState(null);
   const [confirmedDept, setConfirmedDept] = useState(false);
   const [currentTokens, setCurrentTokens] = useState([]);
@@ -78,6 +78,18 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     period4: null,
     period5: null
   });
+
+  useEffect(() => {
+    if (!resumeData?.selectedDept || !resumeData?.contractSchedule) return;
+
+    setSelectedDept(resumeData.selectedDept);
+    setConfirmedDept(true);
+    setReviewMode(true);
+    setRandomLunchWave(resumeData.randomLunchWave || 'Wave 1');
+    setSchedule(resumeData.contractSchedule);
+    setCurrentTokens([]);
+    setShuffleCount(0);
+  }, [resumeData]);
 
   const handleShuffleCatalog = (deptId, isInitialLoad = false) => {
     if (!isInitialLoad && shuffleCount >= 3) {
@@ -116,6 +128,13 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   };
 
   const handleSelectDept = (deptId) => {
+    if (selectedDept !== deptId) {
+      setCurrentTokens([]);
+      setShuffleCount(0);
+      setReviewMode(false);
+      setRandomLunchWave('');
+      setSchedule({ period1: null, period2: null, period3: null, period4: null, period5: null });
+    }
     setSelectedDept(deptId);
   };
 
@@ -145,6 +164,73 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
   const countPrepBlocks = () => {
     return Object.values(schedule).filter(slot => slot?.isPrep).length;
+  };
+
+  const autoFillRemainingPeriods = (baseSchedule, deptId) => {
+    const periodKeys = ['period1', 'period2', 'period3', 'period4', 'period5'];
+    const finalized = { ...baseSchedule };
+    const deptPool = POOL_EXPANSIONS[deptId] || [];
+    const fallbackPool = deptPool.length ? deptPool : [{ name: 'General Elective', grade: '9th' }];
+    const availableLevels = ['Standard', 'Honors', 'Advanced'];
+
+    const alreadyPlacedClasses = Object.values(finalized).filter((slot) => slot && !slot.isPrep);
+    const preferredNames = alreadyPlacedClasses.map((slot) => slot.name).filter(Boolean);
+    const preferredLevels = alreadyPlacedClasses.map((slot) => slot.level).filter(Boolean);
+    const usedSections = new Set(alreadyPlacedClasses.map((slot) => slot.sec).filter(Boolean));
+
+    const buildRandomSection = () => {
+      let candidate = '';
+      do {
+        candidate = `#${Math.floor(Math.random() * 900) + 100}`;
+      } while (usedSections.has(candidate));
+      usedSections.add(candidate);
+      return candidate;
+    };
+
+    const pickRandom = (items) => items[Math.floor(Math.random() * items.length)];
+
+    const countInSchedule = (name, level) => {
+      return Object.values(finalized).filter((slot) => slot && !slot.isPrep && slot.name === name && slot.level === level).length;
+    };
+
+    periodKeys.forEach((periodKey) => {
+      if (finalized[periodKey]) return;
+
+      let candidate = null;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const usePreferredName = preferredNames.length > 0 && Math.random() < 0.6;
+        const chosenName = usePreferredName ? pickRandom(preferredNames) : pickRandom(fallbackPool).name;
+        const matchedCourse = fallbackPool.find((course) => course.name === chosenName);
+        const grade = matchedCourse?.grade || pickRandom(fallbackPool).grade;
+
+        const usePreferredLevel = preferredLevels.length > 0 && Math.random() < 0.6;
+        const level = usePreferredLevel ? pickRandom(preferredLevels) : pickRandom(availableLevels);
+
+        if (countInSchedule(chosenName, level) >= 2) continue;
+
+        candidate = {
+          name: chosenName,
+          grade,
+          level,
+          sec: buildRandomSection()
+        };
+        break;
+      }
+
+      if (!candidate) {
+        const forcedCourse = pickRandom(fallbackPool);
+        candidate = {
+          name: forcedCourse.name,
+          grade: forcedCourse.grade,
+          level: pickRandom(availableLevels),
+          sec: buildRandomSection()
+        };
+      }
+
+      finalized[periodKey] = candidate;
+    });
+
+    return finalized;
   };
 
   const handleDragStart = (e, itemData) => {
@@ -179,6 +265,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       alert('Mandatory Warning: Your schedule is invalid. You must include exactly 1 Teacher Prep Block.');
       return;
     }
+
+    const finalizedSchedule = autoFillRemainingPeriods(schedule, selectedDept);
+    setSchedule(finalizedSchedule);
+
     const rolledWave = `Wave ${Math.floor(Math.random() * 4) + 1}`;
     setRandomLunchWave(rolledWave);
     setReviewMode(true);
@@ -367,7 +457,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <div style={styles.footerActions}>
           <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={() => setReviewMode(false)}>MODIFY GRID</button>
           <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-          <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave })}>
+          <button style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }} onClick={() => onLaunchGame({ selectedDept, randomLunchWave, contractSchedule: schedule })}>
             CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
           </button>
         </div>
@@ -406,7 +496,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
           
           <div 
             draggable 
-            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep / Student Study Hall', isPrep: true })}
+            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep / Study Hall', isPrep: true })}
             style={{ padding: '10px', backgroundColor: '#333', border: '2px dashed #aaa', borderRadius: '4px', cursor: 'grab', marginBottom: '15px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="class" size={20} /> MOVE PREP / STUDY HALL BLOCK</span>
