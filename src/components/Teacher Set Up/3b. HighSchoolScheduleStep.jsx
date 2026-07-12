@@ -116,6 +116,10 @@ const createEmptySchedule = () => ({
   periodJ: null
 });
 
+const createEmptyStorage = () => (
+  [null, null, null]
+);
+
 const periodKeyForLetter = (letter) => `period${letter}`;
 
 function buildDayPeriodSequence(offset, doublePairs) {
@@ -214,6 +218,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
   const [weeklyRows, setWeeklyRows] = useState([]);
 
   const [schedule, setSchedule] = useState(createEmptySchedule());
+  const [storageSlots, setStorageSlots] = useState(createEmptyStorage());
 
   useEffect(() => {
     if (!resumeData?.selectedDept || !resumeData?.contractSchedule) return;
@@ -231,6 +236,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     setReviewMode(true);
     setRandomLunchWave(restoredWave);
     setSchedule(restoredSchedule);
+    setStorageSlots(createEmptyStorage());
     setWeeklyRows(rebuiltContract.rows);
     setLunchByDay(rebuiltContract.lunchByDay);
     setCurrentTokens([]);
@@ -282,6 +288,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
       setLunchByDay({});
       setWeeklyRows([]);
       setSchedule(createEmptySchedule());
+      setStorageSlots(createEmptyStorage());
     }
     setSelectedDept(deptId);
   };
@@ -290,6 +297,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     if (!selectedDept) return;
     setShuffleCount(0);
     setSchedule(createEmptySchedule());
+    setStorageSlots(createEmptyStorage());
     handleShuffleCatalog(selectedDept, true);
     setConfirmedDept(true);
   };
@@ -312,6 +320,32 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     return PERIOD_KEYS.every((key) => Boolean(schedule[key]));
   };
 
+  const cloneItem = (itemData) => ({
+    name: itemData.name,
+    grade: itemData.grade,
+    level: itemData.level,
+    sec: itemData.sec,
+    isPrep: Boolean(itemData.isPrep)
+  });
+
+  const findFirstEmptyStorageSlot = (periodKey, state = storageSlots) => {
+    return state.findIndex((slot) => !slot);
+  };
+
+  const getStorageItem = (state, slotIndex) => state[slotIndex] || null;
+
+  const setStorageItem = (state, slotIndex, nextItem) => (state || [null, null, null]).map((slot, idx) => (idx === slotIndex ? nextItem : slot));
+
+  const clearStorageItem = (state, slotIndex) => setStorageItem(state, slotIndex, null);
+
+  const getDragPayload = (itemData) => ({
+    name: itemData.name,
+    grade: itemData.grade,
+    level: itemData.level,
+    sec: itemData.sec,
+    isPrep: Boolean(itemData.isPrep)
+  });
+
   const handleDragStart = (e, itemData) => {
     e.dataTransfer.setData('application/json', JSON.stringify(itemData));
   };
@@ -320,20 +354,123 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     e.preventDefault();
     try {
       const itemData = JSON.parse(e.dataTransfer.getData('application/json'));
+      const sourceType = itemData?.sourceType || 'library';
+      const sourcePeriod = itemData?.sourcePeriod || null;
+      const sourceStorageIndex = Number.isInteger(itemData?.sourceStorageIndex) ? itemData.sourceStorageIndex : null;
+      const payload = getDragPayload(itemData);
 
-      if (itemData.isPrep) {
-        if (countPrepBlocks() >= 2 && !schedule[targetPeriod]?.isPrep) {
-          alert('Administrative Block: You can only have up to 2 designated Prep / Study Hall periods!');
-          return;
+      if (sourcePeriod === targetPeriod) return;
+
+      const targetItem = schedule[targetPeriod];
+
+      setSchedule((prevSchedule) => {
+        const nextSchedule = { ...prevSchedule };
+
+        if (!targetItem) {
+          nextSchedule[targetPeriod] = payload;
+          if (sourceType === 'period' && sourcePeriod) {
+            nextSchedule[sourcePeriod] = null;
+          } else if (sourceType === 'storage' && sourceStorageIndex !== null) {
+            setStorageSlots((prevStorage) => clearStorageItem(prevStorage, sourceStorageIndex));
+          }
+          return nextSchedule;
         }
-      } else {
-        if (checkDuplicateLimit(itemData, targetPeriod)) {
-          alert(`Administrative Block: You cannot exceed 4 concurrent sections of ${itemData.name} (${itemData.level})!`);
-          return;
+
+        if (sourceType === 'library') {
+          setStorageSlots((prevStorage) => {
+            const storageIndex = findFirstEmptyStorageSlot(targetPeriod, prevStorage);
+            if (storageIndex === -1) {
+              alert('Administrative Block: That period is full. Use one of the 3 backup slots or trash a class first.');
+              return prevStorage;
+            }
+
+            return setStorageItem(prevStorage, storageIndex, targetItem);
+          });
+          nextSchedule[targetPeriod] = payload;
+          return nextSchedule;
         }
+
+        if (sourceType === 'period' && sourcePeriod) {
+          nextSchedule[targetPeriod] = payload;
+          nextSchedule[sourcePeriod] = targetItem;
+          return nextSchedule;
+        }
+
+        if (sourceType === 'storage' && sourceStorageIndex !== null) {
+          setStorageSlots((prevStorage) => setStorageItem(prevStorage, sourceStorageIndex, targetItem));
+          nextSchedule[targetPeriod] = payload;
+          return nextSchedule;
+        }
+
+        return nextSchedule;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleStorageDrop = (e, targetPeriod, targetSlotIndex) => {
+    e.preventDefault();
+    try {
+      const itemData = JSON.parse(e.dataTransfer.getData('application/json'));
+      const sourceType = itemData?.sourceType || 'library';
+      const sourcePeriod = itemData?.sourcePeriod || null;
+      const sourceStorageIndex = Number.isInteger(itemData?.sourceStorageIndex) ? itemData.sourceStorageIndex : null;
+      const payload = getDragPayload(itemData);
+
+      setStorageSlots((prevStorage) => {
+        let nextStorage = [...prevStorage];
+        const targetItem = getStorageItem(nextStorage, targetSlotIndex);
+
+        if (!targetItem) {
+          if (sourceType === 'period' && sourcePeriod) {
+            setSchedule((prevSchedule) => ({ ...prevSchedule, [sourcePeriod]: null }));
+          } else if (sourceType === 'storage' && sourceStorageIndex !== null) {
+            nextStorage = clearStorageItem(nextStorage, sourceStorageIndex);
+          }
+
+          return setStorageItem(nextStorage, targetSlotIndex, payload);
+        }
+
+        if (sourceType === 'library') {
+          alert('Administrative Block: Pick an open backup slot or move the card to a period first.');
+          return prevStorage;
+        }
+
+        if (sourceType === 'period' && sourcePeriod) {
+          nextStorage = setStorageItem(nextStorage, targetSlotIndex, payload);
+          setSchedule((prevSchedule) => ({ ...prevSchedule, [sourcePeriod]: targetItem }));
+          return nextStorage;
+        }
+
+        if (sourceType === 'storage' && sourceStorageIndex !== null) {
+          nextStorage = setStorageItem(nextStorage, targetSlotIndex, payload);
+          nextStorage = setStorageItem(nextStorage, sourceStorageIndex, targetItem);
+          return nextStorage;
+        }
+
+        return prevStorage;
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleTrashDrop = (e) => {
+    e.preventDefault();
+    try {
+      const itemData = JSON.parse(e.dataTransfer.getData('application/json'));
+      const sourceType = itemData?.sourceType || 'library';
+      const sourcePeriod = itemData?.sourcePeriod || null;
+      const sourceStorageIndex = Number.isInteger(itemData?.sourceStorageIndex) ? itemData.sourceStorageIndex : null;
+
+      if (sourceType === 'period' && sourcePeriod) {
+        setSchedule((prevSchedule) => ({ ...prevSchedule, [sourcePeriod]: null }));
       }
 
-      setSchedule(prev => ({ ...prev, [targetPeriod]: itemData }));
+      if (sourceType === 'storage' && sourceStorageIndex !== null) {
+        setStorageSlots((prevStorage) => clearStorageItem(prevStorage, sourceStorageIndex));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -363,6 +500,58 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
     if (level === 'Advanced') return '#FF3333';
     if (level === 'Honors') return '#00FFFF';
     return '#39FF14'; 
+  };
+
+  const renderScheduleCard = (item, { draggable = false, onDragStart: handleItemDragStart = null, compact = false } = {}) => {
+    if (!item) return null;
+
+    return (
+      <div
+        draggable={draggable}
+        onDragStart={handleItemDragStart}
+        style={{
+          padding: compact ? '8px' : '10px',
+          backgroundColor: '#121212',
+          border: `1px solid ${item.isPrep ? '#ff9f43' : getLevelColor(item.level)}`,
+          borderRadius: '4px',
+          cursor: draggable ? 'grab' : 'default',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontWeight: 'bold', textAlign: 'center' }}>
+          <span style={{ color: '#fff', fontSize: compact ? '0.85rem' : '0.9rem' }}>{item.name} {item.sec || ''}</span>
+          {!item.isPrep && (
+            <span style={{ color: '#888', fontSize: compact ? '0.75rem' : '0.8rem' }}>{item.grade}</span>
+          )}
+        </div>
+        {!item.isPrep && (
+          <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '2px', textAlign: 'center' }}>Level Track: {item.level}</div>
+        )}
+        {item.isPrep && (
+          <div style={{ fontSize: '0.8rem', color: '#ffa500', marginTop: '2px', textAlign: 'center' }}>Prep / Study Hall</div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStorageCard = (item, { slotIndex } = {}) => {
+    if (!item) {
+      return (
+        <div style={{ minHeight: '56px', border: '1px dashed #2f5f2f', borderRadius: '4px', backgroundColor: '#101810', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#567', fontSize: '0.68rem' }}>
+          HOLD {slotIndex + 1}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        draggable
+        onDragStart={(e) => handleDragStart(e, { ...item, sourceType: 'storage', sourceStorageIndex: slotIndex })}
+      >
+        {renderScheduleCard(item, { compact: true })}
+      </div>
+    );
   };
 
   // ----------------------------------------------------------------
@@ -557,7 +746,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
 
           <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
             <strong style={{ color: '#39FF14' }}>Lunch Waves (All Options):</strong>
-            <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
               {Object.entries(LUNCH_WAVE_DAY_TIMES).map(([wave, byDay]) => (
                 <div key={wave} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px' }}>
                   <div><span style={{ color: '#ffa500', fontWeight: 'bold' }}>{wave}</span></div>
@@ -624,12 +813,16 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
           <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK FOR EACH PERIOD (A-J)</h3>
           
-          <div 
-            draggable 
-            onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep / Study Hall', isPrep: true })}
-            style={{ padding: '10px', backgroundColor: '#333', border: '2px dashed #aaa', borderRadius: '4px', cursor: 'grab', marginBottom: '15px', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}
-          >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="class" size={20} /> MOVE PREP / STUDY HALL BLOCK</span>
+          <div style={{ marginBottom: '15px' }}>
+            <div
+              draggable
+              onDragStart={(e) => handleDragStart(e, { name: 'Teacher Prep / Study Hall', isPrep: true, sourceType: 'library' })}
+            >
+              {renderScheduleCard(
+                { name: 'Teacher Prep / Study Hall', isPrep: true },
+                { compact: true }
+              )}
+            </div>
           </div>
 
           <div className="no-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -637,20 +830,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
               <div
                 key={i}
                 draggable
-                onDragStart={(e) => handleDragStart(e, course)}
-                style={{
-                  padding: '8px',
-                  backgroundColor: '#121212',
-                  border: `1px solid ${course.level === 'Advanced' ? '#FF3333' : course.level === 'Honors' ? '#00FFFF' : '#39FF14'}`,
-                  borderRadius: '4px',
-                  cursor: 'grab'
-                }}
+                onDragStart={(e) => handleDragStart(e, { ...course, sourceType: 'library' })}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                  <span>{course.name} {course.sec}</span>
-                  <span style={{ color: '#888' }}>{course.grade}</span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '2px' }}>Level Track: {course.level}</div>
+                {renderScheduleCard(course, { draggable: false, compact: true })}
               </div>
             ))}
           </div>
@@ -659,7 +841,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED ASSIGNMENT</span>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:30 AM - 7:50 AM) - FIXED ASSIGNMENT</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {
@@ -688,12 +870,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 </span>
 
                 {filledItem ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '18px' }}>
-                    <div>
-                      <strong style={{ color: '#fff' }}>{filledItem.name}</strong>
-                      {!filledItem.isPrep && <div style={{ fontSize: '0.8rem', color: '#fff', marginTop: '4px' }}>[{filledItem.level}] - {filledItem.grade}</div>}
-                    </div>
-                    <button onClick={() => setSchedule(prev => ({ ...prev, [pKey]: null }))} style={{ background: 'transparent', color: '#FF3333', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><RetroClose /></button>
+                  <div style={{ marginTop: '18px' }}>
+                    {renderScheduleCard(filledItem, {
+                      draggable: true,
+                      compact: true,
+                      onDragStart: (e) => handleDragStart(e, { ...filledItem, sourceType: 'period', sourcePeriod: pKey })
+                    })}
                   </div>
                 ) : (
                   <div style={{ textAlign: 'center', color: '#555', fontStyle: 'italic', fontSize: '0.85rem', marginTop: '10px' }}>
@@ -703,6 +885,32 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
               </div>
             );
           })}
+
+          <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#101010', border: '1px solid #2a2a2a', borderRadius: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '0.72rem', color: '#9ccf91' }}>
+              <span>UNIVERSAL BACKUP RACK</span>
+              <span style={{ color: '#666' }}>3 SLOT HOLDING AREA</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px' }}>
+              {storageSlots.map((slotItem, slotIndex) => (
+                <div
+                  key={`backup-storage-${slotIndex}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => handleStorageDrop(e, 'backup', slotIndex)}
+                >
+                  {renderStorageCard(slotItem, { slotIndex })}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleTrashDrop}
+            style={{ marginTop: '10px', padding: '10px', borderRadius: '6px', border: '1px dashed #ff3333', backgroundColor: '#1a1010', color: '#ff7777', textAlign: 'center', fontWeight: 'bold' }}
+          >
+            DROP HERE TO TRASH A CLASS OR PREP SLOT
+          </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
             Fill all periods A-J manually. Limit is up to 2 Prep/Study Hall periods and up to 4 simultaneous sections of the same class+level.
