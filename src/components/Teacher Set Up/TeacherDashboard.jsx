@@ -6,6 +6,7 @@ import MiddleSchoolScheduleStep from './3a. MiddleSchoolScheduleStep.jsx';
 import ElementarySchoolScheduleStep from './3c. ElementarySchoolScheduleStep.jsx';
 import ClassSelectionStep from './4. ClassSelectionStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
+import SchoolDirectoryStep from '../SchoolDirectoryStep.jsx';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Global Retro Styles Shared Matrix
@@ -105,7 +106,7 @@ const retroStyles = {
 };
 
 export default function TeacherDashboard({ onExit }) {
-  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECTION' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'WORLD_MAP'
+  // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECTION' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'SCHOOL_DIRECTORY' | 'WORLD_MAP'
   const [step, setStep] = useState('SCHOOL_TYPE');
   
   // Track unified setup states configurations
@@ -120,6 +121,7 @@ export default function TeacherDashboard({ onExit }) {
   
   // Finalized teacher operational properties payload
   const [teacherProfile, setTeacherProfile] = useState(null);
+  const [schoolDirectoryData, setSchoolDirectoryData] = useState(null);
 
   // Structural wrappers for components that share global hooks
   const stateVars = { middleGrade, middleLunchWave, elementaryGrade };
@@ -174,7 +176,12 @@ export default function TeacherDashboard({ onExit }) {
 
   const handleFinishCustomization = (profileData) => {
     setTeacherProfile(profileData);
-    setStep('WORLD_MAP'); 
+    setStep('SCHOOL_DIRECTORY');
+  };
+
+  const handleSchoolDirectoryProceed = (directoryData) => {
+    setSchoolDirectoryData(directoryData);
+    setStep('WORLD_MAP');
   };
 
   // ----------------------------------------------------------------
@@ -260,11 +267,32 @@ export default function TeacherDashboard({ onExit }) {
     );
   }
 
-  // 5. Custom Gameplay Matrix Implementation Boundary
+  // 5. Review generated school directory before entering world map
+  if (step === 'SCHOOL_DIRECTORY') {
+    return (
+      <SchoolDirectoryStep
+        schoolType={schoolType}
+        playerAvatar={teacherProfile}
+        playerDepartment={highSchoolDept || selectedClass}
+        playerGrade={schoolType === 'Middle' ? middleGrade : schoolType === 'Elementary' ? elementaryGrade : null}
+        onProceed={handleSchoolDirectoryProceed}
+        onBack={() => setStep('AVATAR_CUSTOMIZE')}
+        styles={retroStyles}
+      />
+    );
+  }
+
+  // 6. Custom Gameplay Matrix Implementation Boundary
   if (step === 'WORLD_MAP') {
+    const totalStaff = schoolDirectoryData?.roster
+      ? Object.values(schoolDirectoryData.roster).reduce((count, group) => count + group.length, 0)
+      : 0;
+
     return (
       <div style={retroStyles.setupBox}>
         {/* Your custom map and navigation layout code goes right here! */}
+        <h2 style={retroStyles.heading}>WORLD MAP LOADING</h2>
+        <p style={retroStyles.subtitle}>Faculty directory synced: {totalStaff} staff records loaded.</p>
       </div>
     );
   }

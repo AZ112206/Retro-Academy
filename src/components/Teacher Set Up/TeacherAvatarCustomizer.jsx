@@ -555,8 +555,8 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
               <select value={gender} onChange={(e) => setGender(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '130px' }}>
                 {GENDERS.map((option) => <option key={option}>{option}</option>)}
               </select>
-              <select value={title} onChange={(e) => setTitle(e.target.value)} disabled={gender === 'Male'} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '110px', opacity: gender === 'Male' ? 0.65 : 1 }}>
-                {(gender === 'Male' ? ['Mr.'] : ['Ms.', 'Mrs.']).map((option) => <option key={option}>{option}</option>)}
+              <select value={title} onChange={(e) => setTitle(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '110px' }}>
+                {(gender === 'Male' ? ['Mr.', 'Dr.'] : ['Ms.', 'Mrs.', 'Dr.']).map((option) => <option key={option}>{option}</option>)}
               </select>
               <select value={race} onChange={(e) => setRace(e.target.value)} style={{ backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', minWidth: '160px' }}>
                 {RACES.map((option) => <option key={option}>{option}</option>)}
