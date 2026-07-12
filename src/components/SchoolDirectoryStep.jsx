@@ -47,14 +47,14 @@ const HIGH_LUNCH_WAVE_TIMES = {
   'Wave 3': '11:50 AM - 12:30 PM',
   'Wave 4': '12:30 PM - 1:10 PM'
 };
-const HIGH_SLOT_KEYS = Array.from({ length: 12 }, (_, idx) => `slot${idx + 1}`);
+const HIGH_SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
 const HIGH_PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const HIGH_DAY_PATTERNS = [
-  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [10, 11]] },
-  { day: 'Tuesday', offset: 2, doublePairs: [[2, 3], [8, 9]] },
-  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5], [6, 7]] },
-  { day: 'Thursday', offset: 6, doublePairs: [[2, 3], [8, 9]] },
-  { day: 'Friday', offset: 8, doublePairs: [[0, 1], [10, 11]] }
+  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [8, 9]] },
+  { day: 'Tuesday', offset: 1, doublePairs: [[1, 2], [6, 7]] },
+  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5]] },
+  { day: 'Thursday', offset: 2, doublePairs: [[2, 3], [7, 8]] },
+  { day: 'Friday', offset: 0, doublePairs: [[0, 1], [8, 9]] }
 ];
 const HIGH_LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
@@ -293,7 +293,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
       const periodLetter = HIGH_PERIOD_LETTERS[(offset + letterCursor) % HIGH_PERIOD_LETTERS.length];
       sequence[slotIdx] = periodLetter;
 
-      if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 12) {
+      if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 10) {
         sequence[slotIdx + 1] = periodLetter;
         slotIdx += 1;
       }
@@ -480,7 +480,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     });
 
     return [
-      { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
       ...upgradedRows
     ];
   }
@@ -509,7 +509,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
     });
 
     return [
-      { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+      { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
       { block: 'Period 1', time: 'Period Schedule Window', entries: buildPeriodEntries(0) },
       { block: 'Period 2', time: 'Period Schedule Window', entries: buildPeriodEntries(1) },
       { block: `Period 3 (${lunch})`, time: `Class: Period Schedule | Lunch: ${HIGH_LUNCH_WAVE_TIMES[lunch] || 'Assigned by Admin'}`, entries: buildPeriodEntries(2) },
@@ -551,7 +551,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry) {
   const weeklyRows = buildHighWeeklyRowsFromTokens(periodTokens, lunchWave);
 
   return [
-    { block: 'Homeroom', time: '6:10 AM - 6:30 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
+    { block: 'Homeroom', time: '7:30 AM - 7:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
     ...weeklyRows
   ];
 }

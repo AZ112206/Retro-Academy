@@ -184,7 +184,7 @@ export default function TeacherDashboard({ onExit }) {
         contractSchedule: highScheduleContract.contractSchedule,
         contractLunchWave: highScheduleContract.randomLunchWave || null,
         contractSelectedDept: highScheduleContract.selectedDept || null,
-        contractScheduleVersion: highScheduleContract.scheduleVersion || 1,
+        contractScheduleVersion: highScheduleContract.scheduleVersion || 3,
         contractWeeklyRows: highScheduleContract.weeklyRows || null,
         contractLunchByDay: highScheduleContract.lunchByDay || null
       });

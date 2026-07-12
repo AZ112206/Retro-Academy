@@ -47,16 +47,16 @@ const POOL_EXPANSIONS = {
 };
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const SLOT_KEYS = Array.from({ length: 12 }, (_, idx) => `slot${idx + 1}`);
+const SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
 const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 
 const DAY_PATTERNS = [
-  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [10, 11]] },
-  { day: 'Tuesday', offset: 2, doublePairs: [[2, 3], [8, 9]] },
-  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5], [6, 7]] },
-  { day: 'Thursday', offset: 6, doublePairs: [[2, 3], [8, 9]] },
-  { day: 'Friday', offset: 8, doublePairs: [[0, 1], [10, 11]] }
+  { day: 'Monday', offset: 0, doublePairs: [[0, 1], [8, 9]] },
+  { day: 'Tuesday', offset: 1, doublePairs: [[1, 2], [6, 7]] },
+  { day: 'Wednesday', offset: 4, doublePairs: [[4, 5]] },
+  { day: 'Thursday', offset: 2, doublePairs: [[2, 3], [7, 8]] },
+  { day: 'Friday', offset: 0, doublePairs: [[0, 1], [8, 9]] }
 ];
 
 const LUNCH_WAVE_DAY_TIMES = {
@@ -91,8 +91,6 @@ const LUNCH_WAVE_DAY_TIMES = {
 };
 
 const PERIOD_SLOT_TIMES = [
-  '6:30 AM - 7:10 AM',
-  '7:10 AM - 7:50 AM',
   '7:50 AM - 8:30 AM',
   '8:30 AM - 9:10 AM',
   '9:10 AM - 9:50 AM',
@@ -121,15 +119,15 @@ const createEmptySchedule = () => ({
 const periodKeyForLetter = (letter) => `period${letter}`;
 
 function buildDayPeriodSequence(offset, doublePairs) {
-  const sequence = Array(12).fill('A');
+  const sequence = Array(10).fill('A');
   const doubleStartSet = new Set(doublePairs.map((pair) => pair[0]));
   let letterCursor = 0;
 
-  for (let slotIdx = 0; slotIdx < 12; slotIdx += 1) {
+  for (let slotIdx = 0; slotIdx < 10; slotIdx += 1) {
     const periodLetter = PERIOD_LETTERS[(offset + letterCursor) % PERIOD_LETTERS.length];
     sequence[slotIdx] = periodLetter;
 
-    if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 12) {
+    if (doubleStartSet.has(slotIdx) && slotIdx + 1 < 10) {
       sequence[slotIdx + 1] = periodLetter;
       slotIdx += 1;
     }
@@ -180,7 +178,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
         isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'
       ];
 
-      if (slotIdx === 5 || slotIdx === 6) {
+      if (slotIdx === 4 || slotIdx === 5) {
         detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
       }
 
@@ -489,7 +487,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
               <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
                 <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
                   <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>6:10 AM - 6:30 AM</div>
+                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>7:30 AM - 7:50 AM</div>
                   <div style={{ fontSize: '0.7rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                 </td>
                 {WEEK_DAYS.map((day) => (
@@ -586,7 +584,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, s
                 lunchByDay,
                 contractSchedule: schedule,
                 weeklyRows,
-                scheduleVersion: 2
+                scheduleVersion: 3
               })
             }
           >
