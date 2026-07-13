@@ -50,6 +50,7 @@ const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
 const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
+const LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 
 const DAY_PATTERNS = [
   { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
@@ -215,6 +216,53 @@ function validateRotationCoverage(dayPatterns) {
 
 const HAS_VALID_ROTATION = validateRotationCoverage(DAY_PATTERNS);
 
+function buildContractBalanceReport(baseSchedule, contractRows) {
+  const periodDropCounts = PERIOD_LETTERS.reduce((acc, letter) => {
+    acc[letter] = 0;
+    return acc;
+  }, {});
+
+  (contractRows || []).forEach((row) => {
+    (row.entries || []).forEach((entry) => {
+      if (!entry?.isLunch) return;
+      const letter = String(entry.periodLabel || '').toUpperCase();
+      if (!periodDropCounts[letter] && periodDropCounts[letter] !== 0) return;
+      periodDropCounts[letter] += 1;
+    });
+  });
+
+  const activeClassLetters = PERIOD_LETTERS.filter((letter) => {
+    const slot = baseSchedule?.[periodKeyForLetter(letter)];
+    return Boolean(slot && !slot.isPrep);
+  });
+
+  const classDropCounts = {};
+  activeClassLetters.forEach((letter) => {
+    const slot = baseSchedule?.[periodKeyForLetter(letter)];
+    const signature = `${slot?.name || 'Unknown'}|${slot?.level || 'Standard'}|${slot?.sec || ''}`;
+    classDropCounts[signature] = (classDropCounts[signature] || 0) + (periodDropCounts[letter] || 0);
+  });
+
+  const activePeriodCounts = activeClassLetters.map((letter) => periodDropCounts[letter] || 0);
+  const activeClassCounts = Object.values(classDropCounts);
+  const periodDropMin = activePeriodCounts.length ? Math.min(...activePeriodCounts) : 0;
+  const periodDropMax = activePeriodCounts.length ? Math.max(...activePeriodCounts) : 0;
+  const classDropMin = activeClassCounts.length ? Math.min(...activeClassCounts) : 0;
+  const classDropMax = activeClassCounts.length ? Math.max(...activeClassCounts) : 0;
+
+  const isPeriodDropBalanced = periodDropMax - periodDropMin <= 1;
+  const isClassDropBalanced = classDropMax - classDropMin <= 1;
+
+  return {
+    periodDropCounts,
+    classDropCounts,
+    isPeriodDropBalanced,
+    isClassDropBalanced,
+    periodDropSpread: periodDropMax - periodDropMin,
+    classDropSpread: classDropMax - classDropMin
+  };
+}
+
 function buildWeeklyContract(baseSchedule, lunchWave) {
   const normalizedTokens = PERIOD_LETTERS.map((letter) => {
     const key = periodKeyForLetter(letter);
@@ -332,6 +380,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   const [randomLunchWave, setRandomLunchWave] = useState('');
   const [lunchByDay, setLunchByDay] = useState({});
   const [weeklyRows, setWeeklyRows] = useState([]);
+  const [balanceReport, setBalanceReport] = useState(null);
 
   const [schedule, setSchedule] = useState(createEmptySchedule());
   const [storageSlots, setStorageSlots] = useState(createEmptyStorage());
@@ -355,6 +404,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     setStorageSlots(createEmptyStorage());
     setWeeklyRows(rebuiltContract.rows);
     setLunchByDay(rebuiltContract.lunchByDay);
+    setBalanceReport(buildContractBalanceReport(restoredSchedule, rebuiltContract.rows));
     setCurrentTokens([]);
     setShuffleCount(0);
   }, [resumeData]);
@@ -403,6 +453,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       setRandomLunchWave('');
       setLunchByDay({});
       setWeeklyRows([]);
+      setBalanceReport(null);
       setSchedule(createEmptySchedule());
       setStorageSlots(createEmptyStorage());
     }
@@ -608,12 +659,42 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       return;
     }
 
-    const rolledWave = `Wave ${Math.floor(Math.random() * 4) + 1}`;
-    const contract = buildWeeklyContract(schedule, rolledWave);
+    const waveAttemptOrder = [...LUNCH_WAVES].sort(() => Math.random() - 0.5);
+    let selectedContract = null;
+    let selectedWave = waveAttemptOrder[0];
+    let selectedReport = null;
 
-    setRandomLunchWave(rolledWave);
-    setLunchByDay(contract.lunchByDay);
-    setWeeklyRows(contract.rows);
+    for (const wave of waveAttemptOrder) {
+      const candidateContract = buildWeeklyContract(schedule, wave);
+      const candidateReport = buildContractBalanceReport(schedule, candidateContract.rows);
+      if (candidateReport.isPeriodDropBalanced && candidateReport.isClassDropBalanced) {
+        selectedContract = candidateContract;
+        selectedWave = wave;
+        selectedReport = candidateReport;
+        break;
+      }
+
+      if (!selectedContract) {
+        selectedContract = candidateContract;
+        selectedWave = wave;
+        selectedReport = candidateReport;
+      }
+    }
+
+    if (!selectedContract || !selectedReport) {
+      alert('Administrative Warning: Unable to build a valid weekly contract. Please adjust period assignments and retry.');
+      return;
+    }
+
+    if (!selectedReport.isPeriodDropBalanced || !selectedReport.isClassDropBalanced) {
+      alert('Administrative Warning: Lunch-drop balancing is uneven. Adjust schedule assignments and retry review.');
+      return;
+    }
+
+    setRandomLunchWave(selectedWave);
+    setLunchByDay(selectedContract.lunchByDay);
+    setWeeklyRows(selectedContract.rows);
+    setBalanceReport(selectedReport);
     setReviewMode(true);
   };
 
@@ -770,8 +851,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   if (reviewMode) {
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
-        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> SIGN OFFICIAL COVENANT MATRIX</h2>
-        <p style={styles.subtitle}>Review your 5-day high school pattern. Doubles stay outside Periods 5-8, and lunch can replace one class slot per day.</p>
+        <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
+        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Doubles stay outside Periods 5-8, and lunch can replace one class slot per day.</p>
         
         <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
@@ -781,14 +862,27 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </div>
           </div>
 
+          <div style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '8px 10px', marginBottom: '10px', color: '#ddd', fontSize: '0.78rem' }}>
+            <strong style={{ color: '#39FF14' }}>Role:</strong> Teacher | <strong style={{ color: '#39FF14' }}>School:</strong> High
+          </div>
+
           <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
             Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks in the base rotation. If lunch lands on a class slot, that class is the one replaced.
           </div>
+
+          {balanceReport && (
+            <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#131d13', borderRadius: '4px', border: '1px solid #2d6a2d', fontSize: '0.78rem', color: '#b7e8b2' }}>
+              <div style={{ fontWeight: 'bold', color: '#39FF14', marginBottom: '4px' }}>Balance Check Locked</div>
+              <div>Rotation Coverage (A-J): {HAS_VALID_ROTATION ? 'PASS' : 'FAIL'} | Double Blocks: 1 each | Single Blocks: 3 each</div>
+              <div>Lunch Drops by Period: {balanceReport.isPeriodDropBalanced ? 'PASS' : 'FAIL'} (max spread: {balanceReport.periodDropSpread})</div>
+              <div>Lunch Drops by Class Assignment: {balanceReport.isClassDropBalanced ? 'PASS' : 'FAIL'} (max spread: {balanceReport.classDropSpread})</div>
+            </div>
+          )}
           
           <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
-                <th style={{ padding: '8px 7px', color: '#888', width: '24%' }}>PERIOD / TIME</th>
+                <th style={{ padding: '8px 7px', color: '#888', width: '24%' }}>BLOCK / TIME</th>
                 {WEEK_DAYS.map(day => (
                   <th key={day} style={{ padding: '8px 7px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
                 ))}
@@ -1043,6 +1137,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           onClick={() => {
             setConfirmedDept(false);
             setReviewMode(false);
+            setBalanceReport(null);
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
