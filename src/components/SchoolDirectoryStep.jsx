@@ -376,9 +376,20 @@ function buildStudentAvatarAppearance(seedStudent, sectionKey, studentIndex) {
 }
 
 function formatPeriodLabel(periodLabel) {
-  const normalized = String(periodLabel || '').trim().toUpperCase();
+  const normalized = String(periodLabel || '')
+    .trim()
+    .replace(/^period\s*/i, '')
+    .trim()
+    .toUpperCase();
   if (!normalized) return 'Period';
   return `Period ${normalized}`;
+}
+
+function getClassTypeAbbreviation(classType) {
+  const normalized = String(classType || '').trim().toLowerCase();
+  if (normalized === 'honors') return '(H)';
+  if (normalized === 'advanced') return '(A)';
+  return '(S)';
 }
 
 function buildStudentRosterFromSections(sections) {
@@ -1113,6 +1124,7 @@ function FacultyCard({ staff, onOpen, schoolType }) {
 }
 
 function StudentCard({ student, onOpen }) {
+  const classTypeTag = getClassTypeAbbreviation(student.classGrade);
   return (
     <div
       onClick={() => onOpen(student)}
@@ -1131,7 +1143,7 @@ function StudentCard({ student, onOpen }) {
           {student.name}
         </span>
         <span style={{ fontSize: '0.62rem', color: '#39FF14', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-          {student.className}
+          {student.className} {classTypeTag}
         </span>
         <span style={{ fontSize: '0.58rem', color: '#f5f1dd', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
           {student.courseNumber} | {formatPeriodLabel(student.blockLabel)}
@@ -1156,8 +1168,6 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   const tabScrollRef = useRef(null);
   const dragStateRef = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
   const contentScrollRef = useRef(null);
-  const studentTabScrollRef = useRef(null);
-  const studentDragStateRef = useRef({ dragging: false, lastX: 0, lastTime: 0 });
   const contentDragRef = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
 
   // Procedurally seed the entire school grid dataset
@@ -1207,20 +1217,6 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       setStudentActiveTab(studentTabKeys[0]);
     }
   }, [studentActiveTab, studentTabKeys]);
-
-  useEffect(() => {
-    if (!studentTabScrollRef.current || studentTabKeys.length === 0) return;
-    const frameId = window.requestAnimationFrame(() => {
-      const fallbackKey = studentTabKeys[0];
-      const currentKey = studentTabKeys.includes(studentActiveTab) ? studentActiveTab : fallbackKey;
-      const targetNode = studentTabScrollRef.current?.querySelector(`[data-student-tab-key="${currentKey}"]`);
-      if (!targetNode) return;
-      const centeredOffset = targetNode.offsetLeft - Math.max((studentTabScrollRef.current.clientWidth - targetNode.offsetWidth) / 2, 0);
-      studentTabScrollRef.current.scrollTo({ left: centeredOffset, behavior: 'auto' });
-    });
-
-    return () => window.cancelAnimationFrame(frameId);
-  }, [studentTabKeys, viewMode]);
 
   const currentTabStaff = facultyRoster[activeTab] || [];
   const currentTabStudents = studentRoster[studentActiveTab] || [];
@@ -1279,58 +1275,6 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
     dragStateRef.current.dragging = false;
   };
 
-  const beginStudentTabDrag = (clientX) => {
-    if (!studentTabScrollRef.current) return;
-    studentDragStateRef.current = {
-      dragging: true,
-      lastX: clientX,
-      lastTime: Date.now()
-    };
-  };
-
-  const moveStudentTabDrag = (clientX) => {
-    if (!studentDragStateRef.current.dragging || !studentTabScrollRef.current) return;
-    const now = Date.now();
-    const deltaX = clientX - studentDragStateRef.current.lastX;
-    const deltaTime = Math.max(now - studentDragStateRef.current.lastTime, 16);
-    const pointerSpeed = Math.abs(deltaX) / deltaTime;
-    const speedMultiplier = clamp(1 + (pointerSpeed * 0.9), 1, 2.35);
-
-    studentTabScrollRef.current.scrollLeft -= deltaX * speedMultiplier;
-    studentDragStateRef.current.lastX = clientX;
-    studentDragStateRef.current.lastTime = now;
-  };
-
-  const endStudentTabDrag = () => {
-    studentDragStateRef.current.dragging = false;
-  };
-
-  const syncStudentActiveTabFromScroll = () => {
-    if (!studentTabScrollRef.current || studentTabKeys.length === 0) return;
-    const tabNodes = Array.from(studentTabScrollRef.current.children);
-    if (tabNodes.length === 0) return;
-
-    const centerX = studentTabScrollRef.current.scrollLeft + (studentTabScrollRef.current.clientWidth / 2);
-    const nearestNode = tabNodes.reduce((nearest, node) => {
-      const nodeCenter = node.offsetLeft + (node.offsetWidth / 2);
-      if (!nearest) return { node, distance: Math.abs(nodeCenter - centerX) };
-      const distance = Math.abs(nodeCenter - centerX);
-      return distance < nearest.distance ? { node, distance } : nearest;
-    }, null);
-
-    const nextKey = nearestNode?.node?.dataset?.studentTabKey;
-    if (nextKey && nextKey !== studentActiveTab) {
-      setStudentActiveTab(nextKey);
-    }
-  };
-
-  const handleStudentTabWheel = (event) => {
-    if (!studentTabScrollRef.current) return;
-    const delta = Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    if (delta === 0) return;
-    event.preventDefault();
-    studentTabScrollRef.current.scrollLeft += delta;
-  };
 
   const beginContentDrag = (clientX) => {
     if (!contentScrollRef.current) return;
@@ -1495,50 +1439,32 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       ) : (
         <>
           <div
-            ref={studentTabScrollRef}
-            onScroll={syncStudentActiveTabFromScroll}
-            onWheel={handleStudentTabWheel}
-            onMouseDown={(event) => beginStudentTabDrag(event.clientX)}
-            onMouseMove={(event) => moveStudentTabDrag(event.clientX)}
-            onMouseUp={endStudentTabDrag}
-            onMouseLeave={endStudentTabDrag}
-            onTouchStart={(event) => beginStudentTabDrag(event.touches[0]?.clientX || 0)}
-            onTouchMove={(event) => moveStudentTabDrag(event.touches[0]?.clientX || 0)}
-            onTouchEnd={endStudentTabDrag}
-            style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start', marginBottom: '10px', padding: '4px 10px 12px', overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', userSelect: 'none', cursor: studentDragStateRef.current.dragging ? 'grabbing' : 'grab', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px', flexWrap: 'wrap', paddingBottom: '6px', userSelect: 'none', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {studentTabKeys.map((tabKey) => (
-              <div
+              <button
                 key={tabKey}
-                data-student-tab-key={tabKey}
+                onClick={() => setStudentActiveTab(tabKey)}
                 style={{
-                  flex: '0 0 min(280px, 78vw)',
-                  minHeight: '78px',
-                  padding: '12px 16px',
-                  fontSize: '0.78rem',
+                  padding: '8px 16px',
+                  fontSize: '0.75rem',
                   backgroundColor: studentActiveTab === tabKey ? '#f5f1dd' : '#121212',
                   color: studentActiveTab === tabKey ? '#111' : '#fff',
                   border: `1px solid ${studentActiveTab === tabKey ? '#f5f1dd' : '#39FF14'}`,
-                  borderRadius: '8px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
                   fontWeight: 'bold',
                   letterSpacing: '0.5px',
-                  whiteSpace: 'normal',
-                  scrollSnapAlign: 'center',
-                  boxShadow: studentActiveTab === tabKey ? '0 0 18px rgba(245, 241, 221, 0.18)' : 'none',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between'
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <div style={{ color: studentActiveTab === tabKey ? '#333' : '#9acb92', fontSize: '0.7rem' }}>SCROLL TO SELECT</div>
-                <div>{studentSectionMap[tabKey]?.label?.toUpperCase() || (tabKey === 'homeroom' ? 'HOMEROOM' : tabKey.toUpperCase())}</div>
-                <div style={{ color: studentActiveTab === tabKey ? '#111' : '#39FF14' }}>{studentSectionMap[tabKey]?.count || 0} STUDENTS</div>
-              </div>
+                {(studentSectionMap[tabKey]?.label || (tabKey === 'homeroom' ? 'Homeroom' : tabKey)).toUpperCase()} ({studentSectionMap[tabKey]?.count || 0})
+              </button>
             ))}
           </div>
 
           <div style={{ marginBottom: '18px', color: '#9acb92', fontSize: '0.76rem', letterSpacing: '0.5px', textAlign: 'center' }}>
-            CLICK AND DRAG LEFT OR RIGHT TO SWITCH BETWEEN HOMEROOM AND CLASS ROSTERS.
+            CLICK A HOMEROOM OR CLASS SECTION TO VIEW THAT ROSTER.
           </div>
 
           <div
@@ -1854,10 +1780,10 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
               <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px' }}>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Grade:</strong> {selectedStudent.grade}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Age:</strong> {selectedStudent.age}</p>
-                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class:</strong> {selectedStudent.className}</p>
-                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class Grade:</strong> {selectedStudent.classGrade}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class:</strong> {selectedStudent.className} {getClassTypeAbbreviation(selectedStudent.classGrade)}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class Type:</strong> {getClassTypeAbbreviation(selectedStudent.classGrade)}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Course Number:</strong> {selectedStudent.courseNumber}</p>
-                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Period:</strong> {formatPeriodLabel(selectedStudent.blockLabel).replace('Period Period', 'Period')}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Period:</strong> {formatPeriodLabel(selectedStudent.blockLabel)}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Current Grade:</strong> {selectedStudent.currentGradeLetter} / {selectedStudent.currentGradeNumber}</p>
                 <p style={{ margin: 0, color: '#fff' }}><strong>Section:</strong> {selectedStudent.sectionCode}</p>
               </div>
