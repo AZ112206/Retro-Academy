@@ -630,7 +630,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           </div>
         </div>
 
-        <div style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '680px', overflowY: 'auto', alignItems: 'stretch' }}>
+        <div className="no-scrollbar" style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '680px', overflowY: 'auto', alignItems: 'stretch' }}>
           <div style={sectionStyle}>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>SKIN TONE</span>
             <div style={swatchRowStyle}>

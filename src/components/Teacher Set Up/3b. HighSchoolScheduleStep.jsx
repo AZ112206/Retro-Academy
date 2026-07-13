@@ -785,34 +785,34 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks in the base rotation. If lunch lands on a class slot, that class is the one replaced.
           </div>
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
-                <th style={{ padding: '10px', color: '#888', width: '24%' }}>PERIOD / TIME</th>
+                <th style={{ padding: '8px 7px', color: '#888', width: '24%' }}>PERIOD / TIME</th>
                 {WEEK_DAYS.map(day => (
-                  <th key={day} style={{ padding: '10px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
+                  <th key={day} style={{ padding: '8px 7px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
-                <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
+                <td style={{ padding: '8px 7px', borderRight: '1px solid #222' }}>
                   <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
-                  <div style={{ fontSize: '0.7rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
+                  <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
+                  <div style={{ fontSize: '0.66rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                 </td>
                 {WEEK_DAYS.map((day) => (
-                  <td key={day} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#00FFFF' }}>Homeroom & Attendance</div>
+                  <td key={day} style={{ padding: '8px 7px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#00FFFF' }}>Homeroom & Attendance</div>
                   </td>
                 ))}
               </tr>
 
               {weeklyRows.map((row, rowIdx) => (
                 <tr key={row.blockKey} style={{ borderBottom: '1px solid #222' }}>
-                  <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
+                  <td style={{ padding: '8px 7px', borderRight: '1px solid #222' }}>
                     <div style={{ fontWeight: 'bold', color: '#39FF14' }}>{row.block}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#aaa', marginTop: '2px' }}>{row.time}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>{row.time}</div>
                   </td>
 
                   {row.entries.map((entry, dayIdx) => {
@@ -825,20 +825,20 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
                     <td
                       key={`${row.blockKey}-${WEEK_DAYS[dayIdx]}`}
                       rowSpan={cellRowSpan}
-                      style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}
+                      style={{ padding: '8px 7px', borderRight: '1px solid #222', verticalAlign: 'middle' }}
                     >
-                      <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: entry.isPrep ? '#ff9f43' : '#fff' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: entry.isPrep ? '#ff9f43' : '#fff' }}>
                         {entry.name}
                       </div>
 
                       {!entry.isPrep && !entry.isLunch && !entry.isDoubleContinuation && (
-                        <div style={{ fontSize: '0.75rem', marginTop: '4px', fontWeight: '500', color: getLevelColor(entry.level) }}>
+                        <div style={{ fontSize: '0.7rem', marginTop: '4px', fontWeight: '500', color: getLevelColor(entry.level) }}>
                           [{entry.level}] - {entry.grade}
                         </div>
                       )}
 
                       {!entry.isDoubleContinuation && (
-                        <div style={{ marginTop: '4px', fontSize: '0.68rem', color: '#b6d9b1' }}>
+                        <div style={{ marginTop: '4px', fontSize: '0.66rem', color: '#b6d9b1' }}>
                           {entry.detail}
                         </div>
                       )}
@@ -875,30 +875,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-J throughout the week with the requested double/single day pattern.</span></span>
           </div>
 
-          <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
-            <strong style={{ color: '#39FF14' }}>Lunch Time Reference (Wave Map):</strong>
-            <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: '120px repeat(5, minmax(0, 1fr))', gap: '6px', alignItems: 'stretch' }}>
-              <div style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#777', fontWeight: 'bold' }}>
-                Wave
-              </div>
-              {WEEK_DAYS.map((day) => (
-                <div key={day} style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#39FF14', fontWeight: 'bold', textAlign: 'center' }}>
-                  {day}
-                </div>
-              ))}
-
-              {Object.entries(LUNCH_WAVE_DAY_TIMES).flatMap(([wave, byDay]) => ([
-                <div key={`${wave}-label`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#ffa500', fontWeight: 'bold' }}>
-                  {wave}
-                </div>,
-                ...WEEK_DAYS.map((day) => (
-                  <div key={`${wave}-${day}`} style={{ backgroundColor: '#1d1d1d', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#c8c8c8', fontSize: '0.72rem', textAlign: 'center' }}>
-                    {byDay[day]}
-                  </div>
-                ))
-              ]))}
-            </div>
-          </div>
         </div>
 
         <div style={styles.footerActions}>

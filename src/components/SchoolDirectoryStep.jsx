@@ -665,8 +665,15 @@ function buildHighLunchPlanByDay(tokens, lunchWave) {
     const sequence = Array.isArray(pattern?.sequence) ? pattern.sequence : Array(10).fill('A');
     const doubleStarts = new Set((pattern?.doublePairs || []).map((pair) => pair[0]));
     const continuations = new Set((pattern?.doublePairs || []).map((pair) => pair[1]));
+    const isAdjacentToSamePeriod = (slotIdx) => {
+      const periodLabel = sequence[slotIdx] || '';
+      if (!periodLabel) return false;
+      const prevLabel = sequence[slotIdx - 1] || null;
+      const nextLabel = sequence[slotIdx + 1] || null;
+      return prevLabel === periodLabel || nextLabel === periodLabel;
+    };
 
-    const candidates = middaySlots
+    const baseCandidates = middaySlots
       .filter((slotIdx) => !continuations.has(slotIdx) && !doubleStarts.has(slotIdx))
       .map((slotIdx) => {
         const periodLabel = sequence[slotIdx] || 'A';
@@ -684,7 +691,12 @@ function buildHighLunchPlanByDay(tokens, lunchWave) {
       })
       .sort((a, b) => a.score - b.score);
 
-    const selected = candidates[0] || {
+    // Never replace a slot if it is immediately next to the same period label.
+    // This prevents lunch from creating repeated same-period adjacency artifacts.
+    const candidates = baseCandidates.filter((candidate) => !isAdjacentToSamePeriod(candidate.slotIdx));
+    const resolvedCandidates = candidates.length > 0 ? candidates : baseCandidates;
+
+    const selected = resolvedCandidates[0] || {
       slotIdx: preferredSlotIndex,
       periodLabel: sequence[preferredSlotIndex] || 'A',
       isClass: false
@@ -879,6 +891,9 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
         }
 
         const detail = token.detail || detailParts.join(' | ') || null;
+        if (token.isLunch) {
+          return buildSpecialEntry('Lunch Break', 'lunch', { detail });
+        }
         if (token.isPrep) {
           return buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', 'prep', { detail });
         }
@@ -1500,8 +1515,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       )}
 
       {selectedStaff && liveProfile && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', zIndex: 60, padding: '16px', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: showSchedule ? '1140px' : '760px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: showSchedule ? '24px' : '20px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+        <div className="no-scrollbar" style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', zIndex: 60, padding: '16px', overflowY: 'auto' }}>
+          <div className="no-scrollbar" style={{ width: '100%', maxWidth: showSchedule ? '1140px' : '760px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: showSchedule ? '24px' : '20px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
               <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStaff.name.toUpperCase()} {showSchedule ? 'CONTRACT SCREEN' : 'PROFILE'}</h3>
               <button style={styles.backButton} onClick={() => (showSchedule ? setShowSchedule(false) : setSelectedStaff(null))}>{showSchedule ? 'BACK TO PROFILE' : 'CLOSE'}</button>
@@ -1538,12 +1553,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                         : selectedStaffSchedule.rows;
                       return (
                     <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.86rem', textAlign: 'center' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center', tableLayout: 'fixed' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #39FF14' }}>
-                            <th style={{ padding: '10px 8px', color: '#39FF14', minWidth: '190px' }}>BLOCK / TIME</th>
+                            <th style={{ padding: '10px 8px', color: '#39FF14', width: '24%' }}>BLOCK / TIME</th>
                             {WEEK_DAYS.map((day) => (
-                              <th key={day} style={{ padding: '10px 8px', color: '#39FF14', minWidth: '170px' }}>{day.toUpperCase()}</th>
+                              <th key={day} style={{ padding: '10px 8px', color: '#39FF14', width: '15%' }}>{day.toUpperCase()}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1592,7 +1607,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                     rowSpan={cellRowSpan}
                                     style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle', backgroundColor: isDoubleContinuation ? '#161616' : 'transparent' }}
                                   >
-                                    <div style={{ fontWeight: 'bold', color: primaryColor, fontSize: '0.82rem' }}>
+                                    <div style={{ fontWeight: 'bold', color: normalized.kind === 'prep' ? '#ff9f43' : '#fff', fontSize: '0.85rem' }}>
                                       {normalized.name}
                                     </div>
 
@@ -1613,6 +1628,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                       <div style={{ fontSize: '0.7rem', marginTop: '4px', color: '#b6d9b1' }}>
                                         Double Block Continuation
                                       </div>
+                                    )}
+
+                                    {normalized.isDouble && !isDoubleContinuation && (
+                                      <span style={{ display: 'inline-block', marginTop: '5px', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px' }}>
+                                        Double Period
+                                      </span>
                                     )}
 
                                     {showLunchTag && (
@@ -1655,10 +1676,10 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                       Administrative and support staff use a duty rotation timeline instead of class-section contract blocks.
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(150px, 1fr))', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(140px, 1fr))', gap: '8px' }}>
                       {WEEK_DAYS.map((day, dayIdx) => (
-                        <div key={day} style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ fontSize: '0.78rem', color: '#39FF14', fontWeight: 'bold', textAlign: 'center', borderBottom: '1px solid #222', paddingBottom: '4px' }}>
+                        <div key={day} style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontSize: '0.7rem', color: '#39FF14', fontWeight: 'bold', textAlign: 'center', borderBottom: '1px solid #222', paddingBottom: '3px' }}>
                             {day.toUpperCase()}
                           </div>
                           {selectedStaffSchedule.rows.map((row, idx) => {
@@ -1667,12 +1688,17 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                               ? rawEntry
                               : buildSpecialEntry(String(rawEntry || 'Duty Coverage'), 'support');
                             return (
-                              <div key={`${day}-${row.block}-${idx}`} style={{ backgroundColor: '#101010', border: '1px solid #242424', borderRadius: '4px', padding: '6px' }}>
-                                <div style={{ fontSize: '0.68rem', color: '#8ecf85', fontWeight: 'bold' }}>{row.block}</div>
-                                <div style={{ fontSize: '0.62rem', color: '#7b7b7b', marginTop: '1px' }}>{row.time}</div>
-                                <div style={{ fontSize: '0.73rem', color: getEntryColor(normalized), marginTop: '4px', fontWeight: 'bold' }}>{normalized.name}</div>
+                              <div key={`${day}-${row.block}-${idx}`} style={{ backgroundColor: '#101010', border: '1px solid #242424', borderRadius: '4px', padding: '4px' }}>
+                                <div style={{ fontSize: '0.62rem', color: '#8ecf85', fontWeight: 'bold' }}>{row.block}</div>
+                                <div style={{ fontSize: '0.58rem', color: '#7b7b7b', marginTop: '1px' }}>{row.time}</div>
+                                <div style={{ fontSize: '0.64rem', color: normalized.kind === 'prep' ? '#ff9f43' : '#fff', marginTop: '2px', fontWeight: 'bold' }}>{normalized.name}</div>
                                 {normalized.detail && (
-                                  <div style={{ fontSize: '0.64rem', color: '#a5bfa1', marginTop: '2px' }}>{normalized.detail}</div>
+                                  <div style={{ fontSize: '0.58rem', color: '#a5bfa1', marginTop: '1px' }}>{normalized.detail}</div>
+                                )}
+                                {normalized.kind === 'lunch' && (
+                                  <span style={{ display: 'inline-block', marginTop: '2px', fontSize: '0.56rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px' }}>
+                                    Class Replaced By Lunch
+                                  </span>
                                 )}
                               </div>
                             );
