@@ -19,7 +19,7 @@ export default function SchoolTypeStep({ onSelect, onSelectType, onBack, onExit,
         </button>
         <button style={styles.menuButton} onClick={() => handleSelect?.('High')}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="cap" /> HIGH SCHOOL</span>
-          <span style={styles.subtext}>Grades 9-12 | 6 Classrooms per department | 10-Block Rotating Matrix | Single + Double Blocks | Dynamic Lunch Windows</span>
+          <span style={styles.subtext}>Grades 9-12 | 5-Day Rotating Matrix | 10 Periods A-J | 1 Prep Block | 1 Lunch Wave Slot | Balanced Morning/Afternoon Classes</span>
         </button>
       </div>
       <div style={styles.footerActions}>

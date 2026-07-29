@@ -88,16 +88,16 @@ const HIGH_LUNCH_WAVE_DAY_TIMES = {
   }
 };
 const HIGH_PERIOD_SLOT_TIMES = [
-  '7:50 AM - 8:30 AM',
-  '8:30 AM - 9:10 AM',
-  '9:10 AM - 9:50 AM',
-  '9:50 AM - 10:30 AM',
-  '10:30 AM - 11:10 AM',
-  '11:10 AM - 11:50 AM',
-  '11:50 AM - 12:30 PM',
-  '12:30 PM - 1:10 PM',
-  '1:10 PM - 1:50 PM',
-  '1:50 PM - 2:30 PM'
+  '8:00 AM - 8:35 AM',
+  '8:40 AM - 9:15 AM',
+  '9:20 AM - 9:55 AM',
+  '10:00 AM - 10:35 AM',
+  '10:40 AM - 11:15 AM',
+  '11:20 AM - 11:55 AM',
+  '12:00 PM - 12:35 PM',
+  '12:40 PM - 1:15 PM',
+  '1:20 PM - 1:55 PM',
+  '2:00 PM - 2:30 PM'
 ];
 
 function resolveHighLunchWaveFromTime(timeLabel) {
@@ -903,7 +903,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
 
       return {
         block: row.block || 'Block',
-        time: row.time || 'Rotating Window (Day remains 8:20 AM - 2:30 PM)',
+        time: row.time || 'Rotating Window (Day remains 8:00 AM - 2:30 PM)',
         entries
       };
     });
@@ -1524,7 +1524,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
             {showSchedule && selectedStaffSchedule ? (
               <div style={{ ...styles.setupBox, maxWidth: '100%', minHeight: 'unset', padding: '20px', justifyContent: 'flex-start', backgroundColor: '#111' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   <p style={{ margin: 0, color: '#39FF14', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                     {selectedStaffUsesContractView ? 'CONTRACT SCHEDULE PREVIEW' : 'DUTY ROTATION PREVIEW'}
                   </p>
@@ -1534,7 +1534,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                 {selectedStaffSchedule.lunchWave && (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
                     <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
-                      Lunch Window: <strong style={{ color: '#ffa500' }}>Auto-Balanced By Schedule</strong>
+                      Lunch Wave Slot: <strong style={{ color: '#ffa500' }}>One Per Day, Balanced By Rotation</strong>
                     </div>
                   </div>
                 )}
@@ -1567,7 +1567,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                             <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
                               <td style={{ padding: '12px 10px', borderRight: '1px solid #222' }}>
                                 <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                                <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
+                                <div style={{ fontSize: '0.72rem', color: '#aaa', marginTop: '2px' }}>8:00 AM - 8:15 AM</div>
                                 <div style={{ fontSize: '0.7rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                               </td>
                               {WEEK_DAYS.map((day) => (
@@ -1638,7 +1638,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
                                     {showLunchTag && (
                                       <span style={{ display: 'inline-block', marginTop: '5px', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px' }}>
-                                        Class Replaced By Lunch
+                                        Lunch Wave Slot
                                       </span>
                                     )}
                                   </td>
@@ -1665,7 +1665,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                     )}
 
                     <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.76rem', color: '#8f8f8f', textAlign: 'center' }}>
-                      Weekly contract matrix stays fully covered Monday-Friday, mirrors the player contract format, and keeps randomized prep blocks within the school-wide high school pattern.
+                      Weekly rotating matrix stays fully covered Monday-Friday with one prep block, one lunch wave slot, and balanced morning/afternoon classes.
                     </div>
 
                     {schoolType === 'High' && renderLunchWaveMatrix()}

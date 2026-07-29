@@ -902,7 +902,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
             <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> A-J Weekly Rotation Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Lunch Window: <strong style={{ color: '#ffa500' }}>Auto-Balanced By Schedule</strong></span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Lunch Wave Slot: <strong style={{ color: '#ffa500' }}>One Per Day, Balanced By Rotation</strong></span>
             </div>
           </div>
 
@@ -937,7 +937,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
               <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
                 <td style={{ padding: '8px 7px', borderRight: '1px solid #222' }}>
                   <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                  <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
+                  <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>8:00 AM - 8:15 AM</div>
                   <div style={{ fontSize: '0.66rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                 </td>
                 {WEEK_DAYS.map((day) => (
@@ -990,7 +990,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
                       {entry.isLunch && (
                         <span style={{ display: 'inline-block', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px', marginTop: '5px' }}>
-                          Class Replaced By Lunch
+                          Lunch Wave Slot
                         </span>
                       )}
                     </td>
@@ -1011,7 +1011,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-J throughout the week with the requested double/single day pattern.</span></span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-J throughout the week with one prep block, one lunch wave slot, and balanced morning/afternoon classes.</span></span>
           </div>
 
         </div>
