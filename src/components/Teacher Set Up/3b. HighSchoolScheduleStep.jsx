@@ -53,6 +53,9 @@ const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 const LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 const CLASS_LEVELS = ['Standard', 'Honors', 'Advanced'];
 const PREP_TOKEN_LABEL = 'Teacher Prep / Study Hall';
+const TARGET_MORNING_CLASS_COUNT = 3;
+const TARGET_AFTERNOON_CLASS_COUNT = 3;
+const OPTIONAL_FLEX_LABEL = 'Flex / Advisory';
 
 const DAY_PATTERNS = [
   { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
@@ -283,7 +286,8 @@ function buildContractBalanceReport(baseSchedule) {
   const morningAfternoonSplit = getMorningAfternoonSplit(baseSchedule);
   const isPrepAssigned = prepCount === 1;
   const isLunchAssigned = lunchCount === 1;
-  const isMorningAfternoonBalanced = morningAfternoonSplit.classBeforeLunch === morningAfternoonSplit.classAfterLunch && morningAfternoonSplit.classBeforeLunch === 4;
+  const isMorningAfternoonBalanced = morningAfternoonSplit.classBeforeLunch === TARGET_MORNING_CLASS_COUNT
+    && morningAfternoonSplit.classAfterLunch === TARGET_AFTERNOON_CLASS_COUNT;
   const isClassDistributionBalanced = classValues.length ? classMax - classMin <= 1 : true;
   const isClassLimitOkay = classMax <= 3;
 
@@ -424,6 +428,35 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   const [schedule, setSchedule] = useState(createEmptySchedule());
   const [storageSlots, setStorageSlots] = useState(createEmptyStorage());
 
+  const countClassAssignments = () => Object.values(schedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
+
+  const countClassAssignmentsBySide = (periodKey) => {
+    const lunchEntry = Object.entries(schedule).find(([, slot]) => slot?.isLunch);
+    if (!lunchEntry) return 0;
+
+    const lunchPeriodKey = lunchEntry[0];
+    const lunchIndex = PERIOD_KEYS.indexOf(lunchPeriodKey);
+    const targetIndex = PERIOD_KEYS.indexOf(periodKey);
+
+    if (targetIndex < lunchIndex) {
+      return Object.entries(schedule).reduce((count, [key, slot]) => {
+        if (!slot || slot.isPrep || slot.isLunch) return count;
+        const slotIndex = PERIOD_KEYS.indexOf(key);
+        return slotIndex < lunchIndex ? count + 1 : count;
+      }, 0);
+    }
+
+    if (targetIndex > lunchIndex) {
+      return Object.entries(schedule).reduce((count, [key, slot]) => {
+        if (!slot || slot.isPrep || slot.isLunch) return count;
+        const slotIndex = PERIOD_KEYS.indexOf(key);
+        return slotIndex > lunchIndex ? count + 1 : count;
+      }, 0);
+    }
+
+    return 0;
+  };
+
   useEffect(() => {
     if (!resumeData?.selectedDept || !resumeData?.contractSchedule) return;
 
@@ -519,11 +552,20 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     const targetItem = schedule[targetPeriod];
     const baseCount = countSignatureInSchedule(itemData);
     const targetIsSameSignature = Boolean(targetItem && !targetItem.isPrep && !targetItem.isLunch && getTokenSignature(targetItem) === getTokenSignature(itemData));
+    const targetSideCount = countClassAssignmentsBySide(targetPeriod);
+    const currentClassCount = countClassAssignments();
+    const targetIsMorning = PERIOD_KEYS.indexOf(targetPeriod) < PERIOD_KEYS.indexOf(Object.entries(schedule).find(([, slot]) => slot?.isLunch)?.[0] || 'periodE');
+    const targetIsAfternoon = PERIOD_KEYS.indexOf(targetPeriod) > PERIOD_KEYS.indexOf(Object.entries(schedule).find(([, slot]) => slot?.isLunch)?.[0] || 'periodE');
+
+    if (targetIsMorning && targetSideCount >= TARGET_MORNING_CLASS_COUNT && !targetIsSameSignature) return false;
+    if (targetIsAfternoon && targetSideCount >= TARGET_AFTERNOON_CLASS_COUNT && !targetIsSameSignature) return false;
+    if (currentClassCount >= TARGET_MORNING_CLASS_COUNT + TARGET_AFTERNOON_CLASS_COUNT && !targetIsSameSignature) return false;
+
     return targetIsSameSignature || baseCount < 3;
   };
 
   const hasAllBlocksAssigned = () => {
-    return PERIOD_KEYS.every((key) => Boolean(schedule[key]));
+    return countPrepBlocks() === 1 && countLunchBlocks() === 1 && countClassAssignments() === 6;
   };
 
   const cloneItem = (itemData) => ({
@@ -703,7 +745,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     if (!hasAllBlocksAssigned()) {
-      alert('Mandatory Warning: Assign a class, lunch, or prep token to every period A-J before review.');
+      alert('Mandatory Warning: Place exactly one prep block, one lunch wave, and six class assignments split 3 before lunch and 3 after lunch before review.');
       return;
     }
 
@@ -719,7 +761,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     if (!balanceReport.isMorningAfternoonBalanced) {
-      alert('Mandatory Warning: Keep four class periods before lunch and four after lunch for a balanced day.');
+      alert('Mandatory Warning: Keep three class periods before lunch and three after lunch for a balanced day.');
       return;
     }
 
@@ -896,7 +938,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
-        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and four morning/four afternoon classes in a rotating pattern.</p>
+        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and three morning/three afternoon classes in a rotating pattern.</p>
         
         <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
@@ -911,7 +953,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
-            Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks in the base rotation. Lunch remains its own slot while classes stay evenly split before and after lunch.
+            Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks in the base rotation. Lunch remains its own slot while classes stay evenly split as 3 before lunch and 3 after lunch.
           </div>
 
           {balanceReport && (
@@ -1109,7 +1151,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED ASSIGNMENT</span>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED DAILY BLOCK</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {
@@ -1183,7 +1225,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill all periods A-J manually. Use exactly one prep block, one lunch wave, and keep the class roster balanced with no more than 3 sections of any class and level combination.
+            Fill the main class periods around lunch manually. Use exactly one prep block, one lunch wave, and keep the class roster balanced with no more than 3 sections of any class and level combination.
           </div>
         </div>
       </div>

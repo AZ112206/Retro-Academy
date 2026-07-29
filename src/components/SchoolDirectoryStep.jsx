@@ -573,6 +573,11 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
   if (!facultyRoster || typeof facultyRoster !== 'object') return coverageMap;
   const lunchWaves = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 
+  const globalWaveCounts = lunchWaves.reduce((acc, wave) => {
+    acc[wave] = 0;
+    return acc;
+  }, {});
+
   Object.entries(facultyRoster).forEach(([tabKey, members]) => {
     if (!tabKey.startsWith('department_') || !Array.isArray(members)) return;
 
@@ -605,8 +610,8 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
 
     const waveOffset = hashString(tabKey) % lunchWaves.length;
     const chooseBalancedWave = () => {
-      const minCount = Math.min(...Object.values(waveCounts));
-      const candidates = lunchWaves.filter((wave) => waveCounts[wave] === minCount);
+      const minCount = Math.min(...Object.values(globalWaveCounts));
+      const candidates = lunchWaves.filter((wave) => globalWaveCounts[wave] === minCount);
       const orderedCandidates = candidates.sort((a, b) => {
         const aIndex = (lunchWaves.indexOf(a) - waveOffset + lunchWaves.length) % lunchWaves.length;
         const bIndex = (lunchWaves.indexOf(b) - waveOffset + lunchWaves.length) % lunchWaves.length;
@@ -624,6 +629,7 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
         : null;
       const assignedWave = explicitWave || chooseBalancedWave();
       waveCounts[assignedWave] = (waveCounts[assignedWave] || 0) + 1;
+      globalWaveCounts[assignedWave] = (globalWaveCounts[assignedWave] || 0) + 1;
 
       coverageMap[staffKey] = {
         departmentKey,
@@ -640,7 +646,7 @@ function buildHighDepartmentCoverageMap(facultyRoster) {
 
 function buildHighSchedulePreferences(facultyRoster) {
   if (!facultyRoster || typeof facultyRoster !== 'object') {
-    return { preferredPrepCount: 2 };
+    return { preferredPrepCount: 1 };
   }
 
   const allStaff = Object.values(facultyRoster).flatMap((members) => (Array.isArray(members) ? members : []));
@@ -648,7 +654,7 @@ function buildHighSchedulePreferences(facultyRoster) {
   const playerPrepCount = Object.values(playerRecord?.contractSchedule || {}).filter((slot) => slot?.isPrep).length;
 
   return {
-    preferredPrepCount: Number.isFinite(playerPrepCount) ? clamp(playerPrepCount, 0, 3) : 2
+    preferredPrepCount: Number.isFinite(playerPrepCount) ? clamp(playerPrepCount, 1, 1) : 1
   };
 }
 
@@ -949,24 +955,8 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
   const courseSequence = buildHighCourseSequence(staff, coverageEntry, random);
   const levelSequence = buildHighLevelSequence(courseSequence, random);
 
-  const preferredPrepCount = clamp(Number(schedulePreferences?.preferredPrepCount ?? 2), 0, 3);
-  const prepRoll = random();
-  let prepCount = preferredPrepCount;
-
-  if (preferredPrepCount === 0) {
-    prepCount = prepRoll < 0.65 ? 0 : 1;
-  } else if (preferredPrepCount === 1) {
-    prepCount = prepRoll < 0.2 ? 0 : prepRoll < 0.8 ? 1 : 2;
-  } else if (preferredPrepCount === 2) {
-    prepCount = prepRoll < 0.2 ? 1 : prepRoll < 0.8 ? 2 : 3;
-  } else {
-    prepCount = prepRoll < 0.35 ? 2 : 3;
-  }
-
-  const prepIndexes = new Set();
-  while (prepIndexes.size < prepCount) {
-    prepIndexes.add(Math.floor(random() * HIGH_PERIOD_LETTERS.length));
-  }
+  const prepCount = 1;
+  const prepIndexes = new Set([Math.floor(random() * 3)]);
 
   const periodTokens = {};
   HIGH_PERIOD_LETTERS.forEach((periodLetter, idx) => {
@@ -975,9 +965,21 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
       return;
     }
 
-    const chosenCourse = courseSequence[idx];
-    const chosenLevel = levelSequence[idx];
-    periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
+    if (idx >= 0 && idx <= 2) {
+      const chosenCourse = courseSequence[idx];
+      const chosenLevel = levelSequence[idx];
+      periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
+      return;
+    }
+
+    if (idx >= 7 && idx <= 9) {
+      const chosenCourse = courseSequence[idx - 4];
+      const chosenLevel = levelSequence[idx - 4];
+      periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
+      return;
+    }
+
+    periodTokens[periodLetter] = buildSpecialEntry('Flex / Advisory', 'support');
   });
 
   const weeklyRows = buildHighWeeklyRowsFromTokens(periodTokens, lunchWave);
@@ -1665,7 +1667,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                     )}
 
                     <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.76rem', color: '#8f8f8f', textAlign: 'center' }}>
-                      Weekly rotating matrix stays fully covered Monday-Friday with one prep block, one lunch wave slot, and balanced morning/afternoon classes.
+                      Weekly rotating matrix stays fully covered Monday-Friday with one prep block, one lunch wave slot, and balanced 3-before/3-after classes.
                     </div>
 
                     {schoolType === 'High' && renderLunchWaveMatrix()}
