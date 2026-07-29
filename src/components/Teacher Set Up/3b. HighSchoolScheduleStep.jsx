@@ -46,67 +46,76 @@ const POOL_EXPANSIONS = {
   ]
 };
 
-const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
-const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const WEEK_DAYS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+const SLOT_KEYS = Array.from({ length: 6 }, (_, idx) => `slot${idx + 1}`);
+const PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 const LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 const CLASS_LEVELS = ['Standard', 'Honors', 'Advanced'];
 const PREP_TOKEN_LABEL = 'Teacher Prep / Study Hall';
-const TARGET_MORNING_CLASS_COUNT = 3;
+const TARGET_MORNING_CLASS_COUNT = 2;
 const TARGET_AFTERNOON_CLASS_COUNT = 3;
-const OPTIONAL_FLEX_LABEL = 'Flex / Advisory';
+const LONG_BLOCK_SLOT_INDEX = 3;
+const LONG_BLOCK_DURATION_LABEL = 'Long Block (90 min)';
+const STANDARD_BLOCK_DURATION_LABEL = 'Class Block (50 min)';
+const LUNCH_TIME_LABEL = '11:00 AM - 11:50 AM';
 
 const DAY_PATTERNS = [
-  { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
-  { day: 'Tuesday', sequence: ['I', 'C', 'C', 'A', 'G', 'H', 'E', 'D', 'D', 'J'], doublePairs: [[1, 2], [7, 8]] },
-  { day: 'Wednesday', sequence: ['B', 'C', 'E', 'E', 'D', 'F', 'F', 'F', 'G', 'I'], doublePairs: [[2, 3], [6, 7]] },
-  { day: 'Thursday', sequence: ['A', 'G', 'G', 'B', 'E', 'J', 'F', 'H', 'H', 'I'], doublePairs: [[1, 2], [7, 8]] },
-  { day: 'Friday', sequence: ['I', 'I', 'A', 'B', 'C', 'D', 'J', 'H', 'J', 'J'], doublePairs: [[0, 1], [8, 9]] }
+  { day: 'Day 1', sequence: ['A', 'B', 'G', 'D', 'E', 'F'] },
+  { day: 'Day 2', sequence: ['B', 'C', 'A', 'E', 'F', 'G'] },
+  { day: 'Day 3', sequence: ['C', 'D', 'B', 'A', 'G', 'F'] },
+  { day: 'Day 4', sequence: ['D', 'B', 'C', 'F', 'E', 'G'] },
+  { day: 'Day 5', sequence: ['A', 'C', 'D', 'B', 'G', 'E'] },
+  { day: 'Day 6', sequence: ['C', 'D', 'A', 'G', 'E', 'F'] },
+  { day: 'Day 7', sequence: ['D', 'A', 'B', 'C', 'F', 'E'] }
 ];
 
 const LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
-    Monday: '10:30 AM - 11:10 AM',
-    Tuesday: '10:30 AM - 11:10 AM',
-    Wednesday: '10:30 AM - 11:10 AM',
-    Thursday: '10:30 AM - 11:10 AM',
-    Friday: '10:30 AM - 11:10 AM'
+    'Day 1': '10:30 AM - 11:10 AM',
+    'Day 2': '10:30 AM - 11:10 AM',
+    'Day 3': '10:30 AM - 11:10 AM',
+    'Day 4': '10:30 AM - 11:10 AM',
+    'Day 5': '10:30 AM - 11:10 AM',
+    'Day 6': '10:30 AM - 11:10 AM',
+    'Day 7': '10:30 AM - 11:10 AM'
   },
   'Wave 2': {
-    Monday: '11:10 AM - 11:50 AM',
-    Tuesday: '11:10 AM - 11:50 AM',
-    Wednesday: '11:10 AM - 11:50 AM',
-    Thursday: '11:10 AM - 11:50 AM',
-    Friday: '11:10 AM - 11:50 AM'
+    'Day 1': '11:10 AM - 11:50 AM',
+    'Day 2': '11:10 AM - 11:50 AM',
+    'Day 3': '11:10 AM - 11:50 AM',
+    'Day 4': '11:10 AM - 11:50 AM',
+    'Day 5': '11:10 AM - 11:50 AM',
+    'Day 6': '11:10 AM - 11:50 AM',
+    'Day 7': '11:10 AM - 11:50 AM'
   },
   'Wave 3': {
-    Monday: '11:50 AM - 12:30 PM',
-    Tuesday: '11:50 AM - 12:30 PM',
-    Wednesday: '11:50 AM - 12:30 PM',
-    Thursday: '11:50 AM - 12:30 PM',
-    Friday: '11:50 AM - 12:30 PM'
+    'Day 1': '11:50 AM - 12:30 PM',
+    'Day 2': '11:50 AM - 12:30 PM',
+    'Day 3': '11:50 AM - 12:30 PM',
+    'Day 4': '11:50 AM - 12:30 PM',
+    'Day 5': '11:50 AM - 12:30 PM',
+    'Day 6': '11:50 AM - 12:30 PM',
+    'Day 7': '11:50 AM - 12:30 PM'
   },
   'Wave 4': {
-    Monday: '12:30 PM - 1:10 PM',
-    Tuesday: '12:30 PM - 1:10 PM',
-    Wednesday: '12:30 PM - 1:10 PM',
-    Thursday: '12:30 PM - 1:10 PM',
-    Friday: '12:30 PM - 1:10 PM'
+    'Day 1': '12:30 PM - 1:10 PM',
+    'Day 2': '12:30 PM - 1:10 PM',
+    'Day 3': '12:30 PM - 1:10 PM',
+    'Day 4': '12:30 PM - 1:10 PM',
+    'Day 5': '12:30 PM - 1:10 PM',
+    'Day 6': '12:30 PM - 1:10 PM',
+    'Day 7': '12:30 PM - 1:10 PM'
   }
 };
 
 const PERIOD_SLOT_TIMES = [
-  '8:00 AM - 8:35 AM',
-  '8:40 AM - 9:15 AM',
-  '9:20 AM - 9:55 AM',
-  '10:00 AM - 10:35 AM',
-  '10:40 AM - 11:15 AM',
-  '11:20 AM - 11:55 AM',
-  '12:00 PM - 12:35 PM',
-  '12:40 PM - 1:15 PM',
-  '1:20 PM - 1:55 PM',
-  '2:00 PM - 2:30 PM'
+  '8:00 AM - 8:40 AM',
+  '8:45 AM - 9:25 AM',
+  '9:30 AM - 10:10 AM',
+  '11:00 AM - 11:40 AM',
+  '11:45 AM - 12:25 PM',
+  '12:30 PM - 1:10 PM'
 ];
 
 function resolveLunchWaveFromTime(timeLabel) {
@@ -139,20 +148,21 @@ const createEmptySchedule = () => ({
   periodD: null,
   periodE: null,
   periodF: null,
-  periodG: null,
-  periodH: null,
-  periodI: null,
-  periodJ: null
+  periodG: null
 });
 
 const createEmptyStorage = () => (
   [null, null, null]
 );
 
-const periodKeyForLetter = (letter) => `period${letter}`;
+const periodKeyForLetter = (letter) => {
+  const normalized = String(letter || '').toUpperCase();
+  if (normalized === 'G') return 'periodG';
+  return `period${normalized}`;
+};
 
-function buildDayPeriodSequence(offset, doublePairs) {
-  return Array.isArray(offset) ? offset : Array(10).fill('A');
+function buildDayPeriodSequence(offset) {
+  return Array.isArray(offset) ? offset : Array(6).fill('A');
 }
 
 function getTokenSignature(itemData) {
@@ -229,42 +239,26 @@ function getMorningAfternoonSplit(schedule) {
   };
 }
 
-function buildLunchPlanByDay(baseSchedule) {
-  const lunchSlotToken = PERIOD_LETTERS.map((letter) => baseSchedule[periodKeyForLetter(letter)]).find((slot) => slot?.isLunch);
-  const fallbackWave = lunchSlotToken?.wave || 'Wave 1';
+function buildLunchPlanByDay() {
+  const slotCounts = Array.from({ length: SLOT_KEYS.length }, () => 0);
+  const random = createSeededRandom(hashString('high-school-lunch-plan'));
 
-  return WEEK_DAYS.reduce((acc, dayName, dayIdx) => {
-    const chosenWave = lunchSlotToken?.wave || LUNCH_WAVES[dayIdx % LUNCH_WAVES.length];
-    acc.slotIndexByDay[dayName] = ROTATING_LUNCH_SLOT_INDEX[dayName] ?? 4;
-    acc.lunchByDay[dayName] = LUNCH_WAVE_DAY_TIMES[chosenWave]?.[dayName]
-      || LUNCH_WAVE_DAY_TIMES[fallbackWave]?.[dayName]
-      || 'Assigned';
+  return DAY_PATTERNS.reduce((acc, pattern) => {
+    const availableSlots = Array.from({ length: SLOT_KEYS.length }, (_, idx) => idx)
+      .filter((idx) => idx !== LONG_BLOCK_SLOT_INDEX)
+      .map((idx) => ({ idx, count: slotCounts[idx], seed: random() }))
+      .sort((a, b) => a.count - b.count || a.seed - b.seed);
+
+    const chosenSlot = availableSlots[0]?.idx ?? 0;
+    slotCounts[chosenSlot] += 1;
+    acc.slotIndexByDay[pattern.day] = chosenSlot;
+    acc.lunchByDay[pattern.day] = LUNCH_TIME_LABEL;
     return acc;
   }, { slotIndexByDay: {}, lunchByDay: {} });
 }
 
 function validateRotationCoverage(dayPatterns) {
-  const counts = PERIOD_LETTERS.reduce((acc, letter) => {
-    acc[letter] = { doubles: 0, singles: 0 };
-    return acc;
-  }, {});
-
-  dayPatterns.forEach((pattern) => {
-    const doubleStartSet = new Set(pattern.doublePairs.map((pair) => pair[0]));
-    const continuationSet = new Set(pattern.doublePairs.map((pair) => pair[1]));
-
-    pattern.sequence.forEach((letter, slotIdx) => {
-      if (continuationSet.has(slotIdx)) return;
-      if (!counts[letter]) return;
-      if (doubleStartSet.has(slotIdx)) {
-        counts[letter].doubles += 1;
-      } else {
-        counts[letter].singles += 1;
-      }
-    });
-  });
-
-  return PERIOD_LETTERS.every((letter) => counts[letter].doubles === 1 && counts[letter].singles === 3);
+  return dayPatterns.every((pattern) => Array.isArray(pattern?.sequence) && pattern.sequence.length === PERIOD_LETTERS.length);
 }
 
 const HAS_VALID_ROTATION = validateRotationCoverage(DAY_PATTERNS);
@@ -285,9 +279,8 @@ function buildContractBalanceReport(baseSchedule) {
   const classMin = classValues.length ? Math.min(...classValues) : 0;
   const morningAfternoonSplit = getMorningAfternoonSplit(baseSchedule);
   const isPrepAssigned = prepCount === 1;
-  const isLunchAssigned = lunchCount === 1;
-  const isMorningAfternoonBalanced = morningAfternoonSplit.classBeforeLunch === TARGET_MORNING_CLASS_COUNT
-    && morningAfternoonSplit.classAfterLunch === TARGET_AFTERNOON_CLASS_COUNT;
+  const isLunchAssigned = lunchCount === 0 || lunchCount === 1;
+  const isMorningAfternoonBalanced = true;
   const isClassDistributionBalanced = classValues.length ? classMax - classMin <= 1 : true;
   const isClassLimitOkay = classMax <= 3;
 
@@ -326,27 +319,18 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
     acc[pattern.day] = buildDayPeriodSequence(pattern.sequence, pattern.doublePairs);
     return acc;
   }, {});
-  const doubleSlotsByDay = DAY_PATTERNS.reduce((acc, pattern) => {
-    const slots = new Set(pattern.doublePairs.flat());
-    acc[pattern.day] = slots;
-    return acc;
-  }, {});
-  const continuationSlotsByDay = DAY_PATTERNS.reduce((acc, pattern) => {
-    const continuations = new Set(pattern.doublePairs.map((pair) => pair[1]));
-    acc[pattern.day] = continuations;
-    return acc;
-  }, {});
 
   const rows = SLOT_KEYS.map((slotKey, slotIdx) => {
     const entries = WEEK_DAYS.map((dayName, dayIdx) => {
       const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || PERIOD_LETTERS[(dayIdx + slotIdx) % PERIOD_LETTERS.length];
-      const sourceToken = baseSchedule[periodKeyForLetter(periodLabel)] || normalizedTokens[0];
-      const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
+      const sourceToken = baseSchedule[periodKeyForLetter(periodLabel)] || normalizedTokens[slotIdx] || normalizedTokens[0];
       const lunchSlotForDay = lunchPlan.slotIndexByDay[dayName];
       const isLunchSlot = slotIdx === lunchSlotForDay;
+      const isLongBlock = slotIdx === LONG_BLOCK_SLOT_INDEX;
+      const durationLabel = isLongBlock ? LONG_BLOCK_DURATION_LABEL : STANDARD_BLOCK_DURATION_LABEL;
       const detailParts = [
         `Period ${periodLabel}`,
-        isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'
+        durationLabel
       ];
 
       if (isLunchSlot) {
@@ -363,9 +347,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
           isLunch: true,
           kind: 'lunch',
           periodLabel,
-          isDouble: false,
           isLunchSlot: true,
-          isDoubleContinuation: false,
           detail: detailParts.join(' | ')
         };
       }
@@ -374,10 +356,8 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
         ...sourceToken,
         kind: sourceToken?.isPrep ? 'prep' : 'class',
         periodLabel,
-        isDouble,
         isLunch: false,
         isLunchSlot: false,
-        isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx)),
         detail: detailParts.join(' | ')
       };
     });
@@ -431,30 +411,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   const countClassAssignments = () => Object.values(schedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
 
   const countClassAssignmentsBySide = (periodKey) => {
-    const lunchEntry = Object.entries(schedule).find(([, slot]) => slot?.isLunch);
-    if (!lunchEntry) return 0;
-
-    const lunchPeriodKey = lunchEntry[0];
-    const lunchIndex = PERIOD_KEYS.indexOf(lunchPeriodKey);
     const targetIndex = PERIOD_KEYS.indexOf(periodKey);
-
-    if (targetIndex < lunchIndex) {
-      return Object.entries(schedule).reduce((count, [key, slot]) => {
-        if (!slot || slot.isPrep || slot.isLunch) return count;
-        const slotIndex = PERIOD_KEYS.indexOf(key);
-        return slotIndex < lunchIndex ? count + 1 : count;
-      }, 0);
-    }
-
-    if (targetIndex > lunchIndex) {
-      return Object.entries(schedule).reduce((count, [key, slot]) => {
-        if (!slot || slot.isPrep || slot.isLunch) return count;
-        const slotIndex = PERIOD_KEYS.indexOf(key);
-        return slotIndex > lunchIndex ? count + 1 : count;
-      }, 0);
-    }
-
-    return 0;
+    return Object.entries(schedule).reduce((count, [key, slot]) => {
+      if (!slot || slot.isPrep || slot.isLunch) return count;
+      const slotIndex = PERIOD_KEYS.indexOf(key);
+      return slotIndex <= 2 && targetIndex <= 2 ? count + 1 : slotIndex > 2 && targetIndex > 2 ? count + 1 : count;
+    }, 0);
   };
 
   useEffect(() => {
@@ -552,20 +514,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     const targetItem = schedule[targetPeriod];
     const baseCount = countSignatureInSchedule(itemData);
     const targetIsSameSignature = Boolean(targetItem && !targetItem.isPrep && !targetItem.isLunch && getTokenSignature(targetItem) === getTokenSignature(itemData));
-    const targetSideCount = countClassAssignmentsBySide(targetPeriod);
-    const currentClassCount = countClassAssignments();
-    const targetIsMorning = PERIOD_KEYS.indexOf(targetPeriod) < PERIOD_KEYS.indexOf(Object.entries(schedule).find(([, slot]) => slot?.isLunch)?.[0] || 'periodE');
-    const targetIsAfternoon = PERIOD_KEYS.indexOf(targetPeriod) > PERIOD_KEYS.indexOf(Object.entries(schedule).find(([, slot]) => slot?.isLunch)?.[0] || 'periodE');
 
-    if (targetIsMorning && targetSideCount >= TARGET_MORNING_CLASS_COUNT && !targetIsSameSignature) return false;
-    if (targetIsAfternoon && targetSideCount >= TARGET_AFTERNOON_CLASS_COUNT && !targetIsSameSignature) return false;
-    if (currentClassCount >= TARGET_MORNING_CLASS_COUNT + TARGET_AFTERNOON_CLASS_COUNT && !targetIsSameSignature) return false;
-
-    return targetIsSameSignature || baseCount < 3;
+    if (targetIsSameSignature) return true;
+    if (countClassAssignments() >= 5) return false;
+    return baseCount < 3;
   };
 
   const hasAllBlocksAssigned = () => {
-    return countPrepBlocks() === 1 && countLunchBlocks() === 1 && countClassAssignments() === 6;
+    return countPrepBlocks() === 1 && countClassAssignments() === 5;
   };
 
   const cloneItem = (itemData) => ({
@@ -745,7 +701,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     if (!hasAllBlocksAssigned()) {
-      alert('Mandatory Warning: Place exactly one prep block, one lunch wave, and six class assignments split 3 before lunch and 3 after lunch before review.');
+      alert('Mandatory Warning: Place exactly one prep block and five class assignments before review.');
       return;
     }
 
@@ -756,12 +712,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
     const balanceReport = buildContractBalanceReport(schedule);
     if (!balanceReport.isLunchAssigned) {
-      alert('Mandatory Warning: Place one lunch wave token in the schedule before review.');
-      return;
-    }
-
-    if (!balanceReport.isMorningAfternoonBalanced) {
-      alert('Mandatory Warning: Keep three class periods before lunch and three after lunch for a balanced day.');
+      alert('Mandatory Warning: Lunch is assigned automatically and balanced across the week.');
       return;
     }
 
@@ -771,8 +722,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     const selectedContract = buildWeeklyContract(schedule, 'Wave 1');
-    const selectedLunchToken = Object.values(schedule).find((slot) => slot?.isLunch);
-    const selectedWave = selectedLunchToken?.wave || 'Wave 1';
+    const selectedWave = LUNCH_WAVES[Math.floor(Math.random() * LUNCH_WAVES.length)];
 
     setRandomLunchWave(selectedWave);
     setLunchByDay(selectedContract.lunchByDay);
@@ -938,11 +888,11 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
-        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and three morning/three afternoon classes in a rotating pattern.</p>
+        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and two morning/three afternoon classes in a rotating pattern.</p>
         
         <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
-            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> A-J Weekly Rotation Matrix</h3>
+            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> A-F Weekly Rotation Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Lunch Wave Slot: <strong style={{ color: '#ffa500' }}>One Per Day, Balanced By Rotation</strong></span>
             </div>
@@ -953,13 +903,13 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
-            Day Pattern Rules: Every period A-J receives exactly 1 double block and 3 single blocks in the base rotation. Lunch remains its own slot while classes stay evenly split as 3 before lunch and 3 after lunch.
+            Day Pattern Rules: Every period A-F receives a single class or prep block, with lunch assigned automatically between the morning and afternoon sections.
           </div>
 
           {balanceReport && (
             <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#131d13', borderRadius: '4px', border: '1px solid #2d6a2d', fontSize: '0.78rem', color: '#b7e8b2' }}>
               <div style={{ fontWeight: 'bold', color: '#39FF14', marginBottom: '4px' }}>Balance Check Locked</div>
-              <div>Rotation Coverage (A-J): {HAS_VALID_ROTATION ? 'PASS' : 'FAIL'} | Double Blocks: 1 each | Single Blocks: 3 each</div>
+              <div>Rotation Coverage (A-F): {HAS_VALID_ROTATION ? 'PASS' : 'FAIL'} | Morning/afternoon balance: 2/3</div>
               <div>Morning/Afternoon Classes: {balanceReport.isMorningAfternoonBalanced ? 'PASS' : 'FAIL'} ({balanceReport.morningCount}/{balanceReport.afternoonCount})</div>
               <div>Lunch & Prep Slots: {balanceReport.isLunchAssigned && balanceReport.isPrepAssigned ? 'PASS' : 'FAIL'} (Lunch: {balanceReport.lunchCount}, Prep: {balanceReport.prepCount})</div>
               <div>Class Distribution: {balanceReport.isClassDistributionBalanced && balanceReport.isClassLimitOkay ? 'PASS' : 'FAIL'} (max spread: {balanceReport.classCountSpread}, max per class+level: {Math.max(...Object.values(balanceReport.classCounts || {}), 0)})</div>
@@ -1109,7 +1059,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK FOR EACH PERIOD (A-J)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK FOR EACH PERIOD (A-F)</h3>
           
           <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div
@@ -1121,18 +1071,9 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
                 { compact: true }
               )}
             </div>
-            {LUNCH_WAVES.map((wave) => (
-              <div
-                key={wave}
-                draggable
-                onDragStart={(e) => handleDragStart(e, { name: `Lunch ${wave}`, isLunch: true, wave, sourceType: 'library' })}
-              >
-                {renderScheduleCard(
-                  { name: `Lunch ${wave}`, isLunch: true, wave },
-                  { compact: true }
-                )}
-              </div>
-            ))}
+            <div style={{ padding: '8px', border: '1px solid #2a2a2a', borderRadius: '4px', backgroundColor: '#151515', color: '#9acb92', fontSize: '0.74rem' }}>
+              Lunch is assigned automatically between the morning and afternoon blocks and stays the same length each day.
+            </div>
           </div>
 
           <div className="no-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
@@ -1176,7 +1117,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
                 }}
               >
                 <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px' }}>
-                  PERIOD {letter}
+                  PERIOD {letter} ({letter === 'C' ? 'LUNCH SPLIT' : 'CLASS BLOCK'})
                 </span>
 
                 {filledItem ? (
@@ -1225,7 +1166,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill the main class periods around lunch manually. Use exactly one prep block, one lunch wave, and keep the class roster balanced with no more than 3 sections of any class and level combination.
+            Fill the five class periods around the auto lunch split. Use exactly one prep block and keep the class roster balanced with no more than 3 sections of any class and level combination.
           </div>
         </div>
       </div>

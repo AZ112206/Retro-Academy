@@ -6,7 +6,7 @@ import { PixelAvatar } from './Teacher Set Up/TeacherAvatarCustomizer.jsx';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const SUPPORT_PERIODS = ['Hall Supervision', 'Family Outreach', 'Documentation Block', 'Student Check-ins', 'Campus Coordination'];
-const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const WEEK_DAYS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
 const ELEMENTARY_CLASS_OPTIONS = {
   'Reading & ELA': 'Language Arts & Reading',
   Mathematics: 'Elementary Math Focus',
@@ -48,56 +48,65 @@ const HIGH_LUNCH_WAVE_TIMES = {
   'Wave 3': '11:50 AM - 12:30 PM',
   'Wave 4': '12:30 PM - 1:10 PM'
 };
-const HIGH_SLOT_KEYS = Array.from({ length: 10 }, (_, idx) => `slot${idx + 1}`);
-const HIGH_PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+const HIGH_SLOT_KEYS = Array.from({ length: 6 }, (_, idx) => `slot${idx + 1}`);
+const HIGH_PERIOD_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+const HIGH_LONG_BLOCK_SLOT_INDEX = 3;
+const HIGH_LONG_BLOCK_DURATION_LABEL = 'Long Block (90 min)';
+const HIGH_STANDARD_BLOCK_DURATION_LABEL = 'Class Block (50 min)';
 const HIGH_DAY_PATTERNS = [
-  { day: 'Monday', sequence: ['A', 'A', 'C', 'D', 'E', 'F', 'G', 'H', 'B', 'B'], doublePairs: [[0, 1], [8, 9]] },
-  { day: 'Tuesday', sequence: ['I', 'C', 'C', 'A', 'G', 'H', 'E', 'D', 'D', 'J'], doublePairs: [[1, 2], [7, 8]] },
-  { day: 'Wednesday', sequence: ['B', 'C', 'E', 'E', 'D', 'F', 'F', 'F', 'G', 'I'], doublePairs: [[2, 3], [6, 7]] },
-  { day: 'Thursday', sequence: ['A', 'G', 'G', 'B', 'E', 'J', 'F', 'H', 'H', 'I'], doublePairs: [[1, 2], [7, 8]] },
-  { day: 'Friday', sequence: ['I', 'I', 'A', 'B', 'C', 'D', 'J', 'H', 'J', 'J'], doublePairs: [[0, 1], [8, 9]] }
+  { day: 'Day 1', sequence: ['A', 'B', 'G', 'D', 'E', 'F'] },
+  { day: 'Day 2', sequence: ['B', 'C', 'A', 'E', 'F', 'G'] },
+  { day: 'Day 3', sequence: ['C', 'D', 'B', 'A', 'G', 'F'] },
+  { day: 'Day 4', sequence: ['D', 'B', 'C', 'F', 'E', 'G'] },
+  { day: 'Day 5', sequence: ['A', 'C', 'D', 'B', 'G', 'E'] },
+  { day: 'Day 6', sequence: ['C', 'D', 'A', 'G', 'E', 'F'] },
+  { day: 'Day 7', sequence: ['D', 'A', 'B', 'C', 'F', 'E'] }
 ];
 const HIGH_LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
-    Monday: '10:30 AM - 11:10 AM',
-    Tuesday: '10:30 AM - 11:10 AM',
-    Wednesday: '10:30 AM - 11:10 AM',
-    Thursday: '10:30 AM - 11:10 AM',
-    Friday: '10:30 AM - 11:10 AM'
+    'Day 1': '10:30 AM - 11:10 AM',
+    'Day 2': '10:30 AM - 11:10 AM',
+    'Day 3': '10:30 AM - 11:10 AM',
+    'Day 4': '10:30 AM - 11:10 AM',
+    'Day 5': '10:30 AM - 11:10 AM',
+    'Day 6': '10:30 AM - 11:10 AM',
+    'Day 7': '10:30 AM - 11:10 AM'
   },
   'Wave 2': {
-    Monday: '11:10 AM - 11:50 AM',
-    Tuesday: '11:10 AM - 11:50 AM',
-    Wednesday: '11:10 AM - 11:50 AM',
-    Thursday: '11:10 AM - 11:50 AM',
-    Friday: '11:10 AM - 11:50 AM'
+    'Day 1': '11:10 AM - 11:50 AM',
+    'Day 2': '11:10 AM - 11:50 AM',
+    'Day 3': '11:10 AM - 11:50 AM',
+    'Day 4': '11:10 AM - 11:50 AM',
+    'Day 5': '11:10 AM - 11:50 AM',
+    'Day 6': '11:10 AM - 11:50 AM',
+    'Day 7': '11:10 AM - 11:50 AM'
   },
   'Wave 3': {
-    Monday: '11:50 AM - 12:30 PM',
-    Tuesday: '11:50 AM - 12:30 PM',
-    Wednesday: '11:50 AM - 12:30 PM',
-    Thursday: '11:50 AM - 12:30 PM',
-    Friday: '11:50 AM - 12:30 PM'
+    'Day 1': '11:50 AM - 12:30 PM',
+    'Day 2': '11:50 AM - 12:30 PM',
+    'Day 3': '11:50 AM - 12:30 PM',
+    'Day 4': '11:50 AM - 12:30 PM',
+    'Day 5': '11:50 AM - 12:30 PM',
+    'Day 6': '11:50 AM - 12:30 PM',
+    'Day 7': '11:50 AM - 12:30 PM'
   },
   'Wave 4': {
-    Monday: '12:30 PM - 1:10 PM',
-    Tuesday: '12:30 PM - 1:10 PM',
-    Wednesday: '12:30 PM - 1:10 PM',
-    Thursday: '12:30 PM - 1:10 PM',
-    Friday: '12:30 PM - 1:10 PM'
+    'Day 1': '12:30 PM - 1:10 PM',
+    'Day 2': '12:30 PM - 1:10 PM',
+    'Day 3': '12:30 PM - 1:10 PM',
+    'Day 4': '12:30 PM - 1:10 PM',
+    'Day 5': '12:30 PM - 1:10 PM',
+    'Day 6': '12:30 PM - 1:10 PM',
+    'Day 7': '12:30 PM - 1:10 PM'
   }
 };
 const HIGH_PERIOD_SLOT_TIMES = [
-  '8:00 AM - 8:35 AM',
-  '8:40 AM - 9:15 AM',
-  '9:20 AM - 9:55 AM',
-  '10:00 AM - 10:35 AM',
-  '10:40 AM - 11:15 AM',
-  '11:20 AM - 11:55 AM',
-  '12:00 PM - 12:35 PM',
-  '12:40 PM - 1:15 PM',
-  '1:20 PM - 1:55 PM',
-  '2:00 PM - 2:30 PM'
+  '8:00 AM - 8:40 AM',
+  '8:45 AM - 9:25 AM',
+  '9:30 AM - 10:10 AM',
+  '11:00 AM - 11:40 AM',
+  '11:45 AM - 12:25 PM',
+  '12:30 PM - 1:10 PM'
 ];
 
 function resolveHighLunchWaveFromTime(timeLabel) {
@@ -658,62 +667,20 @@ function buildHighSchedulePreferences(facultyRoster) {
   };
 }
 
-function buildHighLunchPlanByDay(tokens, lunchWave) {
-  const preferredSlotIndex = HIGH_LUNCH_WAVE_SLOT_INDEX[lunchWave] ?? 5;
-  const defaultLunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[lunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
-  const middaySlots = [4, 5, 6, 7];
-  const classDropCounts = HIGH_PERIOD_LETTERS.reduce((acc, letter) => {
-    acc[letter] = 0;
-    return acc;
-  }, {});
+function buildHighLunchPlanByDay(lunchWave) {
+  const slotCounts = Array.from({ length: HIGH_SLOT_KEYS.length }, () => 0);
+  const random = createSeededRandom(hashString(`high-school-preview-${lunchWave || 'balanced'}`));
 
   return HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
-    const sequence = Array.isArray(pattern?.sequence) ? pattern.sequence : Array(10).fill('A');
-    const doubleStarts = new Set((pattern?.doublePairs || []).map((pair) => pair[0]));
-    const continuations = new Set((pattern?.doublePairs || []).map((pair) => pair[1]));
-    const isAdjacentToSamePeriod = (slotIdx) => {
-      const periodLabel = sequence[slotIdx] || '';
-      if (!periodLabel) return false;
-      const prevLabel = sequence[slotIdx - 1] || null;
-      const nextLabel = sequence[slotIdx + 1] || null;
-      return prevLabel === periodLabel || nextLabel === periodLabel;
-    };
+    const availableSlots = Array.from({ length: HIGH_SLOT_KEYS.length }, (_, idx) => idx)
+      .filter((idx) => idx !== HIGH_LONG_BLOCK_SLOT_INDEX)
+      .map((idx) => ({ idx, count: slotCounts[idx], seed: random() }))
+      .sort((a, b) => a.count - b.count || a.seed - b.seed);
 
-    const baseCandidates = middaySlots
-      .filter((slotIdx) => !continuations.has(slotIdx) && !doubleStarts.has(slotIdx))
-      .map((slotIdx) => {
-        const periodLabel = sequence[slotIdx] || 'A';
-        const token = tokens[periodLabel] || null;
-        const isClass = token?.kind === 'class';
-        const priorDrops = isClass ? (classDropCounts[periodLabel] || 0) : 0;
-        const classPenalty = isClass ? 1 : 0;
-        const distancePenalty = Math.abs(slotIdx - preferredSlotIndex);
-        return {
-          slotIdx,
-          periodLabel,
-          isClass,
-          score: classPenalty * 100 + priorDrops * 10 + distancePenalty
-        };
-      })
-      .sort((a, b) => a.score - b.score);
-
-    // Never replace a slot if it is immediately next to the same period label.
-    // This prevents lunch from creating repeated same-period adjacency artifacts.
-    const candidates = baseCandidates.filter((candidate) => !isAdjacentToSamePeriod(candidate.slotIdx));
-    const resolvedCandidates = candidates.length > 0 ? candidates : baseCandidates;
-
-    const selected = resolvedCandidates[0] || {
-      slotIdx: preferredSlotIndex,
-      periodLabel: sequence[preferredSlotIndex] || 'A',
-      isClass: false
-    };
-
-    if (selected.isClass) {
-      classDropCounts[selected.periodLabel] = (classDropCounts[selected.periodLabel] || 0) + 1;
-    }
-
-    acc.slotIndexByDay[pattern.day] = selected.slotIdx;
-    acc.lunchByDay[pattern.day] = HIGH_PERIOD_SLOT_TIMES[selected.slotIdx] || defaultLunchByDay[pattern.day] || 'Assigned';
+    const chosenSlot = availableSlots[0]?.idx ?? 0;
+    slotCounts[chosenSlot] += 1;
+    acc.slotIndexByDay[pattern.day] = chosenSlot;
+    acc.lunchByDay[pattern.day] = '11:00 AM - 11:50 AM';
     return acc;
   }, { slotIndexByDay: {}, lunchByDay: {} });
 }
@@ -723,30 +690,25 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
     return Array.isArray(sequence) ? sequence : Array(10).fill('A');
   };
 
-  const lunchPlan = buildHighLunchPlanByDay(tokens, lunchWave);
+  const lunchPlan = buildHighLunchPlanByDay(lunchWave);
   const lunchByDay = lunchPlan.lunchByDay;
   const fallbackToken = buildHighScheduleFallbackToken(tokens);
   const periodSequenceByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
     acc[pattern.day] = buildDayPeriodSequence(pattern.sequence);
     return acc;
   }, {});
-  const doubleSlotsByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
-    acc[pattern.day] = new Set(pattern.doublePairs.flat());
-    return acc;
-  }, {});
-  const continuationSlotsByDay = HIGH_DAY_PATTERNS.reduce((acc, pattern) => {
-    acc[pattern.day] = new Set(pattern.doublePairs.map((pair) => pair[1]));
-    return acc;
-  }, {});
 
   return HIGH_SLOT_KEYS.map((slotKey, slotIdx) => {
     const entries = WEEK_DAYS.map((dayName, dayIdx) => {
       const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || HIGH_PERIOD_LETTERS[(dayIdx + slotIdx) % HIGH_PERIOD_LETTERS.length];
-      const token = tokens[periodLabel] || fallbackToken;
-      const isDouble = Boolean(doubleSlotsByDay[dayName]?.has(slotIdx));
+      const normalizedLabel = String(periodLabel || '').toUpperCase();
+      const tokenKey = normalizedLabel === 'G' ? 'periodG' : `period${normalizedLabel}`;
+      const token = tokens[tokenKey] || tokens[normalizedLabel] || fallbackToken;
       const lunchSlotForDay = lunchPlan.slotIndexByDay[dayName];
       const isLunchSlot = slotIdx === lunchSlotForDay;
-      const detailParts = [`Period ${periodLabel}`, isDouble ? 'Double Block (80 min)' : 'Single Block (40 min)'];
+      const isLongBlock = slotIdx === HIGH_LONG_BLOCK_SLOT_INDEX;
+      const durationLabel = isLongBlock ? HIGH_LONG_BLOCK_DURATION_LABEL : HIGH_STANDARD_BLOCK_DURATION_LABEL;
+      const detailParts = [`Period ${periodLabel}`, durationLabel];
 
       if (isLunchSlot) {
         detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
@@ -765,7 +727,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
         return {
           ...buildClassEntry(token.name, token.level || 'Standard', token.sec || null, detail),
           isLunchSlot: false,
-          isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx))
+          isDoubleContinuation: false
         };
       }
 
@@ -773,7 +735,7 @@ function buildHighWeeklyRowsFromTokens(tokens, lunchWave) {
       return {
         ...buildSpecialEntry(token.name || 'Teacher Prep / Study Hall', prepKind, { detail }),
         isLunchSlot: false,
-        isDoubleContinuation: Boolean(continuationSlotsByDay[dayName]?.has(slotIdx))
+        isDoubleContinuation: false
       };
     });
 
@@ -955,8 +917,7 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
   const courseSequence = buildHighCourseSequence(staff, coverageEntry, random);
   const levelSequence = buildHighLevelSequence(courseSequence, random);
 
-  const prepCount = 1;
-  const prepIndexes = new Set([Math.floor(random() * 3)]);
+  const prepIndexes = new Set([Math.floor(random() * HIGH_PERIOD_LETTERS.length)]);
 
   const periodTokens = {};
   HIGH_PERIOD_LETTERS.forEach((periodLetter, idx) => {
@@ -965,21 +926,9 @@ function buildHighProfileSchedule(staff, random, coverageEntry, schedulePreferen
       return;
     }
 
-    if (idx >= 0 && idx <= 2) {
-      const chosenCourse = courseSequence[idx];
-      const chosenLevel = levelSequence[idx];
-      periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
-      return;
-    }
-
-    if (idx >= 7 && idx <= 9) {
-      const chosenCourse = courseSequence[idx - 4];
-      const chosenLevel = levelSequence[idx - 4];
-      periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
-      return;
-    }
-
-    periodTokens[periodLetter] = buildSpecialEntry('Flex / Advisory', 'support');
+    const chosenCourse = courseSequence[idx % courseSequence.length];
+    const chosenLevel = levelSequence[idx % levelSequence.length];
+    periodTokens[periodLetter] = buildClassEntry(chosenCourse, chosenLevel, `Sec #${sectionBase + idx}`);
   });
 
   const weeklyRows = buildHighWeeklyRowsFromTokens(periodTokens, lunchWave);
