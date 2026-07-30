@@ -226,6 +226,13 @@ export default function RetroIcon({ kind, size = 28 }) {
       <span key="desk1" style={pixel(paper, '6px', '20px', '5px', '3px')} />,
       <span key="desk2" style={pixel(paper, '17px', '20px', '5px', '3px')} />,
     ],
+    reportCard: [
+      <span key="sheet" style={pixel(paper, '7px', '4px', '14px', '20px')} />,
+      <span key="fold" style={{ ...pixel('#cfc7bb', '17px', '4px', '4px', '4px'), clipPath: 'polygon(0 0, 100% 0, 100% 100%)' }} />,
+      <span key="line1" style={pixel(neon, '10px', '10px', '8px', '1px')} />,
+      <span key="line2" style={pixel(neon, '10px', '13px', '8px', '1px')} />,
+      <span key="line3" style={pixel(neon, '10px', '16px', '6px', '1px')} />,
+    ],
   };
 
   return <PixelCanvas size={size}>{icons[kind] || icons.book}</PixelCanvas>;

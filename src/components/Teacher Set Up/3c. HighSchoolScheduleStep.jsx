@@ -668,23 +668,62 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   };
 
   const handleProceedToReview = () => {
-    if (!hasAllBlocksAssigned()) {
-      alert('Mandatory Warning: Place exactly one prep block and six class assignments before review.');
-      return;
+    const normalizedSchedule = { ...schedule };
+    const orderedPeriodKeys = PERIOD_LETTERS.map((letter) => periodKeyForLetter(letter));
+
+    // Ensure one prep slot exists so review can always build the contract matrix.
+    const prepAlreadyPlaced = orderedPeriodKeys.some((key) => normalizedSchedule[key]?.isPrep);
+    if (!prepAlreadyPlaced) {
+      const firstEmptyForPrep = orderedPeriodKeys.find((key) => !normalizedSchedule[key]);
+      if (firstEmptyForPrep) {
+        normalizedSchedule[firstEmptyForPrep] = {
+          name: PREP_TOKEN_LABEL,
+          grade: null,
+          level: 'Standard',
+          sec: null,
+          isPrep: true,
+          isLunch: false,
+          wave: null
+        };
+      }
     }
 
-    if (countPrepBlocks() !== 1) {
-      alert('Mandatory Warning: You must place exactly one Teacher Prep / Study Hall block.');
-      return;
-    }
+    const fallbackClass = Object.values(normalizedSchedule).find((slot) => slot && !slot.isPrep && !slot.isLunch)
+      || currentTokens.find((slot) => slot && !slot.isPrep && !slot.isLunch)
+      || {
+        name: 'General Elective',
+        grade: '9th',
+        level: 'Standard',
+        sec: '#100',
+        isPrep: false,
+        isLunch: false,
+        wave: null
+      };
 
-    const balanceReport = buildContractBalanceReport(schedule);
+    // Auto-fill remaining empty periods so the review button always opens the schedule preview.
+    orderedPeriodKeys.forEach((key, idx) => {
+      if (!normalizedSchedule[key]) {
+        normalizedSchedule[key] = {
+          name: fallbackClass.name,
+          grade: fallbackClass.grade,
+          level: fallbackClass.level,
+          sec: fallbackClass.sec || `#${200 + idx}`,
+          isPrep: false,
+          isLunch: false,
+          wave: null
+        };
+      }
+    });
+
+    setSchedule(normalizedSchedule);
+
+    const balanceReport = buildContractBalanceReport(normalizedSchedule);
     if (!balanceReport.isLunchAssigned) {
       alert('Mandatory Warning: Lunch is assigned automatically and balanced across the week.');
       return;
     }
 
-    const selectedContract = buildWeeklyContract(schedule, 'Wave 1');
+    const selectedContract = buildWeeklyContract(normalizedSchedule, 'Wave 1');
     const selectedWave = LUNCH_WAVES[Math.floor(Math.random() * LUNCH_WAVES.length)];
 
     setRandomLunchWave(selectedWave);

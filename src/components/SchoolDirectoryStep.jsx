@@ -1017,6 +1017,263 @@ function generateLockedStaffSchedule(staff, schoolType, highCoverageMap = {}, hi
   return { academicYear, rows: ensureRowsHaveWeekEntries(rows), lunchWave, lunchByDay };
 }
 
+function buildTeacherDirectoryForStudents(facultyRoster) {
+  const staffList = Object.values(facultyRoster || {}).flatMap((members) => (Array.isArray(members) ? members : []));
+  const teacherLike = staffList.filter((member) => isTeacherLikeRole(member?.role));
+  const bySubject = {};
+
+  teacherLike.forEach((teacher) => {
+    const subject = resolveSubjectFromRole(teacher?.role);
+    if (!bySubject[subject]) bySubject[subject] = [];
+    bySubject[subject].push(teacher);
+  });
+
+  return { all: teacherLike, bySubject };
+}
+
+function pickTeacherNameForSubject(teacherDirectory, subject, random) {
+  const candidates = teacherDirectory?.bySubject?.[subject] || teacherDirectory?.all || [];
+  if (!Array.isArray(candidates) || candidates.length === 0) return 'Staff Teacher';
+  return candidates[Math.floor(random() * candidates.length)]?.name || 'Staff Teacher';
+}
+
+function buildElementaryStudentSchedule(student, teacherDirectory) {
+  const homeroomSeed = `${student?.grade || 'elem'}|${student?.sectionCode || student?.rosterLabel || 'HR'}`;
+  const random = createSeededRandom(hashString(homeroomSeed));
+  const isLowerElem = String(student?.grade || '').toLowerCase().includes('kindergarten')
+    || String(student?.grade || '').startsWith('0')
+    || String(student?.grade || '').startsWith('1')
+    || String(student?.grade || '').startsWith('2');
+
+  const coreCourses = isLowerElem
+    ? ['Language Arts & Reading', 'Elementary Math Focus', 'Integrated Science/SS']
+    : ['Language Arts & Reading', 'Elementary Math Focus', 'Integrated Science/SS'];
+
+  const rows = [
+    {
+      block: 'Homeroom',
+      time: '8:00 AM - 8:15 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Homeroom Teacher' }))
+    },
+    {
+      block: 'Session 1',
+      time: '8:20 AM - 9:15 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = coreCourses[dayIdx % coreCourses.length];
+        return {
+          entryType: 'class',
+          className,
+          classType: 'Standard',
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Session 2',
+      time: '9:20 AM - 10:15 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = coreCourses[(dayIdx + 1) % coreCourses.length];
+        return {
+          entryType: 'class',
+          className,
+          classType: 'Standard',
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Study Hall',
+      time: '10:20 AM - 11:00 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Homeroom Teacher' }))
+    },
+    {
+      block: 'Lunch/Recess',
+      time: '11:05 AM - 11:45 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'lunch', className: 'Lunch/Recess', classType: '', teacher: 'Grade Team' }))
+    },
+    {
+      block: 'Session 3',
+      time: '12:20 PM - 1:15 PM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = coreCourses[(dayIdx + 2) % coreCourses.length];
+        return {
+          entryType: 'class',
+          className,
+          classType: 'Standard',
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    }
+  ];
+
+  return rows;
+}
+
+function buildMiddleStudentSchedule(student, teacherDirectory) {
+  const random = createSeededRandom(hashString(`${student?.id || student?.name}|middle`));
+  const gradeMatch = String(student?.grade || '').match(/\d+/);
+  const gradeNum = gradeMatch ? Number(gradeMatch[0]) : 6;
+  const pool = Object.values(MIDDLE_CLASS_OPTIONS[gradeNum] || MIDDLE_CLASS_OPTIONS[6]);
+  const classTypes = ['Standard', 'Honors'];
+
+  const rows = [
+    {
+      block: 'Homeroom',
+      time: '8:00 AM - 8:15 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Grade Team' }))
+    },
+    {
+      block: 'Block 1',
+      time: '8:20 AM - 9:10 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = pool[dayIdx % pool.length] || 'Core Instruction';
+        return {
+          entryType: 'class',
+          className,
+          classType: classTypes[(dayIdx + 1) % classTypes.length],
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Block 2',
+      time: '9:15 AM - 10:05 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = pool[(dayIdx + 1) % pool.length] || 'Core Instruction';
+        return {
+          entryType: 'class',
+          className,
+          classType: classTypes[dayIdx % classTypes.length],
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Block 3',
+      time: '10:10 AM - 11:00 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = pool[(dayIdx + 2) % pool.length] || 'Core Instruction';
+        return {
+          entryType: 'class',
+          className,
+          classType: classTypes[(dayIdx + 1) % classTypes.length],
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Study Hall',
+      time: '11:05 AM - 11:35 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Grade Team' }))
+    },
+    {
+      block: 'Lunch',
+      time: '11:40 AM - 12:10 PM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'lunch', className: 'Lunch', classType: '', teacher: 'Grade Team' }))
+    },
+    {
+      block: 'Block 5',
+      time: '12:50 PM - 1:40 PM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = pool[(dayIdx + 3) % pool.length] || 'Core Instruction';
+        return {
+          entryType: 'class',
+          className,
+          classType: classTypes[dayIdx % classTypes.length],
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    },
+    {
+      block: 'Block 6',
+      time: '1:45 PM - 2:30 PM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        const className = pool[(dayIdx + 4) % pool.length] || 'Core Instruction';
+        return {
+          entryType: 'class',
+          className,
+          classType: classTypes[(dayIdx + 1) % classTypes.length],
+          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+        };
+      })
+    }
+  ];
+
+  return rows;
+}
+
+function buildHighStudentSchedule(student, teacherDirectory) {
+  const random = createSeededRandom(hashString(`${student?.id || student?.name}|high`));
+  const subjects = ['Mathematics', 'Science', 'History', 'ELA', 'Foreign Language'];
+  const studyHallIdx = Math.floor(random() * HIGH_SLOT_KEYS.length);
+
+  return [
+    {
+      block: 'Homeroom',
+      time: '8:00 AM - 8:15 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Homeroom Teacher' }))
+    },
+    ...HIGH_SLOT_KEYS.map((_, slotIdx) => ({
+      block: `Period ${slotIdx + 1}`,
+      time: HIGH_PERIOD_SLOT_TIMES[slotIdx] || 'Assigned by District',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        if (slotIdx === studyHallIdx) {
+          return { entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Guidance Team' };
+        }
+
+        const subject = subjects[(slotIdx + dayIdx) % subjects.length];
+        const subjectPool = HIGH_CLASS_OPTIONS[subject] || ['Core Seminar'];
+        const className = subjectPool[(slotIdx + dayIdx) % subjectPool.length];
+        const classType = CLASS_LEVELS[(slotIdx + dayIdx) % CLASS_LEVELS.length];
+
+        return {
+          entryType: 'class',
+          className,
+          classType,
+          teacher: pickTeacherNameForSubject(teacherDirectory, subject, random)
+        };
+      })
+    }))
+  ];
+}
+
+function buildStudentReportCard(scheduleRows, schoolType) {
+  const courseMap = new Map();
+  (scheduleRows || []).forEach((row) => {
+    (row.entries || []).forEach((entry) => {
+      if (!entry || entry.entryType !== 'class') return;
+      const key = `${entry.className}|${entry.classType || ''}|${entry.teacher || ''}`;
+      if (!courseMap.has(key)) {
+        courseMap.set(key, {
+          className: entry.className,
+          classType: entry.classType || 'Standard',
+          teacher: entry.teacher || 'Staff Teacher',
+          grade: 'A+'
+        });
+      }
+    });
+  });
+
+  return {
+    termLabel: schoolType === 'High' ? 'Quarter 1' : 'Trimester 1',
+    rows: Array.from(courseMap.values())
+  };
+}
+
+function buildStudentAcademicViews(student, schoolType, facultyRoster) {
+  const teacherDirectory = buildTeacherDirectoryForStudents(facultyRoster);
+  const scheduleRows = schoolType === 'High'
+    ? buildHighStudentSchedule(student, teacherDirectory)
+    : schoolType === 'Middle'
+    ? buildMiddleStudentSchedule(student, teacherDirectory)
+    : buildElementaryStudentSchedule(student, teacherDirectory);
+
+  return {
+    scheduleRows,
+    reportCard: buildStudentReportCard(scheduleRows, schoolType)
+  };
+}
+
 function StatBar({ label, value, color = '#39FF14' }) {
   return (
     <div style={{ width: '100%' }}>
@@ -1127,6 +1384,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   const [activeTab, setActiveTab] = useState('administration');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [studentViewMode, setStudentViewMode] = useState('schedule');
   const [liveProfile, setLiveProfile] = useState(null);
   const [selectedStaffSchedule, setSelectedStaffSchedule] = useState(null);
   const [showSchedule, setShowSchedule] = useState(false);
@@ -1159,6 +1417,10 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   }, [schoolType, playerAvatar, playerDepartment, playerGrade]);
 
   const studentTabKeys = useMemo(() => Object.keys(studentRoster), [studentRoster]);
+  const selectedStudentAcademic = useMemo(() => {
+    if (!selectedStudent) return null;
+    return buildStudentAcademicViews(selectedStudent, schoolType, facultyRoster);
+  }, [selectedStudent, schoolType, facultyRoster]);
   const studentSectionMap = useMemo(() => {
     return Object.entries(studentRoster).reduce((acc, [key, students]) => {
       const firstStudent = students?.[0];
@@ -1268,6 +1530,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       setShowSchedule(false);
     }
   }, [selectedStaff, schoolType, highDepartmentCoverage, highSchedulePreferences]);
+
+  useEffect(() => {
+    if (selectedStudent) {
+      setStudentViewMode('schedule');
+    }
+  }, [selectedStudent]);
 
   const handleOpenStaff = (staff) => {
     setSelectedStaff(staff);
@@ -1743,11 +2011,124 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
       {selectedStudent && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.78)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', zIndex: 60, padding: '16px', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: '760px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: '20px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
+          <div style={{ width: '100%', maxWidth: studentViewMode === 'profile' ? '760px' : '1140px', backgroundColor: '#111', border: '2px solid #39FF14', borderRadius: '8px', padding: '20px', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>{selectedStudent.name.toUpperCase()} PROFILE</h3>
+              <h3 style={{ margin: 0, color: '#39FF14', letterSpacing: '1px' }}>
+                {selectedStudent.name.toUpperCase()} {studentViewMode === 'profile' ? 'PROFILE' : studentViewMode === 'schedule' ? 'SCHEDULE' : 'REPORT CARD'}
+              </h3>
               <button style={styles.backButton} onClick={() => setSelectedStudent(null)}>CLOSE</button>
             </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+              <button
+                style={{
+                  ...styles.actionButton,
+                  backgroundColor: studentViewMode === 'schedule' ? '#f5f1dd' : '#202020',
+                  color: studentViewMode === 'schedule' ? '#111' : '#fff',
+                  border: studentViewMode === 'schedule' ? '1px solid #f5f1dd' : '1px solid #444',
+                  padding: '10px 14px',
+                  fontSize: '0.82rem'
+                }}
+                onClick={() => setStudentViewMode('schedule')}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="grid" size={18} /> VIEW SCHEDULE</span>
+              </button>
+
+              <button
+                style={{
+                  ...styles.actionButton,
+                  backgroundColor: studentViewMode === 'report' ? '#f5f1dd' : '#202020',
+                  color: studentViewMode === 'report' ? '#111' : '#fff',
+                  border: studentViewMode === 'report' ? '1px solid #f5f1dd' : '1px solid #444',
+                  padding: '10px 14px',
+                  fontSize: '0.82rem'
+                }}
+                onClick={() => setStudentViewMode('report')}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="reportCard" size={18} /> VIEW REPORT CARD</span>
+              </button>
+            </div>
+
+            {studentViewMode === 'schedule' && selectedStudentAcademic ? (
+              <>
+                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem', textAlign: 'center' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #39FF14' }}>
+                        <th style={{ padding: '10px 8px', color: '#39FF14', width: '22%' }}>BLOCK / TIME</th>
+                        {WEEK_DAYS.map((day) => (
+                          <th key={day} style={{ padding: '10px 8px', color: '#39FF14' }}>{day.toUpperCase()}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedStudentAcademic.scheduleRows.map((row, rowIdx) => (
+                        <tr key={`${row.block}-${rowIdx}`} style={{ borderBottom: '1px solid #242424' }}>
+                          <td style={{ padding: '10px 8px', borderRight: '1px solid #222' }}>
+                            <div style={{ color: '#39FF14', fontWeight: 'bold' }}>{row.block}</div>
+                            <div style={{ color: '#8d8d8d', fontSize: '0.72rem' }}>{row.time}</div>
+                          </td>
+                          {row.entries.map((entry, entryIdx) => {
+                            const isStudyHall = entry.entryType === 'studyhall';
+                            const isClass = entry.entryType === 'class';
+                            return (
+                              <td key={`${row.block}-${entryIdx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
+                                <div style={{ color: isStudyHall ? '#ff9f43' : '#fff', fontWeight: 'bold', fontSize: '0.8rem' }}>{entry.className}</div>
+                                {schoolType === 'High' && (
+                                  <div style={{ color: '#9acb92', fontSize: '0.7rem', marginTop: '3px' }}>Type: {entry.classType || 'Standard'}</div>
+                                )}
+                                {(isClass || isStudyHall) && (
+                                  <div style={{ color: '#00FFFF', fontSize: '0.68rem', marginTop: '3px' }}>Teacher: {entry.teacher}</div>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p style={{ margin: '10px 0 0', color: '#9acb92', fontSize: '0.78rem', textAlign: 'center' }}>
+                  Study Hall is listed in the schedule but is excluded from report card grading.
+                </p>
+              </>
+            ) : null}
+
+            {studentViewMode === 'report' && selectedStudentAcademic ? (
+              <>
+                <div style={{ marginBottom: '10px', color: '#39FF14', fontSize: '0.84rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  {selectedStudentAcademic.reportCard.termLabel} REPORT
+                </div>
+                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #39FF14' }}>
+                        <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>CLASS</th>
+                        {schoolType === 'High' ? <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>CLASS TYPE</th> : null}
+                        <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>TEACHER</th>
+                        <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'center' }}>{selectedStudentAcademic.reportCard.termLabel}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedStudentAcademic.reportCard.rows.map((row, idx) => (
+                        <tr key={`${row.className}-${row.teacher}-${idx}`} style={{ borderBottom: '1px solid #242424' }}>
+                          <td style={{ padding: '10px 8px' }}>{row.className}</td>
+                          {schoolType === 'High' ? <td style={{ padding: '10px 8px' }}>{row.classType}</td> : null}
+                          <td style={{ padding: '10px 8px' }}>{row.teacher}</td>
+                          <td style={{ padding: '10px 8px', textAlign: 'center', color: '#39FF14', fontWeight: 'bold' }}>{row.grade}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p style={{ margin: '10px 0 0', color: '#9acb92', fontSize: '0.78rem', textAlign: 'center' }}>
+                  Default grading starts at A+ for all graded classes. Study Hall is not graded.
+                </p>
+              </>
+            ) : null}
+
+            {studentViewMode === 'profile' ? (
+              <>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
               <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -1781,6 +2162,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                 <StatBar label="Organization" value={selectedStudent.profile.personality.organization} color="#7b9acc" />
               </div>
             </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}
