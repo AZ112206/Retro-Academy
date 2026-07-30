@@ -32,6 +32,7 @@ function App() {
   const [activeSlot, setActiveSlot] = useState(initialSession?.activeSlot || null);
   const [sessionSnapshot, setSessionSnapshot] = useState(initialSession?.sessionSnapshot || null);
   const [saveMessage, setSaveMessage] = useState('');
+  const [showSavePopup, setShowSavePopup] = useState(false);
 
   useEffect(() => {
     try {
@@ -98,8 +99,9 @@ function App() {
 
     setSaveSlots(nextSlots);
     persistActiveSession(activeSlot);
-    setSaveMessage(`Saved to ${activeSlot.slotName}`);
-    window.setTimeout(() => setSaveMessage(''), 1800);
+    setSaveMessage('');
+    setShowSavePopup(true);
+    window.setTimeout(() => setShowSavePopup(false), 3000);
   };
 
   useEffect(() => {
@@ -146,8 +148,44 @@ function App() {
           </button>
         </div>
       )}
+
+      {showSavePopup && (
+        <div style={savePopupStyles.modalOverlay}>
+          <div style={savePopupStyles.modalBox}>
+            <h3 style={savePopupStyles.modalHeading}>GAME SAVED!</h3>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const savePopupStyles = {
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100
+  },
+  modalBox: {
+    width: '100%',
+    maxWidth: '460px',
+    border: '2px solid #39FF14',
+    borderRadius: '8px',
+    backgroundColor: '#111',
+    padding: '26px',
+    boxShadow: '0 0 20px rgba(57, 255, 20, 0.25)',
+    textAlign: 'center',
+    fontFamily: '"Courier New", Courier, monospace'
+  },
+  modalHeading: {
+    margin: 0,
+    color: '#39FF14',
+    letterSpacing: '1px'
+  }
+};
 
 export default App;

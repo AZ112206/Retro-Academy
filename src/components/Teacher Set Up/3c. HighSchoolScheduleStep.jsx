@@ -177,28 +177,9 @@ function buildBalancedCatalog(basePool, totalCount = 8) {
   const baseChoices = pool.length ? pool : [{ name: 'General Elective', grade: '9th' }];
   const levelCycle = [...CLASS_LEVELS, ...CLASS_LEVELS];
 
-  const usedSignatures = new Map();
-
   for (let idx = 0; idx < totalCount; idx += 1) {
     const base = baseChoices[idx % baseChoices.length] || { name: 'General Elective', grade: '9th' };
     const level = levelCycle[idx % levelCycle.length] || 'Standard';
-    const signature = `${base.name}|${level}`;
-    const currentCount = usedSignatures.get(signature) || 0;
-
-    if (currentCount >= 3) {
-      const fallbackLevel = CLASS_LEVELS[idx % CLASS_LEVELS.length] || 'Standard';
-      const fallbackSignature = `${base.name}|${fallbackLevel}`;
-      if ((usedSignatures.get(fallbackSignature) || 0) < 3) {
-        balancedCatalog.push({
-          name: base.name,
-          grade: base.grade,
-          level: fallbackLevel,
-          sec: `#${100 + idx}`
-        });
-        usedSignatures.set(fallbackSignature, (usedSignatures.get(fallbackSignature) || 0) + 1);
-        continue;
-      }
-    }
 
     balancedCatalog.push({
       name: base.name,
@@ -206,7 +187,6 @@ function buildBalancedCatalog(basePool, totalCount = 8) {
       level,
       sec: `#${100 + idx}`
     });
-    usedSignatures.set(signature, currentCount + 1);
   }
 
   return balancedCatalog;
@@ -258,7 +238,7 @@ function buildLunchPlanByDay() {
 }
 
 function validateRotationCoverage(dayPatterns) {
-  return dayPatterns.every((pattern) => Array.isArray(pattern?.sequence) && pattern.sequence.length === PERIOD_LETTERS.length);
+  return dayPatterns.every((pattern) => Array.isArray(pattern?.sequence) && pattern.sequence.length === SLOT_KEYS.length);
 }
 
 const HAS_VALID_ROTATION = validateRotationCoverage(DAY_PATTERNS);
@@ -281,8 +261,8 @@ function buildContractBalanceReport(baseSchedule) {
   const isPrepAssigned = prepCount === 1;
   const isLunchAssigned = lunchCount === 0 || lunchCount === 1;
   const isMorningAfternoonBalanced = true;
-  const isClassDistributionBalanced = classValues.length ? classMax - classMin <= 1 : true;
-  const isClassLimitOkay = classMax <= 3;
+  const isClassDistributionBalanced = true;
+  const isClassLimitOkay = true;
 
   return {
     classCounts,
@@ -450,7 +430,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     const basePool = POOL_EXPANSIONS[deptId] || [];
-    const generatedTokens = buildBalancedCatalog(basePool, 8)
+    const generatedTokens = buildBalancedCatalog(basePool, 4)
       .map((token) => ({ ...token, sec: token.sec || `#${Math.floor(Math.random() * 900) + 100}` }))
       .sort(() => Math.random() - 0.5);
 
@@ -492,12 +472,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     return Object.values(schedule).filter(slot => slot?.isLunch).length;
   };
 
-  const countSignatureInSchedule = (itemData) => {
-    if (!itemData || itemData.isPrep || itemData.isLunch) return 0;
-    const signature = getTokenSignature(itemData);
-    return Object.values(schedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch && getTokenSignature(slot) === signature).length;
-  };
-
   const canPlaceTokenInSchedule = (itemData, targetPeriod) => {
     if (!itemData) return false;
     if (itemData.isPrep) {
@@ -512,16 +486,15 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
 
     const targetItem = schedule[targetPeriod];
-    const baseCount = countSignatureInSchedule(itemData);
     const targetIsSameSignature = Boolean(targetItem && !targetItem.isPrep && !targetItem.isLunch && getTokenSignature(targetItem) === getTokenSignature(itemData));
 
     if (targetIsSameSignature) return true;
-    if (countClassAssignments() >= 5) return false;
-    return baseCount < 3;
+    if (countClassAssignments() >= 6) return false;
+    return true;
   };
 
   const hasAllBlocksAssigned = () => {
-    return countPrepBlocks() === 1 && countClassAssignments() === 5;
+    return countPrepBlocks() === 1 && countClassAssignments() === 6;
   };
 
   const cloneItem = (itemData) => ({
@@ -572,7 +545,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       const targetItem = schedule[targetPeriod];
 
       if (!canPlaceTokenInSchedule(payload, targetPeriod)) {
-        alert('Administrative Block: That placement would exceed the max of 3 sections for the same class and level or break the one prep/lunch rule.');
+        alert('Administrative Block: That placement would exceed the six-class limit or break the one prep/lunch rule.');
         return;
       }
 
@@ -636,7 +609,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         const targetItem = getStorageItem(nextStorage, targetSlotIndex);
 
         if (payload && !canPlaceTokenInSchedule(payload, 'backup')) {
-          alert('Administrative Block: That placement would exceed the max of 3 sections for the same class and level or break the one prep/lunch rule.');
+          alert('Administrative Block: That placement would exceed the six-class limit or break the one prep/lunch rule.');
           return prevStorage;
         }
 
@@ -695,13 +668,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   };
 
   const handleProceedToReview = () => {
-    if (!HAS_VALID_ROTATION) {
-      alert('Administrative Warning: The high school rotation is out of balance. Reconfigure the weekly sequence before review.');
-      return;
-    }
-
     if (!hasAllBlocksAssigned()) {
-      alert('Mandatory Warning: Place exactly one prep block and five class assignments before review.');
+      alert('Mandatory Warning: Place exactly one prep block and six class assignments before review.');
       return;
     }
 
@@ -713,11 +681,6 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     const balanceReport = buildContractBalanceReport(schedule);
     if (!balanceReport.isLunchAssigned) {
       alert('Mandatory Warning: Lunch is assigned automatically and balanced across the week.');
-      return;
-    }
-
-    if (!balanceReport.isClassLimitOkay) {
-      alert('Mandatory Warning: No class and level combination may appear more than 3 times.');
       return;
     }
 
@@ -888,7 +851,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     return (
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
-        <p style={styles.subtitle}>Review your locked 5-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and two morning/three afternoon classes in a rotating pattern.</p>
+        <p style={styles.subtitle}>Review your locked 7-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and two morning/three afternoon classes in a rotating pattern.</p>
         
         <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
@@ -1003,7 +966,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#1a1a1a', borderRadius: '4px', fontSize: '0.85rem', color: '#888', textAlign: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-J throughout the week with one prep block, one lunch wave slot, and balanced morning/afternoon classes.</span></span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="info" /> <span><strong>Matrix Core Rotation Rule:</strong> This contract uses periods A-G throughout the week with one prep block, one lunch wave slot, and balanced morning/afternoon classes.</span></span>
           </div>
 
         </div>
@@ -1058,8 +1021,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
-        <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK FOR EACH PERIOD (A-F)</h3>
+        <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14', minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK CLASSES (4 OPTIONS)</h3>
           
           <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div
@@ -1076,14 +1039,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </div>
           </div>
 
-          <div className="no-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'flex-start' }}>
             {currentTokens.map((course, i) => (
               <div
                 key={i}
                 draggable
                 onDragStart={(e) => handleDragStart(e, { ...course, sourceType: 'library' })}
               >
-                {renderScheduleCard(course, { draggable: false, compact: true })}
+                {renderScheduleCard(course, { draggable: false, compact: false })}
               </div>
             ))}
           </div>
@@ -1166,7 +1129,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill the five class periods around the auto lunch split. Use exactly one prep block and keep the class roster balanced with no more than 3 sections of any class and level combination.
+            Fill the six class periods around the auto lunch split. Use exactly one prep block and keep the class roster balanced with no more than 3 sections of any class and level combination.
           </div>
         </div>
       </div>
