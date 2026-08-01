@@ -35,6 +35,11 @@ const MIDDLE_CLASS_OPTIONS = {
     'Social Studies': 'Early American History & Civics Foundations'
   }
 };
+const MIDDLE_SPECIALIST_ROTATION = {
+  6: { specialistBlock: 'Block 2', studyHallBlock: 'Block 4', lunchLabel: 'Wave A (Early)' },
+  7: { specialistBlock: 'Block 4', studyHallBlock: 'Block 6', lunchLabel: 'Wave B (Mid)' },
+  8: { specialistBlock: 'Block 6', studyHallBlock: 'Block 2', lunchLabel: 'Wave C (Late)' }
+};
 const HIGH_CLASS_OPTIONS = {
   Mathematics: ['Algebra I', 'Geometry', 'Algebra II', 'Trigonometry', 'Pre-Calculus', 'Calculus'],
   Science: ['Earth Science', 'Biology', 'Chemistry', 'Physics'],
@@ -429,6 +434,7 @@ function buildStudentRosterFromSections(sections) {
         classGrade: section.courseLevel || 'Standard',
         className: section.courseName,
         sectionCode: section.sectionCode,
+        rosterGroup: section.rosterGroup || section.key,
         courseNumber: section.courseNumber,
         blockLabel: section.blockLabel,
         rosterLabel: section.label,
@@ -816,8 +822,8 @@ function buildMiddleProfileSchedule(staff, random) {
   const resolvedGrade = Number.isFinite(grade) ? grade : 6;
   const subject = resolveSubjectFromRole(staff.role);
   const sectionBase = resolvedGrade * 100 + Math.floor(random() * 60) + 1;
-  const waveByGrade = { 6: 'Wave A (Early)', 7: 'Wave B (Mid)', 8: 'Wave C (Late)' };
-  const wave = waveByGrade[resolvedGrade] || 'Wave B (Mid)';
+  const gradeConfig = MIDDLE_SPECIALIST_ROTATION[resolvedGrade] || MIDDLE_SPECIALIST_ROTATION[6];
+  const wave = gradeConfig.lunchLabel;
   const classLevel = pickWithSeed(['Standard', 'Honors', 'Advanced'], random);
   const className = MIDDLE_CLASS_OPTIONS[resolvedGrade]?.[subject] || `Grade ${resolvedGrade} Core Instruction`;
 
@@ -832,11 +838,36 @@ function buildMiddleProfileSchedule(staff, random) {
   return [
     { block: 'Homeroom', time: '8:00 AM - 8:15 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry('Homeroom & Attendance', 'homeroom')) },
     { block: 'Block 1', time: '8:20 AM - 9:10 AM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(0 + dayIdx) % sections.length])) },
-    { block: 'Block 2', time: '9:15 AM - 10:05 AM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(1 + dayIdx) % sections.length])) },
+    {
+      block: 'Block 2',
+      time: '9:15 AM - 10:05 AM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        if (gradeConfig.specialistBlock === 'Block 2') return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+        if (gradeConfig.studyHallBlock === 'Block 2') return buildSpecialEntry('Advisory Study Hall Coverage', 'support');
+        return buildClassEntry(className, classLevel, sections[(1 + dayIdx) % sections.length]);
+      })
+    },
     { block: 'Block 3', time: '10:10 AM - 11:00 AM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(2 + dayIdx) % sections.length])) },
-    { block: 'Midday Rotation', time: '11:05 AM - 12:45 PM', entries: WEEK_DAYS.map(() => buildSpecialEntry(`Lunch ${wave} + Advisory`, 'lunch')) },
-    { block: 'Block 5', time: '12:50 PM - 1:40 PM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(3 + dayIdx) % sections.length])) },
-    { block: 'Block 6', time: '1:45 PM - 2:30 PM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(4 + dayIdx) % sections.length])) }
+    { block: 'Lunch', time: '11:05 AM - 11:50 AM', entries: WEEK_DAYS.map(() => buildSpecialEntry(`Lunch ${wave}`, 'lunch')) },
+    {
+      block: 'Block 4',
+      time: '11:55 AM - 12:45 PM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        if (gradeConfig.specialistBlock === 'Block 4') return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+        if (gradeConfig.studyHallBlock === 'Block 4') return buildSpecialEntry('Advisory Study Hall Coverage', 'support');
+        return buildClassEntry(className, classLevel, sections[(3 + dayIdx) % sections.length]);
+      })
+    },
+    { block: 'Block 5', time: '12:50 PM - 1:40 PM', entries: WEEK_DAYS.map((_, dayIdx) => buildClassEntry(className, classLevel, sections[(4 + dayIdx) % sections.length])) },
+    {
+      block: 'Block 6',
+      time: '1:45 PM - 2:30 PM',
+      entries: WEEK_DAYS.map((_, dayIdx) => {
+        if (gradeConfig.specialistBlock === 'Block 6') return buildSpecialEntry('Teacher Prep / Study Hall', 'prep');
+        if (gradeConfig.studyHallBlock === 'Block 6') return buildSpecialEntry('Advisory Study Hall Coverage', 'support');
+        return buildClassEntry(className, classLevel, sections[(5 + dayIdx) % sections.length]);
+      })
+    }
   ];
 }
 
@@ -1037,8 +1068,26 @@ function pickTeacherNameForSubject(teacherDirectory, subject, random) {
   return candidates[Math.floor(random() * candidates.length)]?.name || 'Staff Teacher';
 }
 
+function pickTeacherNameFromList(teachers, seedKey, fallback = 'Staff Teacher') {
+  if (!Array.isArray(teachers) || teachers.length === 0) return fallback;
+  const random = createSeededRandom(hashString(seedKey));
+  const pickIndex = Math.floor(random() * teachers.length);
+  return teachers[pickIndex]?.name || fallback;
+}
+
+function pickDifferentTeacherName(teachers, excludedName, seedKey, fallback = 'Staff Teacher') {
+  const filtered = (Array.isArray(teachers) ? teachers : []).filter((teacher) => teacher?.name && teacher.name !== excludedName);
+  if (filtered.length === 0) return fallback;
+  return pickTeacherNameFromList(filtered, seedKey, fallback);
+}
+
+function buildTermLabelsBySchool(schoolType) {
+  if (schoolType === 'High') return ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'];
+  return ['Trimester 1', 'Trimester 2', 'Trimester 3'];
+}
+
 function buildElementaryStudentSchedule(student, teacherDirectory) {
-  const homeroomSeed = `${student?.grade || 'elem'}|${student?.sectionCode || student?.rosterLabel || 'HR'}`;
+  const homeroomSeed = `${student?.grade || 'elem'}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
   const random = createSeededRandom(hashString(homeroomSeed));
   const isLowerElem = String(student?.grade || '').toLowerCase().includes('kindergarten')
     || String(student?.grade || '').startsWith('0')
@@ -1048,12 +1097,16 @@ function buildElementaryStudentSchedule(student, teacherDirectory) {
   const coreCourses = isLowerElem
     ? ['Language Arts & Reading', 'Elementary Math Focus', 'Integrated Science/SS']
     : ['Language Arts & Reading', 'Elementary Math Focus', 'Integrated Science/SS'];
+  const specialistPool = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech'];
+  const specialistCourse = specialistPool[Math.floor(random() * specialistPool.length)];
+  const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
+  const specialistTeacher = pickTeacherNameForSubject(teacherDirectory, specialistCourse, random);
 
   const rows = [
     {
       block: 'Homeroom',
       time: '8:00 AM - 8:15 AM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Homeroom Teacher' }))
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: homeroomTeacher }))
     },
     {
       block: 'Session 1',
@@ -1082,9 +1135,9 @@ function buildElementaryStudentSchedule(student, teacherDirectory) {
       })
     },
     {
-      block: 'Study Hall',
+      block: 'Specialist',
       time: '10:20 AM - 11:00 AM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Homeroom Teacher' }))
+      entries: WEEK_DAYS.map(() => ({ entryType: 'class', className: specialistCourse, classType: 'Specialist', teacher: specialistTeacher }))
     },
     {
       block: 'Lunch/Recess',
@@ -1113,112 +1166,125 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
   const random = createSeededRandom(hashString(`${student?.id || student?.name}|middle`));
   const gradeMatch = String(student?.grade || '').match(/\d+/);
   const gradeNum = gradeMatch ? Number(gradeMatch[0]) : 6;
-  const pool = Object.values(MIDDLE_CLASS_OPTIONS[gradeNum] || MIDDLE_CLASS_OPTIONS[6]);
-  const classTypes = ['Standard', 'Honors'];
+  const gradeConfig = MIDDLE_SPECIALIST_ROTATION[gradeNum] || MIDDLE_SPECIALIST_ROTATION[6];
+  const corePool = Object.values(MIDDLE_CLASS_OPTIONS[gradeNum] || MIDDLE_CLASS_OPTIONS[6]);
+  const homeroomSeed = `${gradeNum}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
+  const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Grade Team');
+  const specialistPool = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech'];
+  const specialistCourse = specialistPool[hashString(`${homeroomSeed}|specialist`) % specialistPool.length];
+  const specialistTeacher = pickTeacherNameForSubject(
+    teacherDirectory,
+    specialistCourse,
+    createSeededRandom(hashString(`${homeroomSeed}|specialist-teacher`))
+  );
+  const studyHallTeacher = pickDifferentTeacherName(teacherDirectory?.all, homeroomTeacher, `${student?.id || student?.name}|studyhall`, 'Guidance Team');
 
-  const rows = [
+  const classTypes = ['Standard', 'Honors'];
+  const coreCourseOrder = [...corePool].sort((a, b) => {
+    const aSeed = hashString(`${student?.id || student?.name}|${a}`);
+    const bSeed = hashString(`${student?.id || student?.name}|${b}`);
+    return aSeed - bSeed;
+  });
+
+  const coreBlocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Block 6'];
+  const blockAssignments = {};
+  let coreIndex = 0;
+
+  coreBlocks.forEach((blockName) => {
+    if (blockName === gradeConfig.specialistBlock) {
+      blockAssignments[blockName] = {
+        entryType: 'class',
+        className: specialistCourse,
+        classType: 'Specialist',
+        teacher: specialistTeacher
+      };
+      return;
+    }
+
+    if (blockName === gradeConfig.studyHallBlock) {
+      blockAssignments[blockName] = {
+        entryType: 'studyhall',
+        className: 'Study Hall',
+        classType: 'Support',
+        teacher: studyHallTeacher
+      };
+      return;
+    }
+
+    const className = coreCourseOrder[coreIndex % coreCourseOrder.length] || 'Core Instruction';
+    blockAssignments[blockName] = {
+      entryType: 'class',
+      className,
+      classType: classTypes[coreIndex % classTypes.length],
+      teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
+    };
+    coreIndex += 1;
+  });
+
+  return [
     {
       block: 'Homeroom',
       time: '8:00 AM - 8:15 AM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Grade Team' }))
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: homeroomTeacher }))
     },
     {
       block: 'Block 1',
       time: '8:20 AM - 9:10 AM',
-      entries: WEEK_DAYS.map((_, dayIdx) => {
-        const className = pool[dayIdx % pool.length] || 'Core Instruction';
-        return {
-          entryType: 'class',
-          className,
-          classType: classTypes[(dayIdx + 1) % classTypes.length],
-          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
-        };
-      })
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 1'] }))
     },
     {
       block: 'Block 2',
       time: '9:15 AM - 10:05 AM',
-      entries: WEEK_DAYS.map((_, dayIdx) => {
-        const className = pool[(dayIdx + 1) % pool.length] || 'Core Instruction';
-        return {
-          entryType: 'class',
-          className,
-          classType: classTypes[dayIdx % classTypes.length],
-          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
-        };
-      })
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 2'] }))
     },
     {
       block: 'Block 3',
       time: '10:10 AM - 11:00 AM',
-      entries: WEEK_DAYS.map((_, dayIdx) => {
-        const className = pool[(dayIdx + 2) % pool.length] || 'Core Instruction';
-        return {
-          entryType: 'class',
-          className,
-          classType: classTypes[(dayIdx + 1) % classTypes.length],
-          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
-        };
-      })
-    },
-    {
-      block: 'Study Hall',
-      time: '11:05 AM - 11:35 AM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Grade Team' }))
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 3'] }))
     },
     {
       block: 'Lunch',
-      time: '11:40 AM - 12:10 PM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'lunch', className: 'Lunch', classType: '', teacher: 'Grade Team' }))
+      time: '11:05 AM - 11:50 AM',
+      entries: WEEK_DAYS.map(() => ({ entryType: 'lunch', className: `Lunch (${gradeConfig.lunchLabel})`, classType: '', teacher: 'Grade Team' }))
+    },
+    {
+      block: 'Block 4',
+      time: '11:55 AM - 12:45 PM',
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 4'] }))
     },
     {
       block: 'Block 5',
       time: '12:50 PM - 1:40 PM',
-      entries: WEEK_DAYS.map((_, dayIdx) => {
-        const className = pool[(dayIdx + 3) % pool.length] || 'Core Instruction';
-        return {
-          entryType: 'class',
-          className,
-          classType: classTypes[dayIdx % classTypes.length],
-          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
-        };
-      })
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 5'] }))
     },
     {
       block: 'Block 6',
       time: '1:45 PM - 2:30 PM',
-      entries: WEEK_DAYS.map((_, dayIdx) => {
-        const className = pool[(dayIdx + 4) % pool.length] || 'Core Instruction';
-        return {
-          entryType: 'class',
-          className,
-          classType: classTypes[(dayIdx + 1) % classTypes.length],
-          teacher: pickTeacherNameForSubject(teacherDirectory, resolveSubjectFromRole(className), random)
-        };
-      })
+      entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 6'] }))
     }
   ];
-
-  return rows;
 }
 
 function buildHighStudentSchedule(student, teacherDirectory) {
   const random = createSeededRandom(hashString(`${student?.id || student?.name}|high`));
   const subjects = ['Mathematics', 'Science', 'History', 'ELA', 'Foreign Language'];
   const studyHallIdx = Math.floor(random() * HIGH_SLOT_KEYS.length);
+  const homeroomSeed = `${student?.grade || 'high'}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
+  const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
+  const studyHallTeacher = pickDifferentTeacherName(teacherDirectory?.all, homeroomTeacher, `${student?.id || student?.name}|high-studyhall`, 'Guidance Team');
 
   return [
     {
       block: 'Homeroom',
       time: '8:00 AM - 8:15 AM',
-      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: 'Homeroom Teacher' }))
+      entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: homeroomTeacher }))
     },
     ...HIGH_SLOT_KEYS.map((_, slotIdx) => ({
       block: `Period ${slotIdx + 1}`,
       time: HIGH_PERIOD_SLOT_TIMES[slotIdx] || 'Assigned by District',
       entries: WEEK_DAYS.map((_, dayIdx) => {
         if (slotIdx === studyHallIdx) {
-          return { entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: 'Guidance Team' };
+          return { entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: studyHallTeacher };
         }
 
         const subject = subjects[(slotIdx + dayIdx) % subjects.length];
@@ -1238,24 +1304,25 @@ function buildHighStudentSchedule(student, teacherDirectory) {
 }
 
 function buildStudentReportCard(scheduleRows, schoolType) {
+  const termLabels = buildTermLabelsBySchool(schoolType);
   const courseMap = new Map();
   (scheduleRows || []).forEach((row) => {
     (row.entries || []).forEach((entry) => {
       if (!entry || entry.entryType !== 'class') return;
       const key = `${entry.className}|${entry.classType || ''}|${entry.teacher || ''}`;
       if (!courseMap.has(key)) {
+        const termGrades = termLabels.map((_, idx) => (idx === 0 ? 'A+' : ''));
         courseMap.set(key, {
           className: entry.className,
-          classType: entry.classType || 'Standard',
           teacher: entry.teacher || 'Staff Teacher',
-          grade: 'A+'
+          termGrades
         });
       }
     });
   });
 
   return {
-    termLabel: schoolType === 'High' ? 'Quarter 1' : 'Trimester 1',
+    termLabels,
     rows: Array.from(courseMap.values())
   };
 }
@@ -2097,25 +2164,29 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
             {studentViewMode === 'report' && selectedStudentAcademic ? (
               <>
                 <div style={{ marginBottom: '10px', color: '#39FF14', fontSize: '0.84rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                  {selectedStudentAcademic.reportCard.termLabel} REPORT
+                  CURRENT TERM REPORT CARD
                 </div>
                 <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #39FF14' }}>
                         <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>CLASS</th>
-                        {schoolType === 'High' ? <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>CLASS TYPE</th> : null}
                         <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>TEACHER</th>
-                        <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'center' }}>{selectedStudentAcademic.reportCard.termLabel}</th>
+                        {selectedStudentAcademic.reportCard.termLabels.map((termLabel) => (
+                          <th key={termLabel} style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'center' }}>{termLabel}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {selectedStudentAcademic.reportCard.rows.map((row, idx) => (
                         <tr key={`${row.className}-${row.teacher}-${idx}`} style={{ borderBottom: '1px solid #242424' }}>
                           <td style={{ padding: '10px 8px' }}>{row.className}</td>
-                          {schoolType === 'High' ? <td style={{ padding: '10px 8px' }}>{row.classType}</td> : null}
                           <td style={{ padding: '10px 8px' }}>{row.teacher}</td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', color: '#39FF14', fontWeight: 'bold' }}>{row.grade}</td>
+                          {row.termGrades.map((termGrade, gradeIdx) => (
+                            <td key={`${row.className}-${row.teacher}-${gradeIdx}`} style={{ padding: '10px 8px', textAlign: 'center', color: termGrade ? '#39FF14' : '#777', fontWeight: 'bold' }}>
+                              {termGrade || '-'}
+                            </td>
+                          ))}
                         </tr>
                       ))}
                     </tbody>

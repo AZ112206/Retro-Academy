@@ -260,9 +260,9 @@ function buildContractBalanceReport(baseSchedule) {
   const morningAfternoonSplit = getMorningAfternoonSplit(baseSchedule);
   const isPrepAssigned = prepCount === 1;
   const isLunchAssigned = lunchCount === 0 || lunchCount === 1;
-  const isMorningAfternoonBalanced = true;
-  const isClassDistributionBalanced = true;
-  const isClassLimitOkay = true;
+  const isMorningAfternoonBalanced = morningAfternoonSplit.classBeforeLunch >= TARGET_MORNING_CLASS_COUNT && morningAfternoonSplit.classAfterLunch >= TARGET_AFTERNOON_CLASS_COUNT;
+  const isClassDistributionBalanced = classValues.length <= 1 ? true : (classMax - classMin) <= 2;
+  const isClassLimitOkay = classValues.every((count) => count <= 3);
 
   return {
     classCounts,
@@ -277,6 +277,33 @@ function buildContractBalanceReport(baseSchedule) {
     morningCount: morningAfternoonSplit.classBeforeLunch,
     afternoonCount: morningAfternoonSplit.classAfterLunch
   };
+}
+
+function buildClassSignatureCounts(baseSchedule) {
+  return Object.values(baseSchedule || {}).reduce((acc, slot) => {
+    if (!slot || slot.isPrep || slot.isLunch) return acc;
+    const signature = getTokenSignature(slot);
+    acc[signature] = (acc[signature] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function pickLeastUsedBalancedToken(candidates, signatureCounts) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+
+  const ranked = candidates
+    .map((token) => {
+      const signature = getTokenSignature(token);
+      return {
+        token,
+        signature,
+        count: signatureCounts[signature] || 0
+      };
+    })
+    .sort((a, b) => a.count - b.count);
+
+  const preferred = ranked.find((row) => row.count < 3);
+  return preferred || ranked[0];
 }
 
 function buildWeeklyContract(baseSchedule, lunchWave) {
@@ -489,6 +516,16 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     const targetIsSameSignature = Boolean(targetItem && !targetItem.isPrep && !targetItem.isLunch && getTokenSignature(targetItem) === getTokenSignature(itemData));
 
     if (targetIsSameSignature) return true;
+
+    const signature = getTokenSignature(itemData);
+    const currentCount = Object.values(schedule).reduce((count, slot) => {
+      if (!slot || slot.isPrep || slot.isLunch) return count;
+      if (getTokenSignature(slot) !== signature) return count;
+      if (targetItem && slot === targetItem) return count;
+      return count + 1;
+    }, 0);
+
+    if (currentCount >= 3) return false;
     if (countClassAssignments() >= 6) return false;
     return true;
   };
@@ -545,7 +582,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       const targetItem = schedule[targetPeriod];
 
       if (!canPlaceTokenInSchedule(payload, targetPeriod)) {
-        alert('Administrative Block: That placement would exceed the six-class limit or break the one prep/lunch rule.');
+        alert('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
         return;
       }
 
@@ -609,7 +646,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         const targetItem = getStorageItem(nextStorage, targetSlotIndex);
 
         if (payload && !canPlaceTokenInSchedule(payload, 'backup')) {
-          alert('Administrative Block: That placement would exceed the six-class limit or break the one prep/lunch rule.');
+          alert('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
           return prevStorage;
         }
 
@@ -670,6 +707,44 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   const handleProceedToReview = () => {
     const normalizedSchedule = { ...schedule };
     const orderedPeriodKeys = PERIOD_LETTERS.map((letter) => periodKeyForLetter(letter));
+    const assignedClassCount = Object.values(normalizedSchedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
+    const hasPrepToken = orderedPeriodKeys.some((key) => normalizedSchedule[key]?.isPrep);
+
+    if (currentTokens.length === 0 && assignedClassCount === 0) {
+      alert('Mandatory Warning: No class tokens are loaded. Pick a department and class tokens before reviewing the contract.');
+      return;
+    }
+
+    if (assignedClassCount === 0) {
+      alert('Mandatory Warning: Schedule is empty. Add at least one class before continuing.');
+      return;
+    }
+
+    if (!hasPrepToken) {
+      const proceedWithoutPrep = window.confirm(
+        'Warning: No Study Hall/Prep block was selected. You can proceed and auto-balance will insert one prep block, but this may reduce teacher grading/planning time. Continue?'
+      );
+      if (!proceedWithoutPrep) return;
+    }
+
+    if (assignedClassCount < 6) {
+      const proceedWithAutoFill = window.confirm(
+        'Warning: Class selections are incomplete or token picks are limited. Continue with auto-balance to fill remaining periods?'
+      );
+      if (!proceedWithAutoFill) return;
+    }
+
+    const startingCounts = buildClassSignatureCounts(normalizedSchedule);
+    const classPool = [
+      ...Object.values(normalizedSchedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch),
+      ...currentTokens.filter((slot) => slot && !slot.isPrep && !slot.isLunch)
+    ];
+
+    const uniqueSignatures = Array.from(new Set(classPool.map((slot) => getTokenSignature(slot))));
+    if (uniqueSignatures.length > 0 && uniqueSignatures.length < 2) {
+      alert('Mandatory Warning: At least 2 different class tokens are required to keep each class+level at 3 sections max.');
+      return;
+    }
 
     // Ensure one prep slot exists so review can always build the contract matrix.
     const prepAlreadyPlaced = orderedPeriodKeys.some((key) => normalizedSchedule[key]?.isPrep);
@@ -688,32 +763,53 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       }
     }
 
-    const fallbackClass = Object.values(normalizedSchedule).find((slot) => slot && !slot.isPrep && !slot.isLunch)
-      || currentTokens.find((slot) => slot && !slot.isPrep && !slot.isLunch)
-      || {
-        name: 'General Elective',
-        grade: '9th',
-        level: 'Standard',
-        sec: '#100',
-        isPrep: false,
-        isLunch: false,
-        wave: null
-      };
+    const classSignatureCounts = { ...startingCounts };
+    const fallbackClass = classPool[0] || {
+      name: 'General Elective',
+      grade: '9th',
+      level: 'Standard',
+      sec: '#100',
+      isPrep: false,
+      isLunch: false,
+      wave: null
+    };
 
-    // Auto-fill remaining empty periods so the review button always opens the schedule preview.
+    // Auto-fill remaining empty periods while honoring class signature max of 3.
     orderedPeriodKeys.forEach((key, idx) => {
       if (!normalizedSchedule[key]) {
+        const balancedPick = pickLeastUsedBalancedToken(classPool, classSignatureCounts);
+        const nextToken = balancedPick?.token || fallbackClass;
+        const signature = getTokenSignature(nextToken);
+
+        if ((classSignatureCounts[signature] || 0) >= 3) {
+          return;
+        }
+
         normalizedSchedule[key] = {
-          name: fallbackClass.name,
-          grade: fallbackClass.grade,
-          level: fallbackClass.level,
-          sec: fallbackClass.sec || `#${200 + idx}`,
+          name: nextToken.name,
+          grade: nextToken.grade,
+          level: nextToken.level,
+          sec: nextToken.sec || `#${200 + idx}`,
           isPrep: false,
           isLunch: false,
           wave: null
         };
+        classSignatureCounts[signature] = (classSignatureCounts[signature] || 0) + 1;
       }
     });
+
+    const hasUnfilledPeriods = orderedPeriodKeys.some((key) => !normalizedSchedule[key]);
+    if (hasUnfilledPeriods) {
+      alert('Mandatory Warning: Unable to auto-balance schedule without breaking the 3-section class limit. Add more class variety, then retry Review Contract.');
+      return;
+    }
+
+    const finalCounts = buildClassSignatureCounts(normalizedSchedule);
+    const hasOverLimitClass = Object.values(finalCounts).some((count) => count > 3);
+    if (hasOverLimitClass) {
+      alert('Mandatory Warning: More than 3 sections of the same class and level were detected. Remove extras before continuing.');
+      return;
+    }
 
     setSchedule(normalizedSchedule);
 
@@ -950,7 +1046,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
                   {row.entries.map((entry, dayIdx) => {
                     const prevRowEntry = weeklyRows[rowIdx - 1]?.entries?.[dayIdx];
-                    const hasDoubleAnchorAbove = Boolean(prevRowEntry?.isDouble) && !Boolean(prevRowEntry?.isDoubleContinuation);
+                    const hasDoubleAnchorAbove = !!prevRowEntry?.isDouble && !prevRowEntry?.isDoubleContinuation;
                     if (entry.isDoubleContinuation && hasDoubleAnchorAbove) return null;
                     const cellRowSpan = entry.isDouble ? 2 : 1;
 

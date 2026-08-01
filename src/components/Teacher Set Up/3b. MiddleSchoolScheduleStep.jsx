@@ -26,52 +26,69 @@ const SUBJECT_POOL = {
   ]
 };
 
-// Adjusted timeline terminating cleanly at 2:30 PM
+// Standardized uniform bell schedule timeline ensuring equal class lengths and balanced lunch
 const BELL_TIMELINE = [
   { id: 'homeroom', label: 'Homeroom', start: '8:00 AM', end: '8:15 AM', type: 'homeroom' },
   { id: 'block1', label: 'Block 1', start: '8:20 AM', end: '9:10 AM', type: 'class' },
   { id: 'block2', label: 'Block 2', start: '9:15 AM', end: '10:05 AM', type: 'class' },
   { id: 'block3', label: 'Block 3', start: '10:10 AM', end: '11:00 AM', type: 'class' },
-  
-  // Mid-day Rotations (Adjusted slightly to shift the afternoon blocks up)
-  { id: 'mid_slot1', start: '11:05 AM', end: '11:35 AM', type: 'rotation' },
-  { id: 'mid_slot2', start: '11:40 AM', end: '12:10 PM', type: 'rotation' },
-  { id: 'mid_slot3', start: '12:15 PM', end: '12:45 PM', type: 'rotation' },
-  
+  { id: 'lunch', label: 'Lunch Block', start: '11:05 AM', end: '11:50 AM', type: 'lunch' },
+  { id: 'block4', label: 'Block 4', start: '11:55 AM', end: '12:45 PM', type: 'class' },
   { id: 'block5', label: 'Block 5', start: '12:50 PM', end: '1:40 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', start: '1:45 PM', end: '2:30 PM', type: 'class' } // End target 2:30 PM
+  { id: 'block6', label: 'Block 6', start: '1:45 PM', end: '2:30 PM', type: 'class' }
 ];
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, onSaveGame, styles }) {
   const resolvedGrade = Number(middleGrade) || 6;
-  const prepBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
-  const prepBlockId = prepBlockByGrade[resolvedGrade] || 'block2';
 
-  const fallbackSubject = SUBJECT_POOL[resolvedGrade]?.[0];
+  // Grade placement specs: 6th = Block 2, 7th = Block 4, 8th = Block 6
+  const specialistBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
+  const specialistTargetId = specialistBlockByGrade[resolvedGrade] || 'block2';
+
+  const gradeSubjects = SUBJECT_POOL[resolvedGrade] || SUBJECT_POOL[6];
+  const fallbackSubject = gradeSubjects[0];
   const activeSubjectLabel = selectedClass?.name || selectedClass?.course || fallbackSubject?.course || `Grade ${resolvedGrade} Core Block`;
+  const specialistRotationRules = {
+    6: 'Grade 6 Specialists | Grade 7 Study Hall | Grade 8 Core Class',
+    7: 'Grade 7 Specialists | Grade 8 Study Hall | Grade 6 Core Class',
+    8: 'Grade 8 Specialists | Grade 6 Study Hall | Grade 7 Core Class'
+  };
 
+  // Master schedule generation with precise slot rules
   const autoScheduleRows = useMemo(() => {
     let sectionCounter = resolvedGrade * 100 + 1;
 
     return BELL_TIMELINE.map(slot => {
       if (slot.type === 'homeroom') {
         return {
+          id: slot.id,
           block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
           entry: { name: 'Homeroom & Attendance', sec: null, isPrep: false, isLunch: false, isHomeroom: true }
         };
       }
 
+      if (slot.type === 'lunch') {
+        const waveLabel = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
+        return {
+          id: slot.id,
+          block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
+          entry: { name: `Student Lunch Supervision (${waveLabel})`, sec: null, isPrep: false, isLunch: true }
+        };
+      }
+
       if (slot.type === 'class') {
-        if (slot.id === prepBlockId) {
+        if (slot.id === specialistTargetId) {
           return {
-            block: { label: `${slot.label} Specialists / Prep`, time: `${slot.start} - ${slot.end}` },
-            entry: { name: 'Students in Specialists while Teachers Prep', sec: null, isPrep: true, isLunch: false }
+            id: slot.id,
+            block: { label: `${slot.label} / Specialist`, time: `${slot.start} - ${slot.end}` },
+            entry: { name: 'Specialist Rotation (Art/Music/PE/Tech)', sec: 'Spec-101', isPrep: true, isLunch: false }
           };
         }
 
         const row = {
+          id: slot.id,
           block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
           entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
         };
@@ -79,87 +96,30 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         return row;
       }
 
-      if (slot.type === 'rotation') {
-        // Grade 6: Lunch -> Prep -> Class
-        if (resolvedGrade === 6) {
-          if (slot.id === 'mid_slot1') {
-            return {
-              block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Student Lunch Supervision (Wave A)', sec: null, isPrep: false, isLunch: true }
-            };
-          }
-          if (slot.id === 'mid_slot2') {
-            return {
-              block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
-            };
-          }
-          const row = {
-            block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-            entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
-          };
-          sectionCounter += 1;
-          return row;
-        }
-
-        // Grade 7: Class -> Lunch -> Prep
-        if (resolvedGrade === 7) {
-          if (slot.id === 'mid_slot1') {
-            return {
-              block: { label: 'Block 4 Specialists / Prep', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Students in Specialists while Teachers Prep', sec: null, isPrep: true, isLunch: false }
-            };
-          }
-          if (slot.id === 'mid_slot2') {
-            return {
-              block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Student Lunch Supervision (Wave B)', sec: null, isPrep: false, isLunch: true }
-            };
-          }
-          return {
-            block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
-            entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
-          };
-        }
-
-        // Grade 8: Prep -> Class -> Lunch
-        if (resolvedGrade === 8) {
-          if (slot.id === 'mid_slot1') {
-            return {
-              block: { label: 'Advisory / Flex', time: `${slot.start} - ${slot.end}` },
-              entry: { name: 'Advisory, check-ins, and transition support', sec: null, isPrep: false, isLunch: false }
-            };
-          }
-          if (slot.id === 'mid_slot2') {
-            const row = {
-              block: { label: 'Block 4', time: `${slot.start} - ${slot.end}` },
-              entry: { name: activeSubjectLabel, sec: `#${sectionCounter}`, isPrep: false, isLunch: false }
-            };
-            sectionCounter += 1;
-            return row;
-          }
-          return {
-            block: { label: 'Lunch Block', time: `${slot.start} - ${slot.end}` },
-            entry: { name: 'Student Lunch Supervision (Wave C)', sec: null, isPrep: false, isLunch: true }
-          };
-        }
-      }
-
-      return { block: { label: 'Error', time: '' }, entry: { name: 'Unassigned', sec: null } };
+      return { id: slot.id, block: { label: 'Unassigned', time: '' }, entry: { name: 'Open', sec: null } };
     });
-  }, [resolvedGrade, activeSubjectLabel]);
+  }, [resolvedGrade, activeSubjectLabel, specialistTargetId]);
 
   const actualWaveOutput = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
 
   return (
-    <div style={{ ...styles.setupBox, maxWidth: '900px' }}>
+    <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
       <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
-        <RetroIcon kind="grid" /> MASTER GRADE {resolvedGrade} SCHEDULE
+        <RetroIcon kind="grid" /> GRADE {resolvedGrade} TEACHER MASTER SCHEDULE
       </h2>
-      <p style={styles.subtitle}>Selected subject: {activeSubjectLabel}</p>
+      <p style={styles.subtitle}>
+        Core Focus: {activeSubjectLabel} | Specialist Block Locked to: <span style={{ color: '#ff9f43' }}>{specialistTargetId.toUpperCase()}</span>
+      </p>
+      <div style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '10px 12px', marginBottom: '16px', color: '#9acb92', fontSize: '0.78rem' }}>
+        6 Daily Blocks (5 Class Sessions + 1 Teacher Prep/Study Hall) with fixed lunch wave. Rotation Rule: {specialistRotationRules[resolvedGrade]}
+      </div>
 
+      {/* Master Schedule Table */}
       <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
+        <div style={{ color: '#39FF14', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+          // Master Faculty Timetable (5 Core + 1 Specialist + Balanced Lunch)
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.8rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>
@@ -167,11 +127,11 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
             </tr>
           </thead>
           <tbody>
-            {autoScheduleRows.map(({ block, entry }, idx) => (
-              <tr key={`${block.label}-${idx}`} style={{ borderBottom: '1px solid #222' }}>
-                <td style={{ padding: '10px 8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '150px' }}>
+            {autoScheduleRows.map(({ id, block, entry }) => (
+              <tr key={id} style={{ borderBottom: '1px solid #222' }}>
+                <td style={{ padding: '8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '140px' }}>
                   <div style={{ fontWeight: 'bold', color: entry.isHomeroom ? '#00FFFF' : '#fff' }}>{block.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{block.time}</div>
+                  <div style={{ fontSize: '0.65rem', color: '#aaa' }}>{block.time}</div>
                 </td>
                 {WEEK_DAYS.map(day => {
                   let scheduleColor = '#fff';
@@ -180,9 +140,9 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
                   else if (entry.isHomeroom) scheduleColor = '#00FFFF';
 
                   return (
-                    <td key={`${block.label}-${day}-${idx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', color: scheduleColor }}>
+                    <td key={`${id}-${day}`} style={{ padding: '8px', borderRight: '1px solid #222', color: scheduleColor }}>
                       <div style={{ fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal' }}>{entry.name}</div>
-                      {entry.sec && <div style={{ fontSize: '0.7rem', color: '#39FF14' }}>Sec {entry.sec}</div>}
+                      {entry.sec && <div style={{ fontSize: '0.65rem', color: '#39FF14' }}>{entry.sec}</div>}
                     </td>
                   );
                 })}
@@ -200,7 +160,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         </button>
         <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
         <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
-        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: actualWaveOutput })}>
+        <button style={{ ...styles.actionButton, flex: '2 1 240px' }} onClick={() => onLaunchGame({ wave: actualWaveOutput, specialistRotationRule: specialistRotationRules[resolvedGrade] })}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
             CUSTOMIZE AVATAR <RetroArrow color="#0a0a0a" />
           </span>
