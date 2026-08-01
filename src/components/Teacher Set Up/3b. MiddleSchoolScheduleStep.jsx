@@ -32,16 +32,33 @@ const BELL_TIMELINE = [
   { id: 'block1', label: 'Block 1', start: '8:20 AM', end: '9:10 AM', type: 'class' },
   { id: 'block2', label: 'Block 2', start: '9:15 AM', end: '10:05 AM', type: 'class' },
   { id: 'block3', label: 'Block 3', start: '10:10 AM', end: '11:00 AM', type: 'class' },
-  { id: 'lunch', label: 'Lunch Block', start: '11:05 AM', end: '11:50 AM', type: 'lunch' },
-  { id: 'block4', label: 'Block 4', start: '11:55 AM', end: '12:45 PM', type: 'class' },
-  { id: 'block5', label: 'Block 5', start: '12:50 PM', end: '1:40 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', start: '1:45 PM', end: '2:30 PM', type: 'class' }
+  { id: 'lunch', label: 'Lunch Block', start: '11:05 AM', end: '11:35 AM', type: 'lunch' },
+  { id: 'block4', label: 'Block 4', start: '12:40 PM', end: '1:15 PM', type: 'class' },
+  { id: 'block5', label: 'Block 5', start: '1:20 PM', end: '1:55 PM', type: 'class' },
+  { id: 'block6', label: 'Block 6', start: '2:00 PM', end: '2:30 PM', type: 'class' }
 ];
+
+const MIDDLE_LUNCH_WAVE_BY_GRADE = {
+  6: { label: 'Wave A (Early)', time: '11:05 AM - 11:35 AM' },
+  7: { label: 'Wave B (Mid)', time: '11:35 AM - 12:05 PM' },
+  8: { label: 'Wave C (Late)', time: '12:05 PM - 12:35 PM' }
+};
+
+const MIDDLE_SUPPORT_WINDOWS_BY_GRADE = {
+  6: [{ id: 'support-midday-1', label: 'Student Support', time: '11:35 AM - 12:35 PM' }],
+  7: [
+    { id: 'support-midday-1', label: 'Student Support', time: '11:05 AM - 11:35 AM' },
+    { id: 'support-midday-2', label: 'Student Support', time: '12:05 PM - 12:35 PM' }
+  ],
+  8: [{ id: 'support-midday-1', label: 'Student Support', time: '11:05 AM - 12:05 PM' }]
+};
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave, selectedClass, onLaunchGame, onBack, onExit, onSaveGame, styles }) {
   const resolvedGrade = Number(middleGrade) || 6;
+  const waveConfig = MIDDLE_LUNCH_WAVE_BY_GRADE[resolvedGrade] || MIDDLE_LUNCH_WAVE_BY_GRADE[6];
+  const supportWindows = MIDDLE_SUPPORT_WINDOWS_BY_GRADE[resolvedGrade] || MIDDLE_SUPPORT_WINDOWS_BY_GRADE[6];
 
   // Grade placement specs: 6th = Block 2, 7th = Block 4, 8th = Block 6
   const specialistBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
@@ -59,8 +76,31 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
   // Master schedule generation with precise slot rules
   const autoScheduleRows = useMemo(() => {
     let sectionCounter = resolvedGrade * 100 + 1;
+    const supportSlotRows = supportWindows.map((window, idx) => ({
+      id: window.id,
+      label: supportWindows.length > 1 ? `${window.label} ${idx + 1}` : window.label,
+      time: window.time,
+      type: 'support'
+    }));
+    const lunchSlotRow = {
+      id: 'lunch',
+      label: 'Lunch Block',
+      time: waveConfig.time,
+      type: 'lunch'
+    };
+    const middayRows = resolvedGrade === 6
+      ? [lunchSlotRow, ...supportSlotRows]
+      : resolvedGrade === 7
+      ? [supportSlotRows[0], lunchSlotRow, supportSlotRows[1]].filter(Boolean)
+      : [...supportSlotRows, lunchSlotRow];
 
-    return BELL_TIMELINE.map(slot => {
+    const timelineWithSupport = [
+      ...BELL_TIMELINE.slice(0, 4),
+      ...middayRows,
+      ...BELL_TIMELINE.slice(5)
+    ];
+
+    return timelineWithSupport.map(slot => {
       if (slot.type === 'homeroom') {
         return {
           id: slot.id,
@@ -70,11 +110,18 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       }
 
       if (slot.type === 'lunch') {
-        const waveLabel = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
         return {
           id: slot.id,
-          block: { label: slot.label, time: `${slot.start} - ${slot.end}` },
-          entry: { name: `Student Lunch Supervision (${waveLabel})`, sec: null, isPrep: false, isLunch: true }
+          block: { label: slot.label, time: slot.time || waveConfig.time },
+          entry: { name: `Student Lunch Supervision (${waveConfig.label})`, sec: null, isPrep: false, isLunch: true }
+        };
+      }
+
+      if (slot.type === 'support') {
+        return {
+          id: slot.id,
+          block: { label: slot.label, time: slot.time },
+          entry: { name: 'Student Support / Advisory', sec: null, isPrep: false, isLunch: false, isSupport: true }
         };
       }
 
@@ -98,9 +145,9 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
 
       return { id: slot.id, block: { label: 'Unassigned', time: '' }, entry: { name: 'Open', sec: null } };
     });
-  }, [resolvedGrade, activeSubjectLabel, specialistTargetId]);
+  }, [resolvedGrade, activeSubjectLabel, specialistTargetId, supportWindows, waveConfig]);
 
-  const actualWaveOutput = resolvedGrade === 6 ? 'Wave A (Early)' : resolvedGrade === 7 ? 'Wave B (Mid)' : 'Wave C (Late)';
+  const actualWaveOutput = middleLunchWave || waveConfig.label;
 
   return (
     <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
@@ -111,15 +158,16 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
         Core Focus: {activeSubjectLabel} | Specialist Block Locked to: <span style={{ color: '#ff9f43' }}>{specialistTargetId.toUpperCase()}</span>
       </p>
       <div style={{ backgroundColor: '#161616', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '10px 12px', marginBottom: '16px', color: '#9acb92', fontSize: '0.78rem' }}>
-        6 Daily Blocks (5 Class Sessions + 1 Teacher Prep/Study Hall) with fixed lunch wave. Rotation Rule: {specialistRotationRules[resolvedGrade]}
+        6 Daily Blocks (5 Class Sessions + 1 Teacher Prep/Study Hall) with staggered 30-minute lunch waves. Rotation Rule: {specialistRotationRules[resolvedGrade]}
+        <div style={{ marginTop: '6px', color: '#f6d365' }}>Lunch Wave: {actualWaveOutput} ({waveConfig.time})</div>
       </div>
 
       {/* Master Schedule Table */}
-      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh', marginBottom: '20px' }}>
+      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'hidden', overflowY: 'visible', marginBottom: '20px' }}>
         <div style={{ color: '#39FF14', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
           // Master Faculty Timetable (5 Core + 1 Specialist + Balanced Lunch)
         </div>
-        <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.8rem', textAlign: 'center' }}>
+        <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.78rem', textAlign: 'center', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>
@@ -137,6 +185,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
                   let scheduleColor = '#fff';
                   if (entry.isLunch) scheduleColor = '#f6d365';
                   else if (entry.isPrep) scheduleColor = '#ff9f43';
+                  else if (entry.isSupport) scheduleColor = '#9acb92';
                   else if (entry.isHomeroom) scheduleColor = '#00FFFF';
 
                   return (

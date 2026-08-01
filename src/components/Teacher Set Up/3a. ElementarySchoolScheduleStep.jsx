@@ -83,8 +83,8 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, selected
         Sequence: <strong style={{ color: '#39FF14' }}>{currentSetup.order}</strong>
       </div>
 
-      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh', marginBottom: '20px' }}>
-        <table style={{ width: '100%', minWidth: '720px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.85rem', textAlign: 'center' }}>
+      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'hidden', overflowY: 'visible', marginBottom: '20px' }}>
+        <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem', textAlign: 'center', tableLayout: 'fixed' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>

@@ -559,6 +559,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const sectionStyle = { width: '100%', maxWidth: '520px', padding: '14px', borderRadius: '8px', backgroundColor: '#161616', border: '1px solid rgba(57,255,20,0.22)' };
   const swatchRowStyle = { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', justifyContent: 'center', alignItems: 'center' };
   const profileInputStyle = { backgroundColor: '#000', color: '#fff', border: '1px solid #39FF14', padding: '10px', borderRadius: '4px', width: '150px', fontSize: '0.85rem' };
+  const badgePanelHeight = '700px';
 
   const handleFinishCustomization = () => {
     onSaveAvatar({ name: badgeName, badgeName, rosterName, firstName, lastName, title, gender, race, age, birthday, yearsTeaching: workExperienceYears, skinTone, hairStyle, hairColor, hairTieColor, faceShape, eyeShape, eyeColor, browStyle, noseShape, noseColor, mouthStyle, lipColor, topColor, bottomColor, shoeColor });
@@ -569,8 +570,8 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
       <h2 style={styles.heading}>ISSUE FACULTY IDENTIFICATION BADGE</h2>
       <p style={styles.subtitle}>Build a pixel-styled teacher avatar, then lock in the faculty signature and appearance profile.</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: '30px', marginTop: '20px', textAlign: 'center' }}>
-        <div style={{ ...panelStyle, textAlign: 'center' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '24px', marginTop: '20px', textAlign: 'center', alignItems: 'stretch' }}>
+        <div className="no-scrollbar" style={{ ...panelStyle, textAlign: 'center', height: badgePanelHeight, overflowY: 'auto' }}>
           <h3 style={{ color: '#39FF14', marginTop: 0, fontSize: '1rem', letterSpacing: '1px' }}>LIVE BADGE PREVIEW</h3>
 
           <PixelAvatar appearance={appearance} direction={direction} motion={motion} />
@@ -630,7 +631,7 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
           </div>
         </div>
 
-        <div className="no-scrollbar" style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '680px', overflowY: 'auto', alignItems: 'stretch' }}>
+        <div className="no-scrollbar" style={{ ...panelStyle, display: 'flex', flexDirection: 'column', gap: '15px', height: badgePanelHeight, overflowY: 'auto', alignItems: 'stretch' }}>
           <div style={sectionStyle}>
             <span style={{ color: '#39FF14', fontSize: '0.85rem', fontWeight: 'bold', letterSpacing: '1px' }}>SKIN TONE</span>
             <div style={swatchRowStyle}>

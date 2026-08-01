@@ -59,11 +59,17 @@ const LONG_BLOCK_SLOT_INDEX = 3;
 const LONG_BLOCK_DURATION_LABEL = 'Long Block (90 min)';
 const STANDARD_BLOCK_DURATION_LABEL = 'Class Block (50 min)';
 const LUNCH_TIME_LABEL = '11:00 AM - 11:50 AM';
+const LUNCH_WAVE_SPLIT_DETAILS = {
+  'Wave 1': '30 min lunch then 90 min class',
+  'Wave 2': '30 min class then 30 min lunch then 60 min class',
+  'Wave 3': '60 min class then 30 min lunch then 30 min class',
+  'Wave 4': '90 min class then 30 min lunch'
+};
 
 const DAY_PATTERNS = [
   { day: 'Day 1', sequence: ['A', 'B', 'G', 'D', 'E', 'F'] },
   { day: 'Day 2', sequence: ['B', 'C', 'A', 'E', 'F', 'G'] },
-  { day: 'Day 3', sequence: ['C', 'D', 'B', 'A', 'G', 'F'] },
+  { day: 'Day 3', sequence: ['C', 'D', 'B', 'A', 'G', 'E'] },
   { day: 'Day 4', sequence: ['D', 'B', 'C', 'F', 'E', 'G'] },
   { day: 'Day 5', sequence: ['A', 'C', 'D', 'B', 'G', 'E'] },
   { day: 'Day 6', sequence: ['C', 'D', 'A', 'G', 'E', 'F'] },
@@ -110,12 +116,12 @@ const LUNCH_WAVE_DAY_TIMES = {
 };
 
 const PERIOD_SLOT_TIMES = [
-  '8:00 AM - 8:40 AM',
-  '8:45 AM - 9:25 AM',
-  '9:30 AM - 10:10 AM',
-  '11:00 AM - 11:40 AM',
-  '11:45 AM - 12:25 PM',
-  '12:30 PM - 1:10 PM'
+  '8:20 AM - 9:00 AM',
+  '9:05 AM - 9:45 AM',
+  '9:50 AM - 10:30 AM',
+  '10:30 AM - 12:00 PM',
+  '12:05 PM - 12:45 PM',
+  '1:45 PM - 2:30 PM'
 ];
 
 function resolveLunchWaveFromTime(timeLabel) {
@@ -237,22 +243,16 @@ function getMorningAfternoonSplit(schedule) {
   };
 }
 
-function buildLunchPlanByDay() {
-  const slotCounts = Array.from({ length: SLOT_KEYS.length }, () => 0);
-  const random = createSeededRandom(hashString('high-school-lunch-plan'));
+function buildLunchPlanByDay(lunchWave = 'Wave 1') {
+  const resolvedWave = LUNCH_WAVES.includes(lunchWave) ? lunchWave : 'Wave 1';
+  const dayTimes = LUNCH_WAVE_DAY_TIMES[resolvedWave] || {};
 
   return DAY_PATTERNS.reduce((acc, pattern) => {
-    const availableSlots = Array.from({ length: SLOT_KEYS.length }, (_, idx) => idx)
-      .filter((idx) => idx !== LONG_BLOCK_SLOT_INDEX)
-      .map((idx) => ({ idx, count: slotCounts[idx], seed: random() }))
-      .sort((a, b) => a.count - b.count || a.seed - b.seed);
-
-    const chosenSlot = availableSlots[0]?.idx ?? 0;
-    slotCounts[chosenSlot] += 1;
-    acc.slotIndexByDay[pattern.day] = chosenSlot;
-    acc.lunchByDay[pattern.day] = LUNCH_TIME_LABEL;
+    acc.slotIndexByDay[pattern.day] = LONG_BLOCK_SLOT_INDEX;
+    acc.lunchByDay[pattern.day] = dayTimes[pattern.day] || LUNCH_TIME_LABEL;
+    acc.waveByDay[pattern.day] = resolvedWave;
     return acc;
-  }, { slotIndexByDay: {}, lunchByDay: {} });
+  }, { slotIndexByDay: {}, lunchByDay: {}, waveByDay: {} });
 }
 
 function validateRotationCoverage(dayPatterns) {
@@ -338,8 +338,9 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
     );
   });
 
-  const lunchPlan = buildLunchPlanByDay(baseSchedule, lunchWave);
+  const lunchPlan = buildLunchPlanByDay(lunchWave);
   const lunchByDay = lunchPlan.lunchByDay;
+  const waveByDay = lunchPlan.waveByDay;
   const periodSequenceByDay = DAY_PATTERNS.reduce((acc, pattern) => {
     acc[pattern.day] = buildDayPeriodSequence(pattern.sequence, pattern.doublePairs);
     return acc;
@@ -349,20 +350,22 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
     const entries = WEEK_DAYS.map((dayName, dayIdx) => {
       const periodLabel = periodSequenceByDay[dayName]?.[slotIdx] || PERIOD_LETTERS[(dayIdx + slotIdx) % PERIOD_LETTERS.length];
       const sourceToken = baseSchedule[periodKeyForLetter(periodLabel)] || normalizedTokens[slotIdx] || normalizedTokens[0];
-      const lunchSlotForDay = lunchPlan.slotIndexByDay[dayName];
-      const isLunchSlot = slotIdx === lunchSlotForDay;
       const isLongBlock = slotIdx === LONG_BLOCK_SLOT_INDEX;
       const durationLabel = isLongBlock ? LONG_BLOCK_DURATION_LABEL : STANDARD_BLOCK_DURATION_LABEL;
+      const activeWave = waveByDay[dayName] || lunchWave || 'Wave 1';
       const detailParts = [
         `Period ${periodLabel}`,
         durationLabel
       ];
 
-      if (isLunchSlot) {
+      if (isLongBlock) {
+        const splitRule = LUNCH_WAVE_SPLIT_DETAILS[activeWave] || LUNCH_WAVE_SPLIT_DETAILS['Wave 1'];
         detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
+        detailParts.push(`Lunch Split: ${activeWave} - ${splitRule}`);
       }
 
-      if (isLunchSlot) {
+      if (sourceToken?.isLunch) {
+        detailParts.push(`Lunch: ${lunchByDay[dayName]}`);
         return {
           name: sourceToken?.name || 'Lunch Break',
           grade: null,
@@ -372,7 +375,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
           isLunch: true,
           kind: 'lunch',
           periodLabel,
-          isLunchSlot: true,
+          isLunchSlot: isLongBlock,
           detail: detailParts.join(' | ')
         };
       }
@@ -382,7 +385,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
         kind: sourceToken?.isPrep ? 'prep' : 'class',
         periodLabel,
         isLunch: false,
-        isLunchSlot: false,
+        isLunchSlot: isLongBlock,
         detail: detailParts.join(' | ')
       };
     });
@@ -429,11 +432,36 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   const [lunchByDay, setLunchByDay] = useState({});
   const [weeklyRows, setWeeklyRows] = useState([]);
   const [balanceReport, setBalanceReport] = useState(null);
+  const [warningModal, setWarningModal] = useState(null);
+  const [pendingReviewConfirm, setPendingReviewConfirm] = useState(null);
 
   const [schedule, setSchedule] = useState(createEmptySchedule());
   const [storageSlots, setStorageSlots] = useState(createEmptyStorage());
 
   const countClassAssignments = () => Object.values(schedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
+
+  const showWarning = (message) => {
+    setPendingReviewConfirm(null);
+    setWarningModal({
+      title: 'MANDATORY WARNING',
+      message,
+      type: 'alert'
+    });
+  };
+
+  const showConfirmWarning = (message, confirmToken) => {
+    setPendingReviewConfirm(confirmToken);
+    setWarningModal({
+      title: 'WARNING',
+      message,
+      type: 'confirm'
+    });
+  };
+
+  const closeWarningModal = () => {
+    setWarningModal(null);
+    setPendingReviewConfirm(null);
+  };
 
   const countClassAssignmentsBySide = (periodKey) => {
     const targetIndex = PERIOD_KEYS.indexOf(periodKey);
@@ -470,7 +498,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
   const handleShuffleCatalog = (deptId, isInitialLoad = false) => {
     if (!isInitialLoad && shuffleCount >= 3) {
-      alert('Administration Notice: You have exhausted your 3-shuffle limit for this scheduling draft.');
+      showWarning('Administration Notice: You have exhausted your 3-shuffle limit for this scheduling draft.');
       return;
     }
 
@@ -600,7 +628,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       const targetItem = schedule[targetPeriod];
 
       if (!canPlaceTokenInSchedule(payload, targetPeriod)) {
-        alert('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
+        showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
         return;
       }
 
@@ -621,7 +649,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           setStorageSlots((prevStorage) => {
             const storageIndex = findFirstEmptyStorageSlot(targetPeriod, prevStorage);
             if (storageIndex === -1) {
-              alert('Administrative Block: That period is full. Use one of the 3 backup slots or trash a class first.');
+              showWarning('Administrative Block: That period is full. Use one of the 3 backup slots or trash a class first.');
               return prevStorage;
             }
 
@@ -664,7 +692,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         const targetItem = getStorageItem(nextStorage, targetSlotIndex);
 
         if (payload && !canPlaceTokenInSchedule(payload, 'backup')) {
-          alert('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
+          showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
           return prevStorage;
         }
 
@@ -679,7 +707,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         }
 
         if (sourceType === 'library') {
-          alert('Administrative Block: Pick an open backup slot or move the card to a period first.');
+          showWarning('Administrative Block: Pick an open backup slot or move the card to a period first.');
           return prevStorage;
         }
 
@@ -722,39 +750,42 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }
   };
 
-  const handleProceedToReview = () => {
+  const handleProceedToReview = (options = {}) => {
+    const { allowNoPrep = false, allowAutoFill = false } = options;
     const normalizedSchedule = { ...schedule };
     const orderedPeriodKeys = PERIOD_LETTERS.map((letter) => periodKeyForLetter(letter));
     const assignedClassCount = Object.values(normalizedSchedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
     const hasPrepToken = orderedPeriodKeys.some((key) => normalizedSchedule[key]?.isPrep);
 
     if (currentTokens.length === 0 && assignedClassCount === 0) {
-      alert('Mandatory Warning: No class tokens are loaded. Pick a department and class tokens before reviewing the contract.');
+      showWarning('No class tokens are loaded. Pick a department and class tokens before reviewing the contract.');
       return;
     }
 
     if (assignedClassCount === 0) {
-      alert('Mandatory Warning: Schedule is empty. Add at least one class before continuing.');
+      showWarning('Schedule is empty. Add at least one class before continuing.');
       return;
     }
 
     if (assignedClassCount === 7 && !hasPrepToken) {
-      alert('Mandatory Warning: 7 classes were selected with no Study Hall/Prep period. Add one prep/study hall block before reviewing the contract.');
+      showWarning('7 classes were selected with no Study Hall/Prep period. Add one prep/study hall block before reviewing the contract.');
       return;
     }
 
-    if (!hasPrepToken && assignedClassCount < 7) {
-      const proceedWithoutPrep = window.confirm(
-        'Warning: No Study Hall/Prep block was selected. You can proceed and auto-balance will insert one prep block, but this may reduce teacher grading/planning time. Continue?'
+    if (!allowNoPrep && !hasPrepToken && assignedClassCount < 7) {
+      showConfirmWarning(
+        'No Study Hall/Prep block was selected. You can proceed and auto-balance will insert one prep block, but this may reduce teacher grading/planning time. Continue?',
+        'allow-no-prep'
       );
-      if (!proceedWithoutPrep) return;
+      return;
     }
 
-    if (assignedClassCount < 6) {
-      const proceedWithAutoFill = window.confirm(
-        'Warning: Class selections are incomplete or token picks are limited. Continue with auto-balance to fill remaining periods?'
+    if (!allowAutoFill && assignedClassCount < 6) {
+      showConfirmWarning(
+        'Class selections are incomplete or token picks are limited. Continue with auto-balance to fill remaining periods?',
+        'allow-auto-fill'
       );
-      if (!proceedWithAutoFill) return;
+      return;
     }
 
     const startingCounts = buildClassSignatureCounts(normalizedSchedule);
@@ -765,7 +796,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
     const uniqueSignatures = Array.from(new Set(classPool.map((slot) => getTokenSignature(slot))));
     if (uniqueSignatures.length > 0 && uniqueSignatures.length < 2) {
-      alert('Mandatory Warning: At least 2 different class tokens are required to keep each class+level at 3 sections max.');
+      showWarning('At least 2 different class tokens are required to keep each class+level at 3 sections max.');
       return;
     }
 
@@ -823,14 +854,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
     const hasUnfilledPeriods = orderedPeriodKeys.some((key) => !normalizedSchedule[key]);
     if (hasUnfilledPeriods) {
-      alert('Mandatory Warning: Unable to auto-balance schedule without breaking the 3-section class limit. Add more class variety, then retry Review Contract.');
+      showWarning('Unable to auto-balance schedule without breaking the 3-section class limit. Add more class variety, then retry Review Contract.');
       return;
     }
 
     const finalCounts = buildClassSignatureCounts(normalizedSchedule);
     const hasOverLimitClass = Object.values(finalCounts).some((count) => count > 3);
     if (hasOverLimitClass) {
-      alert('Mandatory Warning: More than 3 sections of the same class and level were detected. Remove extras before continuing.');
+      showWarning('More than 3 sections of the same class and level were detected. Remove extras before continuing.');
       return;
     }
 
@@ -838,18 +869,56 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
 
     const balanceReport = buildContractBalanceReport(normalizedSchedule);
     if (!balanceReport.isLunchAssigned) {
-      alert('Mandatory Warning: Lunch is assigned automatically and balanced across the week.');
+      showWarning('Lunch is assigned automatically and balanced across the week.');
       return;
     }
 
-    const selectedContract = buildWeeklyContract(normalizedSchedule, 'Wave 1');
     const selectedWave = LUNCH_WAVES[Math.floor(Math.random() * LUNCH_WAVES.length)];
+    const selectedContract = buildWeeklyContract(normalizedSchedule, selectedWave);
 
     setRandomLunchWave(selectedWave);
     setLunchByDay(selectedContract.lunchByDay);
     setWeeklyRows(selectedContract.rows);
     setBalanceReport(balanceReport);
     setReviewMode(true);
+  };
+
+  const handleWarningConfirm = () => {
+    const token = pendingReviewConfirm;
+    setWarningModal(null);
+    if (token === 'allow-no-prep') {
+      handleProceedToReview({ allowNoPrep: true });
+      return;
+    }
+    if (token === 'allow-auto-fill') {
+      handleProceedToReview({ allowNoPrep: true, allowAutoFill: true });
+      return;
+    }
+    setPendingReviewConfirm(null);
+  };
+
+  const renderWarningModal = () => {
+    if (!warningModal) return null;
+
+    return (
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.78)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
+        <div style={{ width: '100%', maxWidth: '460px', border: '2px solid #39FF14', borderRadius: '8px', backgroundColor: '#111', padding: '20px', boxShadow: '0 0 20px rgba(57, 255, 20, 0.25)', textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 12px 0', color: '#39FF14', letterSpacing: '1px' }}>{warningModal.title}</h3>
+          <p style={{ margin: 0, color: '#f5f1dd', fontSize: '0.9rem', lineHeight: 1.6 }}>{warningModal.message}</p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '18px' }}>
+            {warningModal.type === 'confirm' && (
+              <button style={{ ...styles.backButton, minWidth: '120px' }} onClick={closeWarningModal}>CANCEL</button>
+            )}
+            <button
+              style={warningModal.type === 'confirm' ? { ...styles.actionButton, minWidth: '120px', padding: '10px 14px' } : { ...styles.actionButton, minWidth: '120px', padding: '10px 14px' }}
+              onClick={warningModal.type === 'confirm' ? handleWarningConfirm : closeWarningModal}
+            >
+              {warningModal.type === 'confirm' ? 'CONTINUE' : 'OK'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const getLevelColor = (level) => {
@@ -918,6 +987,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   // ----------------------------------------------------------------
   if (!confirmedDept) {
     return (
+      <>
       <div style={styles.setupBox}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="cap" /> HIGH SCHOOL DEPARTMENTS</h2>
         <p style={styles.subtitle}>Select your specialization branch to load into the dashboard.</p>
@@ -999,6 +1069,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
         </div>
       </div>
+      {renderWarningModal()}
+      </>
     );
   }
 
@@ -1007,13 +1079,14 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   // ----------------------------------------------------------------
   if (reviewMode) {
     return (
+      <>
       <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
-        <p style={styles.subtitle}>Review your locked 7-day high school matrix before avatar customization. Each day keeps one lunch wave, one prep block, and two morning/three afternoon classes in a rotating pattern.</p>
+        <p style={styles.subtitle}>Review your locked 7-day high school matrix before avatar customization. Every 4th block is the long block and follows your assigned lunch wave split.</p>
         
-        <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '2px solid #39FF14', padding: '20px', borderRadius: '8px', margin: '20px auto', overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh' }}>
+        <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'hidden', overflowY: 'visible', marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
-            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> A-F Weekly Rotation Matrix</h3>
+            <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 7-Day A-G Rotation Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}><RetroIcon kind="class" size={20} /> Lunch Wave Slot: <strong style={{ color: '#ffa500' }}>One Per Day, Balanced By Rotation</strong></span>
             </div>
@@ -1023,8 +1096,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             <strong style={{ color: '#39FF14' }}>Role:</strong> Teacher | <strong style={{ color: '#39FF14' }}>School:</strong> High
           </div>
 
-          <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
-            Day Pattern Rules: Every period A-F receives a single class or prep block, with lunch assigned automatically between the morning and afternoon sections.
+            <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
+            Day Pattern Rules: Day 1 A B G D E F | Day 2 B C A E F G | Day 3 C D B A G E | Day 4 D B C F E G | Day 5 A C D B G E | Day 6 C D A G E F | Day 7 D A B C F E.
           </div>
 
           {balanceReport && (
@@ -1037,12 +1110,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </div>
           )}
           
-          <table style={{ width: '100%', minWidth: '1080px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center' }}>
+          <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.78rem', textAlign: 'center', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
-                <th style={{ padding: '8px 7px', color: '#888', width: '24%' }}>BLOCK / TIME</th>
+                <th style={{ padding: '8px 7px', color: '#888', width: '22%' }}>BLOCK / TIME</th>
                 {WEEK_DAYS.map(day => (
-                  <th key={day} style={{ padding: '8px 7px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase', width: '15%' }}>{day}</th>
+                  <th key={day} style={{ padding: '8px 7px', fontWeight: 'bold', color: '#39FF14', textTransform: 'uppercase' }}>{day}</th>
                 ))}
               </tr>
             </thead>
@@ -1106,6 +1179,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
                           Lunch Wave Slot
                         </span>
                       )}
+
+                      {row.slotIndex === LONG_BLOCK_SLOT_INDEX && (
+                        <span style={{ display: 'inline-block', fontSize: '0.65rem', backgroundColor: '#333', color: '#ffa500', padding: '1px 4px', borderRadius: '3px', marginTop: '5px' }}>
+                          Long Block + Lunch Split
+                        </span>
+                      )}
                     </td>
                   )})}
                 </tr>
@@ -1142,7 +1221,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
                 lunchByDay,
                 contractSchedule: schedule,
                 weeklyRows,
-                scheduleVersion: 4
+                scheduleVersion: 5
               })
             }
           >
@@ -1150,6 +1229,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
           </button>
         </div>
       </div>
+      {renderWarningModal()}
+      </>
     );
   }
 
@@ -1157,6 +1238,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
   // PHASE 2: ACTIVE MATRIX INTERACTIVE DRAG MATRIX
   // ----------------------------------------------------------------
   return (
+    <>
     <div style={{ ...styles.setupBox, maxWidth: '950px' }}>
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #39FF14', paddingBottom: '10px', marginBottom: '15px' }}>
         <h2 style={{ ...styles.heading, margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> MATRIX SCHEDULER</h2>
@@ -1213,7 +1295,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED DAILY BLOCK</span>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED DAILY BLOCK</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {
@@ -1315,5 +1397,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         </button>
       </div>
     </div>
+    {renderWarningModal()}
+    </>
   );
 }
