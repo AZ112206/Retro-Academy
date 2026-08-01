@@ -115,11 +115,11 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
       </div>
 
       {/* Master Schedule Table */}
-      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', marginBottom: '20px' }}>
+      <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh', marginBottom: '20px' }}>
         <div style={{ color: '#39FF14', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold', textTransform: 'uppercase' }}>
           // Master Faculty Timetable (5 Core + 1 Specialist + Balanced Lunch)
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.8rem', textAlign: 'center' }}>
+        <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.8rem', textAlign: 'center' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #39FF14' }}>
               <th style={{ padding: '8px', color: '#888', textAlign: 'left' }}>BLOCK / TIME</th>

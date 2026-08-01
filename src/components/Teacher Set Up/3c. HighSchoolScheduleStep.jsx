@@ -526,7 +526,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
     }, 0);
 
     if (currentCount >= 3) return false;
-    if (countClassAssignments() >= 6) return false;
+    if (countClassAssignments() >= 7) return false;
     return true;
   };
 
@@ -720,7 +720,12 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       return;
     }
 
-    if (!hasPrepToken) {
+    if (assignedClassCount === 7 && !hasPrepToken) {
+      alert('Mandatory Warning: 7 classes were selected with no Study Hall/Prep period. Add one prep/study hall block before reviewing the contract.');
+      return;
+    }
+
+    if (!hasPrepToken && assignedClassCount < 7) {
       const proceedWithoutPrep = window.confirm(
         'Warning: No Study Hall/Prep block was selected. You can proceed and auto-balance will insert one prep block, but this may reduce teacher grading/planning time. Continue?'
       );
@@ -1014,7 +1019,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </div>
           )}
           
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center' }}>
+          <table style={{ width: '100%', minWidth: '1080px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
                 <th style={{ padding: '8px 7px', color: '#888', width: '24%' }}>BLOCK / TIME</th>
@@ -1090,7 +1095,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </tbody>
           </table>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(120px, 1fr))`, gap: '8px', marginTop: '12px' }}>
             {WEEK_DAYS.map((day) => (
               <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>

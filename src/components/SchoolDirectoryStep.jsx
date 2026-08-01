@@ -1101,6 +1101,14 @@ function buildElementaryStudentSchedule(student, teacherDirectory) {
   const specialistCourse = specialistPool[Math.floor(random() * specialistPool.length)];
   const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
   const specialistTeacher = pickTeacherNameForSubject(teacherDirectory, specialistCourse, random);
+  const sessionMatch = String(student?.blockLabel || '').match(/\d+/);
+  const primarySession = sessionMatch ? `Session ${sessionMatch[0]}` : null;
+  const primaryClassName = student?.className || coreCourses[0] || 'Elementary Core Instruction';
+  const primaryTeacher = pickTeacherNameForSubject(
+    teacherDirectory,
+    resolveSubjectFromRole(primaryClassName),
+    createSeededRandom(hashString(`${student?.sectionCode || student?.rosterLabel || student?.id}|elem-primary-teacher`))
+  );
 
   const rows = [
     {
@@ -1159,6 +1167,18 @@ function buildElementaryStudentSchedule(student, teacherDirectory) {
     }
   ];
 
+  if (primarySession) {
+    const targetRow = rows.find((row) => row.block === primarySession);
+    if (targetRow) {
+      targetRow.entries = WEEK_DAYS.map(() => ({
+        entryType: 'class',
+        className: primaryClassName,
+        classType: 'Standard',
+        teacher: primaryTeacher
+      }));
+    }
+  }
+
   return rows;
 }
 
@@ -1186,12 +1206,33 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
     return aSeed - bSeed;
   });
 
+  const blockNumberMatch = String(student?.blockLabel || '').match(/\d+/);
+  const primaryBlock = blockNumberMatch ? `Block ${blockNumberMatch[0]}` : null;
+  const primaryClassName = student?.className || coreCourseOrder[0] || 'Core Instruction';
+  const primaryClassType = student?.classGrade || 'Standard';
+  const primaryTeacher = pickTeacherNameForSubject(
+    teacherDirectory,
+    resolveSubjectFromRole(primaryClassName),
+    createSeededRandom(hashString(`${student?.sectionCode || student?.rosterLabel || student?.id}|primary-teacher`))
+  );
+
   const coreBlocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Block 6'];
+  const nonPrimaryBlocks = coreBlocks.filter((blockName) => blockName !== primaryBlock);
+  let specialistBlock = gradeConfig.specialistBlock;
+  let studyHallBlock = gradeConfig.studyHallBlock;
+
+  if (primaryBlock && specialistBlock === primaryBlock) {
+    specialistBlock = nonPrimaryBlocks.find((blockName) => blockName !== studyHallBlock) || specialistBlock;
+  }
+  if (primaryBlock && studyHallBlock === primaryBlock) {
+    studyHallBlock = nonPrimaryBlocks.find((blockName) => blockName !== specialistBlock) || studyHallBlock;
+  }
+
   const blockAssignments = {};
   let coreIndex = 0;
 
   coreBlocks.forEach((blockName) => {
-    if (blockName === gradeConfig.specialistBlock) {
+    if (blockName === specialistBlock) {
       blockAssignments[blockName] = {
         entryType: 'class',
         className: specialistCourse,
@@ -1201,7 +1242,7 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
       return;
     }
 
-    if (blockName === gradeConfig.studyHallBlock) {
+    if (blockName === studyHallBlock) {
       blockAssignments[blockName] = {
         entryType: 'studyhall',
         className: 'Study Hall',
@@ -1220,6 +1261,15 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
     };
     coreIndex += 1;
   });
+
+  if (primaryBlock && blockAssignments[primaryBlock]) {
+    blockAssignments[primaryBlock] = {
+      entryType: 'class',
+      className: primaryClassName,
+      classType: primaryClassType,
+      teacher: primaryTeacher
+    };
+  }
 
   return [
     {
@@ -1268,10 +1318,40 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
 function buildHighStudentSchedule(student, teacherDirectory) {
   const random = createSeededRandom(hashString(`${student?.id || student?.name}|high`));
   const subjects = ['Mathematics', 'Science', 'History', 'ELA', 'Foreign Language'];
-  const studyHallIdx = Math.floor(random() * HIGH_SLOT_KEYS.length);
+  const specialistPool = ['Visual Art', 'Music', 'Physical Education', 'Computer Science', 'Business'];
+  const periodLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  const periodTimes = [
+    '8:00 AM - 8:40 AM',
+    '8:45 AM - 9:25 AM',
+    '9:30 AM - 10:10 AM',
+    '10:15 AM - 10:55 AM',
+    '11:00 AM - 11:40 AM',
+    '11:45 AM - 12:25 PM',
+    '12:30 PM - 1:10 PM'
+  ];
   const homeroomSeed = `${student?.grade || 'high'}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
   const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
   const studyHallTeacher = pickDifferentTeacherName(teacherDirectory?.all, homeroomTeacher, `${student?.id || student?.name}|high-studyhall`, 'Guidance Team');
+  const blockLabelText = String(student?.blockLabel || '').toUpperCase();
+  const periodMatch = blockLabelText.match(/[A-G]$/);
+  const primaryPeriod = periodMatch ? periodMatch[0] : 'A';
+  const primaryClassName = student?.className || 'Core Seminar';
+  const primaryClassType = student?.classGrade || 'Standard';
+  const primaryTeacher = pickTeacherNameForSubject(
+    teacherDirectory,
+    resolveSubjectFromRole(primaryClassName),
+    createSeededRandom(hashString(`${student?.sectionCode || student?.rosterLabel || student?.id}|high-primary-teacher`))
+  );
+
+  const nonPrimaryPeriods = periodLetters.filter((period) => period !== primaryPeriod);
+  const studyHallPeriod = nonPrimaryPeriods[Math.floor(random() * nonPrimaryPeriods.length)] || 'G';
+  const specialistPeriod = nonPrimaryPeriods.find((period) => period !== studyHallPeriod) || 'F';
+  const specialistCourse = specialistPool[Math.floor(random() * specialistPool.length)] || 'Visual Art';
+  const specialistTeacher = pickTeacherNameForSubject(
+    teacherDirectory,
+    specialistCourse,
+    createSeededRandom(hashString(`${student?.id || student?.name}|high-specialist`))
+  );
 
   return [
     {
@@ -1279,12 +1359,30 @@ function buildHighStudentSchedule(student, teacherDirectory) {
       time: '8:00 AM - 8:15 AM',
       entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: homeroomTeacher }))
     },
-    ...HIGH_SLOT_KEYS.map((_, slotIdx) => ({
-      block: `Period ${slotIdx + 1}`,
-      time: HIGH_PERIOD_SLOT_TIMES[slotIdx] || 'Assigned by District',
+    ...periodLetters.map((periodLetter, slotIdx) => ({
+      block: `Period ${periodLetter}`,
+      time: periodTimes[slotIdx] || 'Assigned by District',
       entries: WEEK_DAYS.map((_, dayIdx) => {
-        if (slotIdx === studyHallIdx) {
+        if (periodLetter === primaryPeriod) {
+          return {
+            entryType: 'class',
+            className: primaryClassName,
+            classType: primaryClassType,
+            teacher: primaryTeacher
+          };
+        }
+
+        if (periodLetter === studyHallPeriod) {
           return { entryType: 'studyhall', className: 'Study Hall', classType: 'Support', teacher: studyHallTeacher };
+        }
+
+        if (periodLetter === specialistPeriod) {
+          return {
+            entryType: 'class',
+            className: specialistCourse,
+            classType: 'Specialist',
+            teacher: specialistTeacher
+          };
         }
 
         const subject = subjects[(slotIdx + dayIdx) % subjects.length];
@@ -1303,23 +1401,56 @@ function buildHighStudentSchedule(student, teacherDirectory) {
   ];
 }
 
-function buildStudentReportCard(scheduleRows, schoolType) {
+function buildStudentReportCard(scheduleRows, schoolType, teacherDirectory) {
   const termLabels = buildTermLabelsBySchool(schoolType);
   const courseMap = new Map();
+  const middleSpecialists = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech', 'Library Media'];
+  const highSpecialistFallback = 'College & Career Seminar';
+
+  const addCourseRow = (className, teacher, termSeed = 'A+') => {
+    const safeClass = className || 'Assigned Course';
+    const safeTeacher = teacher || 'Staff Teacher';
+    const key = `${safeClass}|${safeTeacher}`;
+    if (courseMap.has(key)) return;
+    const termGrades = termLabels.map((_, idx) => (idx === 0 ? termSeed : ''));
+    courseMap.set(key, {
+      className: safeClass,
+      teacher: safeTeacher,
+      termGrades
+    });
+  };
+
   (scheduleRows || []).forEach((row) => {
     (row.entries || []).forEach((entry) => {
       if (!entry || entry.entryType !== 'class') return;
-      const key = `${entry.className}|${entry.classType || ''}|${entry.teacher || ''}`;
-      if (!courseMap.has(key)) {
-        const termGrades = termLabels.map((_, idx) => (idx === 0 ? 'A+' : ''));
-        courseMap.set(key, {
-          className: entry.className,
-          teacher: entry.teacher || 'Staff Teacher',
-          termGrades
-        });
-      }
+      addCourseRow(entry.className, entry.teacher || 'Staff Teacher');
     });
   });
+
+  if (schoolType === 'Middle') {
+    middleSpecialists.forEach((specialistName) => {
+      const teacherName = pickTeacherNameForSubject(
+        teacherDirectory,
+        specialistName,
+        createSeededRandom(hashString(`middle-specialist-report|${specialistName}`))
+      );
+      addCourseRow(specialistName, teacherName, 'A');
+    });
+  }
+
+  if (schoolType === 'High') {
+    const specialistEntry = (scheduleRows || [])
+      .flatMap((row) => row.entries || [])
+      .find((entry) => entry?.entryType === 'class' && entry?.classType === 'Specialist');
+
+    const specialistName = specialistEntry?.className || highSpecialistFallback;
+    const specialistTeacher = specialistEntry?.teacher || pickTeacherNameForSubject(
+      teacherDirectory,
+      specialistName,
+      createSeededRandom(hashString(`high-specialist-report|${specialistName}`))
+    );
+    addCourseRow(specialistName, specialistTeacher, 'A');
+  }
 
   return {
     termLabels,
@@ -1337,7 +1468,7 @@ function buildStudentAcademicViews(student, schoolType, facultyRoster) {
 
   return {
     scheduleRows,
-    reportCard: buildStudentReportCard(scheduleRows, schoolType)
+    reportCard: buildStudentReportCard(scheduleRows, schoolType, teacherDirectory)
   };
 }
 
@@ -1413,8 +1544,9 @@ function FacultyCard({ staff, onOpen, schoolType }) {
   );
 }
 
-function StudentCard({ student, onOpen }) {
-  const classTypeTag = getClassTypeAbbreviation(student.classGrade);
+function StudentCard({ student, onOpen, schoolType }) {
+  const showClassType = schoolType === 'High';
+  const classTypeTag = showClassType ? getClassTypeAbbreviation(student.classGrade) : '';
   return (
     <div
       onClick={() => onOpen(student)}
@@ -1433,7 +1565,7 @@ function StudentCard({ student, onOpen }) {
           {student.name}
         </span>
         <span style={{ fontSize: '0.62rem', color: '#39FF14', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
-          {student.className} {classTypeTag}
+          {showClassType ? `${student.className} ${classTypeTag}` : student.className}
         </span>
         <span style={{ fontSize: '0.58rem', color: '#f5f1dd', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
           {student.courseNumber} | {formatPeriodLabel(student.blockLabel)}
@@ -1619,7 +1751,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   const renderLunchWaveMatrix = () => (
     <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#151515', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.8rem', color: '#ddd', textAlign: 'left' }}>
       <strong style={{ color: '#39FF14' }}>Lunch Time Reference (Wave Map):</strong>
-      <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: '120px repeat(5, minmax(0, 1fr))', gap: '6px', alignItems: 'stretch' }}>
+      <div style={{ marginTop: '6px', display: 'grid', gridTemplateColumns: `120px repeat(${WEEK_DAYS.length}, minmax(0, 1fr))`, gap: '6px', alignItems: 'stretch' }}>
         <div style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#777', fontWeight: 'bold' }}>Wave</div>
         {WEEK_DAYS.map((day) => (
           <div key={day} style={{ backgroundColor: '#111', border: '1px solid #2b2b2b', borderRadius: '4px', padding: '6px 8px', color: '#39FF14', fontWeight: 'bold', textAlign: 'center' }}>
@@ -1659,10 +1791,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
             style={{
               display: 'flex',
               gap: '10px',
-              justifyContent: 'center',
+              justifyContent: 'flex-start',
               marginBottom: '20px',
-              flexWrap: 'wrap',
+              flexWrap: 'nowrap',
               paddingBottom: '6px',
+              overflowX: 'auto',
+              overflowY: 'hidden',
               userSelect: 'none',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
@@ -1740,7 +1874,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
       ) : (
         <>
           <div
-            style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '20px', flexWrap: 'wrap', paddingBottom: '6px', userSelect: 'none', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            style={{ display: 'flex', gap: '10px', justifyContent: 'flex-start', marginBottom: '20px', flexWrap: 'nowrap', paddingBottom: '6px', overflowX: 'auto', overflowY: 'hidden', userSelect: 'none', scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {studentTabKeys.map((tabKey) => (
               <button
@@ -1774,7 +1908,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
           >
             {currentTabStudents.length > 0 ? (
               currentTabStudents.map((student) => (
-                <StudentCard key={student.id} student={student} onOpen={handleOpenStudent} />
+                <StudentCard key={student.id} student={student} onOpen={handleOpenStudent} schoolType={schoolType} />
               ))
             ) : (
               <div style={{ color: '#555', fontStyle: 'italic', fontSize: '0.9rem', marginTop: '100px' }}>
@@ -1838,8 +1972,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                         ? selectedStaffSchedule.rows.filter((row) => row.block !== 'Homeroom')
                         : selectedStaffSchedule.rows;
                       return (
-                    <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center', tableLayout: 'fixed' }}>
+                    <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh' }}>
+                      <table style={{ width: '100%', minWidth: '1080px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.9rem', textAlign: 'center', tableLayout: 'fixed' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #39FF14' }}>
                             <th style={{ padding: '10px 8px', color: '#39FF14', width: '24%' }}>BLOCK / TIME</th>
@@ -1939,7 +2073,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                     })()}
 
                     {selectedStaffSchedule.lunchByDay && (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(120px, 1fr))', gap: '8px', marginTop: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(120px, 1fr))`, gap: '8px', marginTop: '12px' }}>
                         {WEEK_DAYS.map((day) => (
                           <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
                             <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
@@ -2118,8 +2252,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
             {studentViewMode === 'schedule' && selectedStudentAcademic ? (
               <>
-                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem', textAlign: 'center' }}>
+                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh' }}>
+                  <table style={{ width: '100%', minWidth: '1080px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem', textAlign: 'center' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #39FF14' }}>
                         <th style={{ padding: '10px 8px', color: '#39FF14', width: '22%' }}>BLOCK / TIME</th>
@@ -2166,8 +2300,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                 <div style={{ marginBottom: '10px', color: '#39FF14', fontSize: '0.84rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                   CURRENT TERM REPORT CARD
                 </div>
-                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem' }}>
+                <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', backgroundColor: '#111', overflowX: 'auto', overflowY: 'auto', maxHeight: '62vh' }}>
+                  <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse', color: '#fff', fontSize: '0.84rem' }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid #39FF14' }}>
                         <th style={{ padding: '10px 8px', color: '#39FF14', textAlign: 'left' }}>CLASS</th>
@@ -2209,8 +2343,10 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
               <div style={{ backgroundColor: '#161616', border: '1px solid #2f2f2f', borderRadius: '6px', padding: '14px' }}>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Grade:</strong> {selectedStudent.grade}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Age:</strong> {selectedStudent.age}</p>
-                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class:</strong> {selectedStudent.className} {getClassTypeAbbreviation(selectedStudent.classGrade)}</p>
-                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class Type:</strong> {getClassTypeAbbreviation(selectedStudent.classGrade)}</p>
+                <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class:</strong> {schoolType === 'High' ? `${selectedStudent.className} ${getClassTypeAbbreviation(selectedStudent.classGrade)}` : selectedStudent.className}</p>
+                {schoolType === 'High' && (
+                  <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Class Type:</strong> {getClassTypeAbbreviation(selectedStudent.classGrade)}</p>
+                )}
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Course Number:</strong> {selectedStudent.courseNumber}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Period:</strong> {formatPeriodLabel(selectedStudent.blockLabel)}</p>
                 <p style={{ margin: '0 0 6px', color: '#fff' }}><strong>Current Grade:</strong> {selectedStudent.currentGradeLetter} / {selectedStudent.currentGradeNumber}</p>
