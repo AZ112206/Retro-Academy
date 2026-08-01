@@ -126,6 +126,24 @@ function resolveLunchWaveFromTime(timeLabel) {
   return matched ? matched[0] : 'Adjusted';
 }
 
+function hashString(value) {
+  const source = String(value || 'retro');
+  let hash = 2166136261;
+  for (let i = 0; i < source.length; i += 1) {
+    hash ^= source.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createSeededRandom(seedValue) {
+  let seed = (seedValue >>> 0) || 123456789;
+  return () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
 const LUNCH_WAVE_SLOT_INDEX = {
   'Wave 1': 4,
   'Wave 2': 5,
