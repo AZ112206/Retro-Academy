@@ -51,26 +51,26 @@ const ELEMENTARY_LUNCH_WAVE_BY_GRADE = {
   5: { label: 'Wave C (Late)', time: '11:35 AM - 12:15 PM', pairedWith: 'Grade 2', order: 'Recess First / Lunch Second' }
 };
 const MIDDLE_LUNCH_WAVE_BY_GRADE = {
-  6: { label: 'Wave A (Early)', time: '11:05 AM - 11:35 AM' },
-  7: { label: 'Wave B (Mid)', time: '11:35 AM - 12:05 PM' },
-  8: { label: 'Wave C (Late)', time: '12:05 PM - 12:35 PM' }
+  6: { label: 'Wave A (Early)', time: '10:35 AM - 11:05 AM' },
+  7: { label: 'Wave B (Mid)', time: '11:10 AM - 11:40 AM' },
+  8: { label: 'Wave C (Late)', time: '11:45 AM - 12:15 PM' }
 };
 const MIDDLE_BLOCK_TIMES = {
   homeroom: '8:00 AM - 8:15 AM',
-  block1: '8:20 AM - 9:10 AM',
-  block2: '9:15 AM - 10:05 AM',
-  block3: '10:10 AM - 11:00 AM',
-  block4: '12:40 PM - 1:15 PM',
-  block5: '1:20 PM - 1:55 PM',
-  block6: '2:00 PM - 2:30 PM'
+  block1: '8:20 AM - 9:00 AM',
+  block2: '9:05 AM - 9:45 AM',
+  block3: '9:50 AM - 10:30 AM',
+  block4: '12:20 PM - 1:00 PM',
+  block5: '1:05 PM - 1:45 PM',
+  block6: '1:50 PM - 2:30 PM'
 };
 const MIDDLE_SUPPORT_WINDOWS_BY_GRADE = {
-  6: [{ block: 'Student Support', time: '11:35 AM - 12:35 PM' }],
+  6: [{ block: 'Student Support', time: '11:10 AM - 12:15 PM' }],
   7: [
-    { block: 'Student Support', time: '11:05 AM - 11:35 AM' },
-    { block: 'Student Support', time: '12:05 PM - 12:35 PM' }
+    { block: 'Student Support', time: '10:35 AM - 11:05 AM' },
+    { block: 'Student Support', time: '11:45 AM - 12:15 PM' }
   ],
-  8: [{ block: 'Student Support', time: '11:05 AM - 12:05 PM' }]
+  8: [{ block: 'Student Support', time: '10:35 AM - 11:40 AM' }]
 };
 const HIGH_CLASS_OPTIONS = {
   Mathematics: ['Algebra I', 'Geometry', 'Algebra II', 'Trigonometry', 'Pre-Calculus', 'Calculus'],
@@ -2407,7 +2407,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                     rowSpan={cellRowSpan}
                                     style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle', backgroundColor: isDoubleContinuation ? '#161616' : 'transparent' }}
                                   >
-                                    <div style={{ fontWeight: 'bold', color: normalized.kind === 'prep' ? '#ff9f43' : '#fff', fontSize: '0.85rem' }}>
+                                    <div style={{ fontWeight: 'bold', color: normalized.kind === 'prep' ? '#ff9f43' : '#fff', fontSize: '0.85rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.35 }}>
                                       {normalized.name}
                                     </div>
 
@@ -2778,7 +2778,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                 const typeColor = entry.classType === 'Support' ? '#ff9f43' : getLevelColor(entry.classType || 'Standard');
                                 return (
                                   <td key={`${row.block}-${entryIdx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
-                                    <div style={{ color: isStudyHall ? '#ff9f43' : '#fff', fontWeight: 'bold', fontSize: '0.8rem' }}>{entry.className}</div>
+                                    <div style={{ color: isStudyHall ? '#ff9f43' : '#fff', fontWeight: 'bold', fontSize: '0.8rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.35 }}>{entry.className}</div>
                                     <div style={{ color: typeColor, fontSize: '0.7rem', marginTop: '3px' }}>Type: {entry.classType || 'Standard'}</div>
                                     {(isClass || isStudyHall) && (
                                       <div style={{ color: '#00FFFF', fontSize: '0.68rem', marginTop: '3px' }}>Teacher: {entry.teacher}</div>

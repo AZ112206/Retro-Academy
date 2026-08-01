@@ -26,31 +26,31 @@ const SUBJECT_POOL = {
   ]
 };
 
-// Standardized uniform bell schedule timeline ensuring equal class lengths and balanced lunch
+// Standardized bell schedule: all class/specialist blocks are equal length and lunch waves are equal length.
 const BELL_TIMELINE = [
   { id: 'homeroom', label: 'Homeroom', start: '8:00 AM', end: '8:15 AM', type: 'homeroom' },
-  { id: 'block1', label: 'Block 1', start: '8:20 AM', end: '9:10 AM', type: 'class' },
-  { id: 'block2', label: 'Block 2', start: '9:15 AM', end: '10:05 AM', type: 'class' },
-  { id: 'block3', label: 'Block 3', start: '10:10 AM', end: '11:00 AM', type: 'class' },
-  { id: 'lunch', label: 'Lunch Block', start: '11:05 AM', end: '11:35 AM', type: 'lunch' },
-  { id: 'block4', label: 'Block 4', start: '12:40 PM', end: '1:15 PM', type: 'class' },
-  { id: 'block5', label: 'Block 5', start: '1:20 PM', end: '1:55 PM', type: 'class' },
-  { id: 'block6', label: 'Block 6', start: '2:00 PM', end: '2:30 PM', type: 'class' }
+  { id: 'block1', label: 'Block 1', start: '8:20 AM', end: '9:00 AM', type: 'class' },
+  { id: 'block2', label: 'Block 2', start: '9:05 AM', end: '9:45 AM', type: 'class' },
+  { id: 'block3', label: 'Block 3', start: '9:50 AM', end: '10:30 AM', type: 'class' },
+  { id: 'lunch', label: 'Lunch Block', start: '10:35 AM', end: '11:05 AM', type: 'lunch' },
+  { id: 'block4', label: 'Block 4', start: '12:20 PM', end: '1:00 PM', type: 'class' },
+  { id: 'block5', label: 'Block 5', start: '1:05 PM', end: '1:45 PM', type: 'class' },
+  { id: 'block6', label: 'Block 6', start: '1:50 PM', end: '2:30 PM', type: 'class' }
 ];
 
 const MIDDLE_LUNCH_WAVE_BY_GRADE = {
-  6: { label: 'Wave A (Early)', time: '11:05 AM - 11:35 AM' },
-  7: { label: 'Wave B (Mid)', time: '11:35 AM - 12:05 PM' },
-  8: { label: 'Wave C (Late)', time: '12:05 PM - 12:35 PM' }
+  6: { label: 'Wave A (Early)', time: '10:35 AM - 11:05 AM' },
+  7: { label: 'Wave B (Mid)', time: '11:10 AM - 11:40 AM' },
+  8: { label: 'Wave C (Late)', time: '11:45 AM - 12:15 PM' }
 };
 
 const MIDDLE_SUPPORT_WINDOWS_BY_GRADE = {
-  6: [{ id: 'support-midday-1', label: 'Student Support', time: '11:35 AM - 12:35 PM' }],
+  6: [{ id: 'support-midday-1', label: 'Student Support', time: '11:10 AM - 12:15 PM' }],
   7: [
-    { id: 'support-midday-1', label: 'Student Support', time: '11:05 AM - 11:35 AM' },
-    { id: 'support-midday-2', label: 'Student Support', time: '12:05 PM - 12:35 PM' }
+    { id: 'support-midday-1', label: 'Student Support', time: '10:35 AM - 11:05 AM' },
+    { id: 'support-midday-2', label: 'Student Support', time: '11:45 AM - 12:15 PM' }
   ],
-  8: [{ id: 'support-midday-1', label: 'Student Support', time: '11:05 AM - 12:05 PM' }]
+  8: [{ id: 'support-midday-1', label: 'Student Support', time: '10:35 AM - 11:40 AM' }]
 };
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -177,7 +177,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
           <tbody>
             {autoScheduleRows.map(({ id, block, entry }) => (
               <tr key={id} style={{ borderBottom: '1px solid #222' }}>
-                <td style={{ padding: '8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '140px' }}>
+                <td style={{ padding: '8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '140px', verticalAlign: 'top' }}>
                   <div style={{ fontWeight: 'bold', color: entry.isHomeroom ? '#00FFFF' : '#fff' }}>{block.label}</div>
                   <div style={{ fontSize: '0.65rem', color: '#aaa' }}>{block.time}</div>
                 </td>
@@ -189,8 +189,8 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
                   else if (entry.isHomeroom) scheduleColor = '#00FFFF';
 
                   return (
-                    <td key={`${id}-${day}`} style={{ padding: '8px', borderRight: '1px solid #222', color: scheduleColor }}>
-                      <div style={{ fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal' }}>{entry.name}</div>
+                    <td key={`${id}-${day}`} style={{ padding: '8px', borderRight: '1px solid #222', color: scheduleColor, verticalAlign: 'top' }}>
+                      <div style={{ fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.35 }}>{entry.name}</div>
                       {entry.sec && <div style={{ fontSize: '0.65rem', color: '#39FF14' }}>{entry.sec}</div>}
                     </td>
                   );
