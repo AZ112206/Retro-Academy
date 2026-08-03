@@ -78,50 +78,50 @@ const DAY_PATTERNS = [
 
 const LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
-    'Day 1': '10:30 AM - 11:10 AM',
-    'Day 2': '10:30 AM - 11:10 AM',
-    'Day 3': '10:30 AM - 11:10 AM',
-    'Day 4': '10:30 AM - 11:10 AM',
-    'Day 5': '10:30 AM - 11:10 AM',
-    'Day 6': '10:30 AM - 11:10 AM',
-    'Day 7': '10:30 AM - 11:10 AM'
+    'Day 1': '10:40 AM - 11:10 AM',
+    'Day 2': '10:40 AM - 11:10 AM',
+    'Day 3': '10:40 AM - 11:10 AM',
+    'Day 4': '10:40 AM - 11:10 AM',
+    'Day 5': '10:40 AM - 11:10 AM',
+    'Day 6': '10:40 AM - 11:10 AM',
+    'Day 7': '10:40 AM - 11:10 AM'
   },
   'Wave 2': {
-    'Day 1': '11:10 AM - 11:50 AM',
-    'Day 2': '11:10 AM - 11:50 AM',
-    'Day 3': '11:10 AM - 11:50 AM',
-    'Day 4': '11:10 AM - 11:50 AM',
-    'Day 5': '11:10 AM - 11:50 AM',
-    'Day 6': '11:10 AM - 11:50 AM',
-    'Day 7': '11:10 AM - 11:50 AM'
+    'Day 1': '11:10 AM - 11:40 AM',
+    'Day 2': '11:10 AM - 11:40 AM',
+    'Day 3': '11:10 AM - 11:40 AM',
+    'Day 4': '11:10 AM - 11:40 AM',
+    'Day 5': '11:10 AM - 11:40 AM',
+    'Day 6': '11:10 AM - 11:40 AM',
+    'Day 7': '11:10 AM - 11:40 AM'
   },
   'Wave 3': {
-    'Day 1': '11:50 AM - 12:30 PM',
-    'Day 2': '11:50 AM - 12:30 PM',
-    'Day 3': '11:50 AM - 12:30 PM',
-    'Day 4': '11:50 AM - 12:30 PM',
-    'Day 5': '11:50 AM - 12:30 PM',
-    'Day 6': '11:50 AM - 12:30 PM',
-    'Day 7': '11:50 AM - 12:30 PM'
+    'Day 1': '11:40 AM - 12:10 PM',
+    'Day 2': '11:40 AM - 12:10 PM',
+    'Day 3': '11:40 AM - 12:10 PM',
+    'Day 4': '11:40 AM - 12:10 PM',
+    'Day 5': '11:40 AM - 12:10 PM',
+    'Day 6': '11:40 AM - 12:10 PM',
+    'Day 7': '11:40 AM - 12:10 PM'
   },
   'Wave 4': {
-    'Day 1': '12:30 PM - 1:10 PM',
-    'Day 2': '12:30 PM - 1:10 PM',
-    'Day 3': '12:30 PM - 1:10 PM',
-    'Day 4': '12:30 PM - 1:10 PM',
-    'Day 5': '12:30 PM - 1:10 PM',
-    'Day 6': '12:30 PM - 1:10 PM',
-    'Day 7': '12:30 PM - 1:10 PM'
+    'Day 1': '12:10 PM - 12:40 PM',
+    'Day 2': '12:10 PM - 12:40 PM',
+    'Day 3': '12:10 PM - 12:40 PM',
+    'Day 4': '12:10 PM - 12:40 PM',
+    'Day 5': '12:10 PM - 12:40 PM',
+    'Day 6': '12:10 PM - 12:40 PM',
+    'Day 7': '12:10 PM - 12:40 PM'
   }
 };
 
 const PERIOD_SLOT_TIMES = [
-  '8:20 AM - 9:00 AM',
-  '9:05 AM - 9:45 AM',
-  '9:50 AM - 10:30 AM',
-  '10:30 AM - 12:00 PM',
-  '12:05 PM - 12:45 PM',
-  '1:45 PM - 2:30 PM'
+  '7:55 AM - 8:45 AM',
+  '8:50 AM - 9:40 AM',
+  '9:45 AM - 10:35 AM',
+  '10:40 AM - 12:40 PM',
+  '12:45 PM - 1:35 PM',
+  '1:40 PM - 2:30 PM'
 ];
 
 function resolveLunchWaveFromTime(timeLabel) {
@@ -422,7 +422,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
   return { rows: normalizedRows, lunchByDay };
 }
 
-export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, onSaveGame, styles, resumeData = null }) {
+export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onLaunchGame, onBack, onExit, onSaveGame, styles, resumeData = null }) {
   const [selectedDept, setSelectedDept] = useState(null);
   const [confirmedDept, setConfirmedDept] = useState(false);
   const [currentTokens, setCurrentTokens] = useState([]);
@@ -991,6 +991,10 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
       <div style={styles.setupBox}>
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="cap" /> HIGH SCHOOL DEPARTMENTS</h2>
         <p style={styles.subtitle}>Select your specialization branch to load into the dashboard.</p>
+
+        <div style={{ margin: '0 auto 18px', width: '100%', maxWidth: '500px', padding: '10px 12px', backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', color: '#d7d7d7', fontSize: '0.82rem' }}>
+          <strong style={{ color: '#39FF14' }}>Assigned Grade:</strong> {highGrade ? `${highGrade}th Grade` : 'Not Set'} | <strong style={{ color: '#39FF14' }}>Homeroom Range:</strong> {highLetterRange || 'Not Set'}
+        </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center', marginTop: '20px', width: '100%' }}>
           <div style={{ display: 'flex', gap: '15px', width: '100%', maxWidth: '500px', justifyContent: 'center' }}>
@@ -1084,7 +1088,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         <h2 style={{ ...styles.heading, display: 'inline-flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}><RetroIcon kind="contract" /> CONTRACT SCHEDULE PREVIEW</h2>
         <p style={styles.subtitle}>Review your locked 7-day high school matrix before avatar customization. Every 4th block is the long block and follows your assigned lunch wave split.</p>
         
-        <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'hidden', overflowY: 'visible', marginBottom: '20px' }}>
+        <div className="no-scrollbar" style={{ backgroundColor: '#111', border: '1px solid #39FF14', borderRadius: '6px', padding: '15px', overflowX: 'auto', overflowY: 'visible', marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', flexWrap: 'wrap', borderBottom: '1px solid #222', paddingBottom: '10px', marginBottom: '15px' }}>
             <h3 style={{ color: '#39FF14', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="grid" /> 7-Day A-G Rotation Matrix</h3>
             <div style={{ backgroundColor: '#222', padding: '6px 12px', borderRadius: '4px', border: '1px solid #ffa500', fontSize: '0.85rem', color: '#fff' }}>
@@ -1096,20 +1100,11 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             <strong style={{ color: '#39FF14' }}>Role:</strong> Teacher | <strong style={{ color: '#39FF14' }}>School:</strong> High
           </div>
 
-            <div style={{ marginBottom: '12px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
-            Day Pattern Rules: Day 1 A B G D E F | Day 2 B C A E F G | Day 3 C D B A G E | Day 4 D B C F E G | Day 5 A C D B G E | Day 6 C D A G E F | Day 7 D A B C F E.
+            <div style={{ marginBottom: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '4px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ccc' }}>
+            Assigned Grade: <strong style={{ color: '#f5f1dd' }}>{highGrade ? `${highGrade}th Grade` : 'Not Set'}</strong> | Homeroom Range: <strong style={{ color: '#f5f1dd' }}>{highLetterRange || 'Not Set'}</strong>
           </div>
 
-          {balanceReport && (
-            <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#131d13', borderRadius: '4px', border: '1px solid #2d6a2d', fontSize: '0.78rem', color: '#b7e8b2' }}>
-              <div style={{ fontWeight: 'bold', color: '#39FF14', marginBottom: '4px' }}>Balance Check Locked</div>
-              <div>Rotation Coverage (A-F): {HAS_VALID_ROTATION ? 'PASS' : 'FAIL'} | Morning/afternoon balance: 2/3</div>
-              <div>Morning/Afternoon Classes: {balanceReport.isMorningAfternoonBalanced ? 'PASS' : 'FAIL'} ({balanceReport.morningCount}/{balanceReport.afternoonCount})</div>
-              <div>Lunch & Prep Slots: {balanceReport.isLunchAssigned && balanceReport.isPrepAssigned ? 'PASS' : 'FAIL'} (Lunch: {balanceReport.lunchCount}, Prep: {balanceReport.prepCount})</div>
-              <div>Class Distribution: {balanceReport.isClassDistributionBalanced && balanceReport.isClassLimitOkay ? 'PASS' : 'FAIL'} (max spread: {balanceReport.classCountSpread}, max per class+level: {Math.max(...Object.values(balanceReport.classCounts || {}), 0)})</div>
-            </div>
-          )}
-          
+
           <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.78rem', textAlign: 'center', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #39FF14' }}>
@@ -1123,7 +1118,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
               <tr style={{ borderBottom: '1px solid #222', backgroundColor: '#0e1f1f' }}>
                 <td style={{ padding: '8px 7px', borderRight: '1px solid #222' }}>
                   <div style={{ fontWeight: 'bold', color: '#00FFFF' }}>Homeroom</div>
-                  <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>8:00 AM - 8:15 AM</div>
+                  <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '2px' }}>7:35 AM - 7:50 AM</div>
                   <div style={{ fontSize: '0.66rem', color: '#5acaca', fontStyle: 'italic', marginTop: '2px' }}>Fixed Daily Attendance</div>
                 </td>
                 {WEEK_DAYS.map((day) => (
@@ -1192,7 +1187,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             </tbody>
           </table>
 
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(120px, 1fr))`, gap: '8px', marginTop: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(0, 1fr))`, gap: '8px', marginTop: '12px' }}>
             {WEEK_DAYS.map((day) => (
               <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
                 <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
@@ -1216,6 +1211,8 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
             style={{ ...styles.actionButton, flex: '2 1 240px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
             onClick={() =>
               onLaunchGame({
+                selectedGrade: highGrade,
+                selectedRange: highLetterRange,
                 selectedDept,
                 randomLunchWave,
                 lunchByDay,
@@ -1295,7 +1292,7 @@ export default function HighSchoolScheduleStep({ onLaunchGame, onBack, onExit, o
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (8:00 AM - 8:15 AM) - FIXED DAILY BLOCK</span>
+            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED DAILY BLOCK</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {

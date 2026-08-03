@@ -108,49 +108,49 @@ const HIGH_DAY_PATTERNS = [
 ];
 const HIGH_LUNCH_WAVE_DAY_TIMES = {
   'Wave 1': {
-    'Day 1': '10:30 AM - 11:10 AM',
-    'Day 2': '10:30 AM - 11:10 AM',
-    'Day 3': '10:30 AM - 11:10 AM',
-    'Day 4': '10:30 AM - 11:10 AM',
-    'Day 5': '10:30 AM - 11:10 AM',
-    'Day 6': '10:30 AM - 11:10 AM',
-    'Day 7': '10:30 AM - 11:10 AM'
+    'Day 1': '10:40 AM - 11:10 AM',
+    'Day 2': '10:40 AM - 11:10 AM',
+    'Day 3': '10:40 AM - 11:10 AM',
+    'Day 4': '10:40 AM - 11:10 AM',
+    'Day 5': '10:40 AM - 11:10 AM',
+    'Day 6': '10:40 AM - 11:10 AM',
+    'Day 7': '10:40 AM - 11:10 AM'
   },
   'Wave 2': {
-    'Day 1': '11:10 AM - 11:50 AM',
-    'Day 2': '11:10 AM - 11:50 AM',
-    'Day 3': '11:10 AM - 11:50 AM',
-    'Day 4': '11:10 AM - 11:50 AM',
-    'Day 5': '11:10 AM - 11:50 AM',
-    'Day 6': '11:10 AM - 11:50 AM',
-    'Day 7': '11:10 AM - 11:50 AM'
+    'Day 1': '11:10 AM - 11:40 AM',
+    'Day 2': '11:10 AM - 11:40 AM',
+    'Day 3': '11:10 AM - 11:40 AM',
+    'Day 4': '11:10 AM - 11:40 AM',
+    'Day 5': '11:10 AM - 11:40 AM',
+    'Day 6': '11:10 AM - 11:40 AM',
+    'Day 7': '11:10 AM - 11:40 AM'
   },
   'Wave 3': {
-    'Day 1': '11:50 AM - 12:30 PM',
-    'Day 2': '11:50 AM - 12:30 PM',
-    'Day 3': '11:50 AM - 12:30 PM',
-    'Day 4': '11:50 AM - 12:30 PM',
-    'Day 5': '11:50 AM - 12:30 PM',
-    'Day 6': '11:50 AM - 12:30 PM',
-    'Day 7': '11:50 AM - 12:30 PM'
+    'Day 1': '11:40 AM - 12:10 PM',
+    'Day 2': '11:40 AM - 12:10 PM',
+    'Day 3': '11:40 AM - 12:10 PM',
+    'Day 4': '11:40 AM - 12:10 PM',
+    'Day 5': '11:40 AM - 12:10 PM',
+    'Day 6': '11:40 AM - 12:10 PM',
+    'Day 7': '11:40 AM - 12:10 PM'
   },
   'Wave 4': {
-    'Day 1': '12:30 PM - 1:10 PM',
-    'Day 2': '12:30 PM - 1:10 PM',
-    'Day 3': '12:30 PM - 1:10 PM',
-    'Day 4': '12:30 PM - 1:10 PM',
-    'Day 5': '12:30 PM - 1:10 PM',
-    'Day 6': '12:30 PM - 1:10 PM',
-    'Day 7': '12:30 PM - 1:10 PM'
+    'Day 1': '12:10 PM - 12:40 PM',
+    'Day 2': '12:10 PM - 12:40 PM',
+    'Day 3': '12:10 PM - 12:40 PM',
+    'Day 4': '12:10 PM - 12:40 PM',
+    'Day 5': '12:10 PM - 12:40 PM',
+    'Day 6': '12:10 PM - 12:40 PM',
+    'Day 7': '12:10 PM - 12:40 PM'
   }
 };
 const HIGH_PERIOD_SLOT_TIMES = [
-  '8:20 AM - 9:00 AM',
-  '9:05 AM - 9:45 AM',
-  '9:50 AM - 10:30 AM',
-  '10:30 AM - 12:00 PM',
-  '12:05 PM - 12:45 PM',
-  '1:45 PM - 2:30 PM'
+  '7:55 AM - 8:45 AM',
+  '8:50 AM - 9:40 AM',
+  '9:45 AM - 10:35 AM',
+  '10:40 AM - 12:40 PM',
+  '12:45 PM - 1:35 PM',
+  '1:40 PM - 2:30 PM'
 ];
 
 function resolveHighLunchWaveFromTime(timeLabel) {
@@ -506,6 +506,9 @@ function buildStudentRosterFromSections(sections) {
         courseNumber: section.courseNumber,
         blockLabel: section.blockLabel,
         lunchWave: section.lunchWave || null,
+        teacherLunchWave: section.teacherLunchWave || null,
+        sectionTeacherName: section.teacherName || null,
+        homeroomTeacherName: section.homeroomTeacherName || section.teacherName || null,
         rosterLabel: section.label,
         currentGradeLetter: 'A+',
         currentGradeNumber: 100,
@@ -600,25 +603,54 @@ function buildMiddleStudentRoster(playerDepartment, playerGrade) {
   return buildStudentRosterFromSections(sections);
 }
 
-function buildHighStudentRoster(playerAvatar) {
+function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
   const sections = [];
   const seenSections = new Set();
   const contractSchedule = playerAvatar?.contractSchedule || {};
+  const playerName = playerAvatar?.name || playerAvatar?.rosterName || (playerAvatar?.firstName && playerAvatar?.lastName ? `${playerAvatar.firstName} ${playerAvatar.lastName}` : 'Homeroom Teacher');
+  const gradeLabel = playerGrade ? `${playerGrade}th` : '9th-12th';
+  const homeroomRangeCode = String(highLetterRange || 'A-E').replace(/[^A-Za-z]/g, '').toUpperCase() || 'AE';
+  const homeroomSectionCode = `HR-${playerGrade || 'HS'}-${homeroomRangeCode}`;
+  const teacherLunchWave = playerAvatar?.randomLunchWave || playerAvatar?.contractLunchWave || 'Wave 1';
 
   sections.push({
     key: 'homeroom',
-    label: 'Homeroom | HR-01 | Period HR',
-    sectionCode: 'HR-01',
-    gradeLabel: '9th-12th',
+    label: `Homeroom | ${homeroomSectionCode} | Period HR`,
+    sectionCode: homeroomSectionCode,
+    gradeLabel,
     courseName: 'Homeroom & Attendance',
     courseLevel: 'Standard',
-    courseNumber: 'HR-01',
+    courseNumber: homeroomSectionCode,
     blockLabel: 'HR',
-    maxStudents: 24
+    maxStudents: 24,
+    teacherName: playerName,
+    homeroomTeacherName: playerName,
+    teacherLunchWave
   });
 
   Object.entries(contractSchedule).forEach(([periodLetter, slot]) => {
-    if (!slot || slot.isPrep) return;
+    if (!slot) return;
+    if (slot.isPrep) {
+      const studyHallKey = `${periodLetter}|studyhall`;
+      if (seenSections.has(studyHallKey)) return;
+      seenSections.add(studyHallKey);
+      sections.push({
+        key: studyHallKey,
+        label: `Study Hall | SH-${String(periodLetter || '').toUpperCase()} | ${formatPeriodLabel(periodLetter)}`,
+        sectionCode: `SH-${String(periodLetter || '').toUpperCase()}`,
+        gradeLabel,
+        courseName: 'Study Hall',
+        courseLevel: 'Support',
+        courseNumber: `SH-${String(periodLetter || '').toUpperCase()}`,
+        blockLabel: String(periodLetter || '').toUpperCase(),
+        lunchWave: teacherLunchWave,
+        teacherLunchWave,
+        maxStudents: 24,
+        teacherName: playerName,
+        homeroomTeacherName: playerName
+      });
+      return;
+    }
     const sectionKey = `${periodLetter}|${slot.name}|${slot.sec || ''}`;
     if (seenSections.has(sectionKey)) return;
     seenSections.add(sectionKey);
@@ -626,13 +658,16 @@ function buildHighStudentRoster(playerAvatar) {
       key: sectionKey,
       label: `${slot.name} | ${slot.sec || 'Sec #000'} | ${formatPeriodLabel(periodLetter)}`,
       sectionCode: slot.sec || 'Sec #000',
-      gradeLabel: slot.grade || '9th',
+      gradeLabel: slot.grade || gradeLabel,
       courseName: slot.name,
       courseLevel: slot.level || 'Standard',
       courseNumber: slot.sec || 'Sec #000',
       blockLabel: String(periodLetter || '').toUpperCase(),
-      lunchWave: playerAvatar?.randomLunchWave || playerAvatar?.contractLunchWave || 'Wave 1',
-      maxStudents: 24
+      lunchWave: teacherLunchWave,
+      teacherLunchWave,
+      maxStudents: 24,
+      teacherName: playerName,
+      homeroomTeacherName: playerName
     });
   });
 
@@ -1139,9 +1174,14 @@ function buildTeacherDirectoryForStudents(facultyRoster) {
 }
 
 function pickTeacherNameForSubject(teacherDirectory, subject, random) {
+  const picked = pickTeacherForSubject(teacherDirectory, subject, random);
+  return picked?.name || 'Staff Teacher';
+}
+
+function pickTeacherForSubject(teacherDirectory, subject, random) {
   const candidates = teacherDirectory?.bySubject?.[subject] || teacherDirectory?.all || [];
-  if (!Array.isArray(candidates) || candidates.length === 0) return 'Staff Teacher';
-  return candidates[Math.floor(random() * candidates.length)]?.name || 'Staff Teacher';
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+  return candidates[Math.floor(random() * candidates.length)] || null;
 }
 
 function pickTeacherNameFromList(teachers, seedKey, fallback = 'Staff Teacher') {
@@ -1538,36 +1578,61 @@ function buildHighStudentSchedule(student, teacherDirectory) {
   const lunchWaves = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
   const periodTimes = HIGH_PERIOD_SLOT_TIMES;
   const homeroomSeed = `${student?.grade || 'high'}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
-  const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
+  const homeroomTeacher = student?.homeroomTeacherName || pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Homeroom Teacher');
   const supportTeacher = pickDifferentTeacherName(teacherDirectory?.all, homeroomTeacher, `${student?.id || student?.name}|high-support`, 'Guidance Team');
   const blockLabelText = String(student?.blockLabel || '').toUpperCase();
   const periodMatch = blockLabelText.match(/[A-G]$/);
   const primaryPeriod = periodMatch ? periodMatch[0] : 'A';
   const primaryClassName = student?.className || 'Core Seminar';
   const primaryClassType = student?.classGrade || 'Standard';
+  const primaryIsStudyHall = /study hall|prep/i.test(String(primaryClassName || ''));
   const hasAcademicPrimary = Boolean(periodMatch)
     && !/homeroom|attendance|lunch|study hall/i.test(String(primaryClassName || ''));
-  const primaryTeacher = pickTeacherNameForSubject(
+  const primaryTeacherRecord = pickTeacherForSubject(
     teacherDirectory,
     resolveSubjectFromRole(primaryClassName),
     createSeededRandom(hashString(`${student?.sectionCode || student?.rosterLabel || student?.id}|high-primary-teacher`))
   );
+  const primaryTeacher = student?.sectionTeacherName || primaryTeacherRecord?.name || 'Staff Teacher';
 
   const gradeMatch = String(student?.grade || '').match(/\d+/);
   const gradeNum = gradeMatch ? Number(gradeMatch[0]) : 9;
   const sectionLunchSeed = `${student?.sectionCode || student?.rosterGroup || student?.className || 'high'}|${student?.blockLabel || ''}`;
+  const teacherMatchedLunchWave = typeof student?.teacherLunchWave === 'string' && lunchWaves.includes(student.teacherLunchWave)
+    ? student.teacherLunchWave
+    : typeof primaryTeacherRecord?.contractLunchWave === 'string' && lunchWaves.includes(primaryTeacherRecord.contractLunchWave)
+    ? primaryTeacherRecord.contractLunchWave
+    : null;
   const explicitLunchWave = typeof student?.lunchWave === 'string' && lunchWaves.includes(student.lunchWave)
     ? student.lunchWave
     : null;
-  const studentLunchWave = explicitLunchWave || lunchWaves[hashString(`${sectionLunchSeed}|high-lunch-wave`) % lunchWaves.length] || 'Wave 1';
+  const studentLunchWave = teacherMatchedLunchWave || explicitLunchWave || lunchWaves[hashString(`${sectionLunchSeed}|high-lunch-wave`) % lunchWaves.length] || 'Wave 1';
   const studentLunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[studentLunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
+  const currentQuarter = 'Quarter 1';
+  const gymQuarterGradeMap = {
+    'Quarter 1': 12,
+    'Quarter 2': 11,
+    'Quarter 3': 10,
+    'Quarter 4': 9
+  };
+  const studyHallQuarterGradeMix = {
+    'Quarter 1': [9, 10, 11],
+    'Quarter 2': [9, 10, 12],
+    'Quarter 3': [9, 11, 12],
+    'Quarter 4': [10, 11, 12]
+  };
+  const gymGradeForQuarter = gymQuarterGradeMap[currentQuarter] || 12;
+  const studyHallMixForQuarter = studyHallQuarterGradeMix[currentQuarter] || [9, 10, 11];
+  const studyHallCohort = `Cohort ${String.fromCharCode(65 + (hashString(`${student?.id || student?.name}|${currentQuarter}|studyhall`) % 3))}`;
 
   const supportPeriodPool = periodLetters.filter((period) => period !== primaryPeriod);
-  const supportPeriod = supportPeriodPool[Math.floor(random() * supportPeriodPool.length)] || 'G';
+  const supportPeriod = primaryIsStudyHall
+    ? primaryPeriod
+    : supportPeriodPool[Math.floor(random() * supportPeriodPool.length)] || 'G';
   const gymTeacher = pickGymTeacherPair(teacherDirectory, `${student?.id || student?.name}|high-gym-team`);
 
   const availableElectives = Array.isArray(teacherDirectory?.highElectives)
-    ? teacherDirectory.highElectives.filter((entry) => entry?.courseName)
+    ? teacherDirectory.highElectives.filter((entry) => entry?.courseName && String(entry.courseName).toLowerCase() !== 'physical education')
     : [];
   const hasElectiveWindow = availableElectives.length > 0;
   const electiveAssignments = {};
@@ -1637,7 +1702,7 @@ function buildHighStudentSchedule(student, teacherDirectory) {
         entryType: 'studyhall',
         className: 'Study Hall',
         classType: 'Support',
-        teacher: supportTeacher
+        teacher: primaryIsStudyHall ? primaryTeacher : supportTeacher
       };
       return acc;
     }
@@ -1659,7 +1724,7 @@ function buildHighStudentSchedule(student, teacherDirectory) {
   return [
     {
       block: 'Homeroom',
-      time: '8:00 AM - 8:15 AM',
+      time: '7:35 AM - 7:50 AM',
       entries: WEEK_DAYS.map(() => ({ entryType: 'homeroom', className: 'Homeroom & Attendance', classType: 'Standard', teacher: homeroomTeacher }))
     },
     ...HIGH_SLOT_KEYS.map((_, slotIdx) => ({
@@ -1679,12 +1744,19 @@ function buildHighStudentSchedule(student, teacherDirectory) {
         const splitRule = HIGH_LUNCH_WAVE_SPLIT_DETAILS[activeWave] || HIGH_LUNCH_WAVE_SPLIT_DETAILS['Wave 1'];
 
         if (baseEntry.entryType === 'studyhall' && isLongBlockSlot) {
+          if (gradeNum === gymGradeForQuarter) {
+            return {
+              entryType: 'class',
+              className: 'Physical Education',
+              classType: 'Standard',
+              teacher: gymTeacher,
+              detail: `Period ${periodLetter} | ${HIGH_LONG_BLOCK_DURATION_LABEL} | ${currentQuarter} Gym Grade: ${gymGradeForQuarter}th | Lunch: ${lunchLabel} | Lunch Split: ${activeWave} - ${splitRule}`
+            };
+          }
+
           return {
-            entryType: 'class',
-            className: 'Physical Education',
-            classType: 'Standard',
-            teacher: gymTeacher,
-            detail: `Period ${periodLetter} | ${HIGH_LONG_BLOCK_DURATION_LABEL} | Lunch: ${lunchLabel} | Lunch Split: ${activeWave} - ${splitRule}`
+            ...baseEntry,
+            detail: `Period ${periodLetter} | ${HIGH_LONG_BLOCK_DURATION_LABEL} | ${currentQuarter} Study Hall Mix: ${studyHallMixForQuarter.join('/')}${studyHallCohort ? ` | ${studyHallCohort}` : ''} | Lunch: ${lunchLabel} | Lunch Split: ${activeWave} - ${splitRule}`
           };
         }
 
@@ -1875,7 +1947,7 @@ function StudentCard({ student, onOpen, schoolType }) {
   );
 }
 
-export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, onProceed, onBack, onSaveGame, styles }) {
+export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange, onProceed, onBack, onSaveGame, styles }) {
   const [viewMode, setViewMode] = useState('staff');
   const [activeTab, setActiveTab] = useState('administration');
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -1906,11 +1978,11 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   }, [schoolType, facultyRoster]);
 
   const studentRoster = useMemo(() => {
-    if (schoolType === 'High') return buildHighStudentRoster(playerAvatar);
+    if (schoolType === 'High') return buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange);
     if (schoolType === 'Middle') return buildMiddleStudentRoster(playerDepartment, playerGrade);
     if (schoolType === 'Elementary') return buildElementaryStudentRoster(playerDepartment, playerGrade);
     return {};
-  }, [schoolType, playerAvatar, playerDepartment, playerGrade]);
+  }, [schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange]);
 
   const studentTabKeys = useMemo(() => Object.keys(studentRoster), [studentRoster]);
   const selectedStudentAcademic = useMemo(() => {
@@ -2351,7 +2423,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                         ? selectedStaffSchedule.rows.filter((row) => row.block !== 'Homeroom')
                         : selectedStaffSchedule.rows;
                       return (
-                    <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'hidden', overflowY: 'visible' }}>
+                    <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'auto', overflowY: 'visible' }}>
                       <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center', tableLayout: 'fixed' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #39FF14' }}>
@@ -2453,7 +2525,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                     })()}
 
                     {selectedStaffSchedule.lunchByDay && (
-                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(120px, 1fr))`, gap: '8px', marginTop: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(0, 1fr))`, gap: '8px', marginTop: '12px' }}>
                         {WEEK_DAYS.map((day) => (
                           <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
                             <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
@@ -2652,7 +2724,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                         <strong style={{ color: '#39FF14' }}>Role:</strong> Student | <strong style={{ color: '#39FF14' }}>School:</strong> High
                       </div>
 
-                      <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'hidden', overflowY: 'visible' }}>
+                      <div className="no-scrollbar" style={{ border: '1px solid #2a2a2a', borderRadius: '6px', flex: 1, minHeight: '420px', backgroundColor: '#111', overflowX: 'auto', overflowY: 'visible' }}>
                         <table style={{ width: '100%', minWidth: '100%', borderCollapse: 'collapse', color: '#fff', fontSize: '0.82rem', textAlign: 'center', tableLayout: 'fixed' }}>
                         <thead>
                           <tr style={{ borderBottom: '2px solid #39FF14' }}>
@@ -2709,6 +2781,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                         </div>
                                       )}
 
+                                      {normalized.teacher && (
+                                        <div style={{ color: '#00FFFF', fontSize: '0.68rem', marginTop: '3px' }}>
+                                          Teacher: {normalized.teacher}
+                                        </div>
+                                      )}
+
                                       {showDetail && (
                                         <div style={{ fontSize: '0.7rem', marginTop: '4px', color: '#b6d9b1' }}>
                                           {normalized.detail}
@@ -2737,7 +2815,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                       </div>
 
                       {selectedStudentAcademic.highLunchByDay && (
-                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(120px, 1fr))`, gap: '8px', marginTop: '12px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WEEK_DAYS.length}, minmax(0, 1fr))`, gap: '8px', marginTop: '12px' }}>
                           {WEEK_DAYS.map((day) => (
                             <div key={day} style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
                               <div style={{ fontSize: '0.75rem', color: '#39FF14', fontWeight: 'bold' }}>{day}</div>
@@ -2774,13 +2852,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                               </td>
                               {row.entries.map((entry, entryIdx) => {
                                 const isStudyHall = entry.entryType === 'studyhall';
-                                const isClass = entry.entryType === 'class';
                                 const typeColor = entry.classType === 'Support' ? '#ff9f43' : getLevelColor(entry.classType || 'Standard');
                                 return (
                                   <td key={`${row.block}-${entryIdx}`} style={{ padding: '10px 8px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
                                     <div style={{ color: isStudyHall ? '#ff9f43' : '#fff', fontWeight: 'bold', fontSize: '0.8rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.35 }}>{entry.className}</div>
                                     <div style={{ color: typeColor, fontSize: '0.7rem', marginTop: '3px' }}>Type: {entry.classType || 'Standard'}</div>
-                                    {(isClass || isStudyHall) && (
+                                    {entry.teacher && (
                                       <div style={{ color: '#00FFFF', fontSize: '0.68rem', marginTop: '3px' }}>Teacher: {entry.teacher}</div>
                                     )}
                                   </td>

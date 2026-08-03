@@ -126,6 +126,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   const [elementaryGrade, setElementaryGrade] = useState(initialData?.elementaryGrade ?? null);
   const [middleGrade, setMiddleGrade] = useState(initialData?.middleGrade ?? null);
   const [middleLunchWave, setMiddleLunchWave] = useState(initialData?.middleLunchWave || '');
+  const [highGrade, setHighGrade] = useState(initialData?.highGrade ?? null);
+  const [highLetterRange, setHighLetterRange] = useState(initialData?.highLetterRange || '');
   
   const [highSchoolDept, setHighSchoolDept] = useState(initialData?.highSchoolDept || null);
   const [lunchWave, setLunchWave] = useState(initialData?.lunchWave || '');
@@ -143,6 +145,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     setElementaryGrade(initialData.elementaryGrade ?? null);
     setMiddleGrade(initialData.middleGrade ?? null);
     setMiddleLunchWave(initialData.middleLunchWave || '');
+    setHighGrade(initialData.highGrade ?? null);
+    setHighLetterRange(initialData.highLetterRange || '');
     setHighSchoolDept(initialData.highSchoolDept || null);
     setLunchWave(initialData.lunchWave || '');
     setSelectedClass(initialData.selectedClass || null);
@@ -158,6 +162,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
       elementaryGrade,
       middleGrade,
       middleLunchWave,
+      highGrade,
+      highLetterRange,
       highSchoolDept,
       lunchWave,
       selectedClass,
@@ -171,6 +177,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     elementaryGrade,
     middleGrade,
     middleLunchWave,
+    highGrade,
+    highLetterRange,
     highSchoolDept,
     lunchWave,
     selectedClass,
@@ -181,18 +189,14 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   ]);
 
   // Structural wrappers for components that share global hooks
-  const stateVars = { middleGrade, middleLunchWave, elementaryGrade };
-  const stateSetters = { setElementaryGrade, setMiddleGrade, setMiddleLunchWave };
+  const stateVars = { middleGrade, middleLunchWave, elementaryGrade, highGrade, highLetterRange };
+  const stateSetters = { setElementaryGrade, setMiddleGrade, setMiddleLunchWave, setHighGrade, setHighLetterRange };
 
   const handleSelectSchoolType = (type) => {
     setSchoolType(type);
     setSelectedClass(null);
     setHighScheduleContract(null);
-    if (type === 'High') {
-      setStep('SCHEDULE_MATRIX'); // High school bypasses grade configuration steps
-    } else {
-      setStep('GRADE_CONFIG');
-    }
+    setStep('GRADE_CONFIG');
   };
 
   const handleGradeConfigNext = () => {
@@ -222,6 +226,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
 
   const handleScheduleLaunch = (data) => {
     if (schoolType === 'High') {
+      setHighGrade(data.selectedGrade || highGrade);
+      setHighLetterRange(data.selectedRange || highLetterRange);
       setHighSchoolDept(data.selectedDept);
       setLunchWave(data.randomLunchWave);
       setHighScheduleContract(data);
@@ -285,8 +291,10 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     if (schoolType === 'High') {
       return (
         <HighSchoolScheduleStep
+          highGrade={highGrade}
+          highLetterRange={highLetterRange}
           onLaunchGame={handleScheduleLaunch}
-          onBack={() => setStep('SCHOOL_TYPE')}
+          onBack={() => setStep('GRADE_CONFIG')}
           onExit={onExit}
           onSaveGame={onSaveGame}
           styles={retroStyles}
@@ -359,7 +367,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
         schoolType={schoolType}
         playerAvatar={teacherProfile}
         playerDepartment={highSchoolDept || selectedClass}
-        playerGrade={schoolType === 'Middle' ? middleGrade : schoolType === 'Elementary' ? elementaryGrade : null}
+        playerGrade={schoolType === 'High' ? highGrade : schoolType === 'Middle' ? middleGrade : schoolType === 'Elementary' ? elementaryGrade : null}
+        highLetterRange={highLetterRange}
         onProceed={handleSchoolDirectoryProceed}
         onBack={() => setStep('AVATAR_CUSTOMIZE')}
         onSaveGame={onSaveGame}
