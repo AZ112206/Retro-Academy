@@ -74,31 +74,6 @@ function persistSaveSlots(saveSlots) {
   }
 }
 
-function loadActiveSession(saveSlots) {
-  try {
-    const raw = window.localStorage.getItem(ACTIVE_SESSION_KEY);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw);
-    const activeSlot = parsed?.activeSlot;
-    if (!activeSlot?.role || !Number.isInteger(activeSlot?.slotIndex)) return null;
-
-    const slotEntry = saveSlots?.[activeSlot.role]?.[activeSlot.slotIndex] || null;
-
-    return {
-      role: activeSlot.role,
-      activeSlot: {
-        role: activeSlot.role,
-        slotIndex: activeSlot.slotIndex,
-        slotName: activeSlot.slotName || slotEntry?.slotName || `Slot ${activeSlot.slotIndex + 1}`
-      },
-      sessionSnapshot: parsed?.sessionSnapshot || slotEntry.saveData || getDefaultSessionSnapshot(activeSlot.role)
-    };
-  } catch {
-    return null;
-  }
-}
-
 function persistActiveSession(activeSlot, sessionSnapshot = null) {
   try {
     if (!activeSlot) {
@@ -117,11 +92,10 @@ function persistActiveSession(activeSlot, sessionSnapshot = null) {
 
 function App() {
   const initialSlots = useMemo(() => loadSaveSlots(), []);
-  const initialSession = useMemo(() => loadActiveSession(initialSlots), [initialSlots]);
-  const [currentRole, setCurrentRole] = useState(initialSession?.role || null);
+  const [currentRole, setCurrentRole] = useState(null);
   const [saveSlots, setSaveSlots] = useState(initialSlots);
-  const [activeSlot, setActiveSlot] = useState(initialSession?.activeSlot || null);
-  const [sessionSnapshot, setSessionSnapshot] = useState(initialSession?.sessionSnapshot || null);
+  const [activeSlot, setActiveSlot] = useState(null);
+  const [sessionSnapshot, setSessionSnapshot] = useState(null);
   const [saveMessage, setSaveMessage] = useState('');
   const [showSavePopup, setShowSavePopup] = useState(false);
 
@@ -204,6 +178,10 @@ function App() {
   useEffect(() => {
     persistSaveSlots(saveSlots);
   }, [saveSlots]);
+
+  useEffect(() => {
+    persistActiveSession(null);
+  }, []);
 
   useEffect(() => {
     if (!activeSlot || !currentRole) return;
