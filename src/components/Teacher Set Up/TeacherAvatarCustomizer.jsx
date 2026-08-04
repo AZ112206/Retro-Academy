@@ -442,31 +442,31 @@ function buildDefaultBirthdayFromAge(ageValue) {
   return `${birthYear}-01-01`;
 }
 
-export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, onSaveGame, styles }) {
-  const [gender, setGender] = useState('Male');
-  const [race, setRace] = useState('Black');
-  const [title, setTitle] = useState('Mr.');
-  const [firstName, setFirstName] = useState(MALE_FIRST_NAMES[0]);
-  const [lastName, setLastName] = useState(LAST_NAMES_BY_RACE.Black[0]);
-  const [skinTone, setSkinTone] = useState(SKIN_TONES_BY_RACE.Black[0]);
-  const [hairStyle, setHairStyle] = useState(HAIR_STYLES_BY_GENDER.Male[0]);
-  const [hairColor, setHairColor] = useState(HAIR_COLORS[0]);
-  const [hairTieColor, setHairTieColor] = useState(HAIR_TIE_COLORS[0]);
-  const [faceShape, setFaceShape] = useState(FACE_SHAPES[0]);
-  const [eyeShape, setEyeShape] = useState(EYE_SHAPES[0]);
-  const [eyeColor, setEyeColor] = useState(EYE_COLOR_OPTIONS[0].value);
-  const [browStyle, setBrowStyle] = useState(BROW_STYLES[0]);
-  const [noseShape, setNoseShape] = useState(NOSE_SHAPES[0]);
-  const [noseColor, setNoseColor] = useState(NOSE_COLORS_BY_RACE.Black[0]);
-  const [mouthStyle, setMouthStyle] = useState(MOUTH_STYLES[0]);
-  const [lipColor, setLipColor] = useState(UNIVERSAL_LIP_COLORS[0]);
-  const [topColor, setTopColor] = useState(WARDROBE_COLORS[0]);
-  const [bottomColor, setBottomColor] = useState(WARDROBE_COLORS[5]);
-  const [shoeColor, setShoeColor] = useState('#111111');
-  const [age, setAge] = useState('30');
-  const [birthday, setBirthday] = useState(buildDefaultBirthdayFromAge('30'));
-  const [workExperienceYears, setWorkExperienceYears] = useState('6');
-  const [direction, setDirection] = useState('Front');
+export default function TeacherAvatarCustomizer({ initialData = null, onStateChange = null, onSaveAvatar, onBack, onExit, onSaveGame, styles }) {
+  const [gender, setGender] = useState(initialData?.gender || 'Male');
+  const [race, setRace] = useState(initialData?.race || 'Black');
+  const [title, setTitle] = useState(initialData?.title || 'Mr.');
+  const [firstName, setFirstName] = useState(initialData?.firstName || MALE_FIRST_NAMES[0]);
+  const [lastName, setLastName] = useState(initialData?.lastName || LAST_NAMES_BY_RACE.Black[0]);
+  const [skinTone, setSkinTone] = useState(initialData?.skinTone || SKIN_TONES_BY_RACE.Black[0]);
+  const [hairStyle, setHairStyle] = useState(initialData?.hairStyle || HAIR_STYLES_BY_GENDER.Male[0]);
+  const [hairColor, setHairColor] = useState(initialData?.hairColor || HAIR_COLORS[0]);
+  const [hairTieColor, setHairTieColor] = useState(initialData?.hairTieColor || HAIR_TIE_COLORS[0]);
+  const [faceShape, setFaceShape] = useState(initialData?.faceShape || FACE_SHAPES[0]);
+  const [eyeShape, setEyeShape] = useState(initialData?.eyeShape || EYE_SHAPES[0]);
+  const [eyeColor, setEyeColor] = useState(initialData?.eyeColor || EYE_COLOR_OPTIONS[0].value);
+  const [browStyle, setBrowStyle] = useState(initialData?.browStyle || BROW_STYLES[0]);
+  const [noseShape, setNoseShape] = useState(initialData?.noseShape || NOSE_SHAPES[0]);
+  const [noseColor, setNoseColor] = useState(initialData?.noseColor || NOSE_COLORS_BY_RACE.Black[0]);
+  const [mouthStyle, setMouthStyle] = useState(initialData?.mouthStyle || MOUTH_STYLES[0]);
+  const [lipColor, setLipColor] = useState(initialData?.lipColor || UNIVERSAL_LIP_COLORS[0]);
+  const [topColor, setTopColor] = useState(initialData?.topColor || WARDROBE_COLORS[0]);
+  const [bottomColor, setBottomColor] = useState(initialData?.bottomColor || WARDROBE_COLORS[5]);
+  const [shoeColor, setShoeColor] = useState(initialData?.shoeColor || '#111111');
+  const [age, setAge] = useState(initialData?.age || '30');
+  const [birthday, setBirthday] = useState(initialData?.birthday || buildDefaultBirthdayFromAge('30'));
+  const [workExperienceYears, setWorkExperienceYears] = useState(initialData?.yearsTeaching || '6');
+  const [direction, setDirection] = useState(initialData?.direction || 'Front');
   
   const [motion, setMotion] = useState({ blink: false, mouthShift: 0, armSwing: 0, footShift: 0, browShift: 0, hairX: 0, hairY: 0 });
 
@@ -476,6 +476,93 @@ export default function TeacherAvatarCustomizer({ onSaveAvatar, onBack, onExit, 
   const hairStyleOptions = HAIR_STYLES_BY_GENDER[gender];
   const badgeName = `${title} ${lastName}`;
   const rosterName = `${firstName} ${lastName}`;
+
+  useEffect(() => {
+    if (!initialData) return;
+    setGender(initialData.gender || 'Male');
+    setRace(initialData.race || 'Black');
+    setTitle(initialData.title || 'Mr.');
+    setFirstName(initialData.firstName || MALE_FIRST_NAMES[0]);
+    setLastName(initialData.lastName || LAST_NAMES_BY_RACE.Black[0]);
+    setSkinTone(initialData.skinTone || SKIN_TONES_BY_RACE.Black[0]);
+    setHairStyle(initialData.hairStyle || HAIR_STYLES_BY_GENDER.Male[0]);
+    setHairColor(initialData.hairColor || HAIR_COLORS[0]);
+    setHairTieColor(initialData.hairTieColor || HAIR_TIE_COLORS[0]);
+    setFaceShape(initialData.faceShape || FACE_SHAPES[0]);
+    setEyeShape(initialData.eyeShape || EYE_SHAPES[0]);
+    setEyeColor(initialData.eyeColor || EYE_COLOR_OPTIONS[0].value);
+    setBrowStyle(initialData.browStyle || BROW_STYLES[0]);
+    setNoseShape(initialData.noseShape || NOSE_SHAPES[0]);
+    setNoseColor(initialData.noseColor || NOSE_COLORS_BY_RACE.Black[0]);
+    setMouthStyle(initialData.mouthStyle || MOUTH_STYLES[0]);
+    setLipColor(initialData.lipColor || UNIVERSAL_LIP_COLORS[0]);
+    setTopColor(initialData.topColor || WARDROBE_COLORS[0]);
+    setBottomColor(initialData.bottomColor || WARDROBE_COLORS[5]);
+    setShoeColor(initialData.shoeColor || '#111111');
+    setAge(initialData.age || '30');
+    setBirthday(initialData.birthday || buildDefaultBirthdayFromAge('30'));
+    setWorkExperienceYears(initialData.yearsTeaching || '6');
+    setDirection(initialData.direction || 'Front');
+  }, [initialData]);
+
+  useEffect(() => {
+    onStateChange?.({
+      gender,
+      race,
+      title,
+      firstName,
+      lastName,
+      skinTone,
+      hairStyle,
+      hairColor,
+      hairTieColor,
+      faceShape,
+      eyeShape,
+      eyeColor,
+      browStyle,
+      noseShape,
+      noseColor,
+      mouthStyle,
+      lipColor,
+      topColor,
+      bottomColor,
+      shoeColor,
+      age,
+      birthday,
+      yearsTeaching: workExperienceYears,
+      direction,
+      badgeName,
+      rosterName
+    });
+  }, [
+    gender,
+    race,
+    title,
+    firstName,
+    lastName,
+    skinTone,
+    hairStyle,
+    hairColor,
+    hairTieColor,
+    faceShape,
+    eyeShape,
+    eyeColor,
+    browStyle,
+    noseShape,
+    noseColor,
+    mouthStyle,
+    lipColor,
+    topColor,
+    bottomColor,
+    shoeColor,
+    age,
+    birthday,
+    workExperienceYears,
+    direction,
+    badgeName,
+    rosterName,
+    onStateChange
+  ]);
 
   // FIXED: Flips first names pool parameters immediately when gender value shifts
   useEffect(() => {

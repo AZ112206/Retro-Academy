@@ -117,6 +117,15 @@ const retroStyles = {
   }
 };
 
+const WORLD_MAP_LOADING_STEPS = [
+  { key: 'district', label: 'District save data', color: '#39FF14' },
+  { key: 'campus', label: 'School campus shell', color: '#00FFFF' },
+  { key: 'faculty', label: 'Faculty directory', color: '#f6d365' },
+  { key: 'students', label: 'Student roster', color: '#ff9f43' },
+  { key: 'schedule', label: 'Bell schedule matrix', color: '#9acb92' },
+  { key: 'map', label: 'World map', color: '#39FF14' }
+];
+
 export default function TeacherDashboard({ onExit, initialData = null, onStateChange = null, onSaveGame = null, activeSlotLabel = '', saveMessage = '' }) {
   // Step workflow tracker: 'SCHOOL_TYPE' | 'GRADE_CONFIG' | 'CLASS_SELECTION' | 'SCHEDULE_MATRIX' | 'AVATAR_CUSTOMIZE' | 'SCHOOL_DIRECTORY' | 'WORLD_MAP'
   const [step, setStep] = useState(initialData?.step || 'SCHOOL_TYPE');
@@ -135,8 +144,10 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   const [highScheduleContract, setHighScheduleContract] = useState(initialData?.highScheduleContract || null);
   
   // Finalized teacher operational properties payload
+  const [avatarDraft, setAvatarDraft] = useState(initialData?.avatarDraft || null);
   const [teacherProfile, setTeacherProfile] = useState(initialData?.teacherProfile || null);
   const [schoolDirectoryData, setSchoolDirectoryData] = useState(initialData?.schoolDirectoryData || null);
+  const [worldLoadIndex, setWorldLoadIndex] = useState(0);
 
   useEffect(() => {
     if (!initialData) return;
@@ -151,6 +162,7 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     setLunchWave(initialData.lunchWave || '');
     setSelectedClass(initialData.selectedClass || null);
     setHighScheduleContract(initialData.highScheduleContract || null);
+    setAvatarDraft(initialData.avatarDraft || null);
     setTeacherProfile(initialData.teacherProfile || null);
     setSchoolDirectoryData(initialData.schoolDirectoryData || null);
   }, [initialData]);
@@ -168,6 +180,7 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
       lunchWave,
       selectedClass,
       highScheduleContract,
+      avatarDraft,
       teacherProfile,
       schoolDirectoryData
     });
@@ -183,10 +196,31 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     lunchWave,
     selectedClass,
     highScheduleContract,
+    avatarDraft,
     teacherProfile,
     schoolDirectoryData,
     onStateChange
   ]);
+
+  useEffect(() => {
+    if (step !== 'WORLD_MAP') {
+      setWorldLoadIndex(0);
+      return undefined;
+    }
+
+    setWorldLoadIndex(0);
+    const intervalId = window.setInterval(() => {
+      setWorldLoadIndex((current) => {
+        if (current >= WORLD_MAP_LOADING_STEPS.length - 1) {
+          window.clearInterval(intervalId);
+          return current;
+        }
+        return current + 1;
+      });
+    }, 480);
+
+    return () => window.clearInterval(intervalId);
+  }, [step]);
 
   // Structural wrappers for components that share global hooks
   const stateVars = { middleGrade, middleLunchWave, elementaryGrade, highGrade, highLetterRange };
@@ -240,6 +274,7 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   };
 
   const handleFinishCustomization = (profileData) => {
+    setAvatarDraft(profileData);
     if (schoolType === 'High' && highScheduleContract?.contractSchedule) {
       setTeacherProfile({
         ...profileData,
@@ -294,6 +329,7 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
           highGrade={highGrade}
           highLetterRange={highLetterRange}
           onLaunchGame={handleScheduleLaunch}
+          onStateChange={setHighScheduleContract}
           onBack={() => setStep('GRADE_CONFIG')}
           onExit={onExit}
           onSaveGame={onSaveGame}
@@ -351,6 +387,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   if (step === 'AVATAR_CUSTOMIZE') {
     return (
       <TeacherAvatarCustomizer 
+        initialData={avatarDraft}
+        onStateChange={setAvatarDraft}
         onSaveAvatar={handleFinishCustomization} 
         onBack={() => setStep('SCHEDULE_MATRIX')} 
         onExit={onExit}
@@ -369,6 +407,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
         playerDepartment={highSchoolDept || selectedClass}
         playerGrade={schoolType === 'High' ? highGrade : schoolType === 'Middle' ? middleGrade : schoolType === 'Elementary' ? elementaryGrade : null}
         highLetterRange={highLetterRange}
+        initialData={schoolDirectoryData}
+        onStateChange={setSchoolDirectoryData}
         onProceed={handleSchoolDirectoryProceed}
         onBack={() => setStep('AVATAR_CUSTOMIZE')}
         onSaveGame={onSaveGame}
@@ -382,17 +422,80 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     const totalStaff = schoolDirectoryData?.roster
       ? Object.values(schoolDirectoryData.roster).reduce((count, group) => count + group.length, 0)
       : 0;
+    const totalStudents = schoolDirectoryData?.studentRoster
+      ? Object.values(schoolDirectoryData.studentRoster).reduce((count, group) => count + group.length, 0)
+      : 0;
+    const clampedLoadIndex = Math.min(worldLoadIndex, WORLD_MAP_LOADING_STEPS.length - 1);
+    const activeLoadStep = WORLD_MAP_LOADING_STEPS[clampedLoadIndex] || WORLD_MAP_LOADING_STEPS[0];
+    const loadProgress = Math.round(((clampedLoadIndex + 1) / WORLD_MAP_LOADING_STEPS.length) * 100);
 
     return (
-      <div style={retroStyles.setupBox}>
-        {/* Your custom map and navigation layout code goes right here! */}
-        <h2 style={retroStyles.heading}>WORLD MAP LOADING</h2>
-        <p style={retroStyles.subtitle}>Faculty directory synced: {totalStaff} staff records loaded.</p>
-        <div style={{ ...retroStyles.footerActions, marginTop: '24px' }}>
-          <button style={{ ...retroStyles.backButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
-          <button style={{ ...retroStyles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
+      <div style={{ ...retroStyles.setupBox, maxWidth: '920px', minHeight: '680px', justifyContent: 'center', gap: '18px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+          <h2 style={{ ...retroStyles.heading, marginBottom: 0 }}>WORLD MAP LOADING</h2>
+          <p style={{ ...retroStyles.subtitle, marginBottom: 0 }}>Booting your retro campus runtime and syncing live school data.</p>
         </div>
-        {saveMessage ? <p style={{ margin: '6px 0 0', color: '#00FFFF', fontSize: '0.76rem' }}>{saveMessage}</p> : null}
+
+        <div style={{ width: '100%', maxWidth: '720px', margin: '0 auto', backgroundColor: '#101010', border: '1px solid #2b2b2b', borderRadius: '8px', padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#39FF14', fontSize: '0.9rem', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '10px' }}>
+            <span>LOAD PROGRESS</span>
+            <span>{loadProgress}%</span>
+          </div>
+
+          <div style={{ height: '18px', borderRadius: '999px', backgroundColor: '#181818', border: '1px solid #2f2f2f', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(57,255,20,0.08)' }}>
+            <div style={{ width: `${loadProgress}%`, height: '100%', background: `linear-gradient(90deg, ${activeLoadStep.color} 0%, #f5f1dd 100%)`, boxShadow: `0 0 16px ${activeLoadStep.color}`, transition: 'width 0.35s ease' }} />
+          </div>
+
+          <div style={{ marginTop: '14px', display: 'grid', gap: '8px' }}>
+            {WORLD_MAP_LOADING_STEPS.map((item, index) => {
+              const isComplete = index < clampedLoadIndex;
+              const isActive = index === clampedLoadIndex;
+              return (
+                <div
+                  key={item.key}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '9px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${isActive ? item.color : '#252525'}`,
+                    backgroundColor: isActive ? '#171f17' : isComplete ? '#141414' : '#111',
+                    color: isActive ? item.color : isComplete ? '#d7d7d7' : '#777',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ fontWeight: 'bold', letterSpacing: '0.4px', textTransform: 'uppercase' }}>{item.label}</span>
+                  <span style={{ fontSize: '0.76rem', color: isActive ? '#f5f1dd' : isComplete ? '#9acb92' : '#666' }}>
+                    {isComplete ? 'READY' : isActive ? 'LOADING...' : 'QUEUED'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ width: '100%', maxWidth: '720px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '10px' }}>
+          <div style={{ backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ color: '#39FF14', fontSize: '0.72rem', letterSpacing: '0.5px' }}>FACULTY</div>
+            <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>{totalStaff}</div>
+          </div>
+          <div style={{ backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ color: '#39FF14', fontSize: '0.72rem', letterSpacing: '0.5px' }}>STUDENTS</div>
+            <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>{totalStudents}</div>
+          </div>
+          <div style={{ backgroundColor: '#141414', border: '1px solid #252525', borderRadius: '6px', padding: '10px 12px' }}>
+            <div style={{ color: '#39FF14', fontSize: '0.72rem', letterSpacing: '0.5px' }}>ACTIVE MODULE</div>
+            <div style={{ color: activeLoadStep.color, fontSize: '1rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{activeLoadStep.label}</div>
+          </div>
+        </div>
+
+        <div style={{ color: activeLoadStep.color, fontSize: '0.9rem', fontWeight: 'bold', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+          {activeLoadStep.label}
+        </div>
+        <div style={{ color: '#9acb92', fontSize: '0.78rem', textAlign: 'center', maxWidth: '720px', lineHeight: 1.6 }}>
+          Loading {activeLoadStep.label.toLowerCase()}... world map assets, school systems, and roster links are being locked into this save.
+        </div>
       </div>
     );
   }

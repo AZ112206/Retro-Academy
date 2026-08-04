@@ -7,6 +7,7 @@ export default function MainMenu({ onStartSlot, onDeleteSlot, saveSlots }) {
   const [slotPrompt, setSlotPrompt] = useState(null);
   const [slotNameDraft, setSlotNameDraft] = useState('');
   const [deletePrompt, setDeletePrompt] = useState(null);
+  const [resumePrompt, setResumePrompt] = useState(null);
 
   const currentRoleSlots = useMemo(() => {
     if (!selectedRole) return [];
@@ -21,6 +22,15 @@ export default function MainMenu({ onStartSlot, onDeleteSlot, saveSlots }) {
   const handleSlotClick = (slotIndex) => {
     const slotEntry = currentRoleSlots[slotIndex];
     if (slotEntry) {
+      if (slotEntry.saveData) {
+        setResumePrompt({
+          slotIndex,
+          slotName: slotEntry.slotName,
+          saveData: slotEntry.saveData
+        });
+        return;
+      }
+
       onStartSlot({
         role: selectedRole,
         slotIndex,
@@ -52,6 +62,30 @@ export default function MainMenu({ onStartSlot, onDeleteSlot, saveSlots }) {
     if (!deletePrompt) return;
     onDeleteSlot(selectedRole, deletePrompt.slotIndex);
     setDeletePrompt(null);
+  };
+
+  const handleResumeConfirm = () => {
+    if (!resumePrompt) return;
+    onStartSlot({
+      role: selectedRole,
+      slotIndex: resumePrompt.slotIndex,
+      slotName: resumePrompt.slotName,
+      saveData: resumePrompt.saveData,
+      restart: false
+    });
+    setResumePrompt(null);
+  };
+
+  const handleRestartConfirm = () => {
+    if (!resumePrompt) return;
+    onStartSlot({
+      role: selectedRole,
+      slotIndex: resumePrompt.slotIndex,
+      slotName: resumePrompt.slotName,
+      saveData: null,
+      restart: true
+    });
+    setResumePrompt(null);
   };
 
   const handleSlotKeyDown = (event, slotIndex) => {
@@ -92,7 +126,7 @@ export default function MainMenu({ onStartSlot, onDeleteSlot, saveSlots }) {
       ) : (
         <div style={styles.menuBox}>
           <h2 style={styles.heading}>{selectedRole?.toUpperCase()} GAME SLOTS</h2>
-          <p style={styles.subtitle}>Choose one of four retro save slots. Reloading the page clears every slot and all unsaved progress.</p>
+          <p style={styles.subtitle}>Choose one of four save slots. Saved games now reopen on the same screen where you last saved.</p>
 
           <div style={styles.slotGrid}>
             {Array.from({ length: 4 }, (_, index) => {
@@ -163,6 +197,25 @@ export default function MainMenu({ onStartSlot, onDeleteSlot, saveSlots }) {
                 <div style={styles.modalActions}>
                   <button style={styles.modalCancel} onClick={() => setDeletePrompt(null)}>NO</button>
                   <button style={styles.deleteConfirm} onClick={handleDeleteConfirm}>YES</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {resumePrompt && (
+            <div style={styles.modalOverlay}>
+              <div style={styles.modalBox}>
+                <h3 style={styles.modalHeading}>RESUME SAVED GAME?</h3>
+                <div style={styles.modalMessageBox}>
+                  Slot {resumePrompt.slotIndex + 1}: {resumePrompt.slotName}
+                  <br /><br />
+                  Choose YES to continue from your last save.
+                  <br />
+                  Choose NO to restart this slot from the beginning.
+                </div>
+                <div style={styles.modalActions}>
+                  <button style={styles.modalCancel} onClick={handleRestartConfirm}>NO</button>
+                  <button style={styles.modalOk} onClick={handleResumeConfirm}>YES</button>
                 </div>
               </div>
             </div>

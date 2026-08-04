@@ -216,6 +216,37 @@ function buildBalancedCatalog(basePool, totalCount = 8) {
   return balancedCatalog;
 }
 
+function buildUniqueDepartmentCatalog(basePool, totalCount = 4) {
+  const pool = Array.isArray(basePool) ? [...basePool] : [];
+  const fallbackPool = pool.length ? pool : [{ name: 'General Elective', grade: '9th' }];
+  const shuffledPool = [...fallbackPool].sort(() => Math.random() - 0.5);
+  const uniqueChoices = [];
+  const seenNames = new Set();
+
+  shuffledPool.forEach((course) => {
+    const courseName = String(course?.name || '').trim().toLowerCase();
+    if (!courseName || seenNames.has(courseName) || uniqueChoices.length >= totalCount) return;
+    seenNames.add(courseName);
+    uniqueChoices.push(course);
+  });
+
+  if (uniqueChoices.length < totalCount) {
+    fallbackPool.forEach((course) => {
+      const courseName = String(course?.name || '').trim().toLowerCase();
+      if (!courseName || seenNames.has(courseName) || uniqueChoices.length >= totalCount) return;
+      seenNames.add(courseName);
+      uniqueChoices.push(course);
+    });
+  }
+
+  return uniqueChoices.map((course, idx) => ({
+    name: course.name,
+    grade: course.grade,
+    level: CLASS_LEVELS[idx % CLASS_LEVELS.length] || 'Standard',
+    sec: `#${100 + Math.floor(Math.random() * 900)}`
+  }));
+}
+
 function getMorningAfternoonSplit(schedule) {
   const entries = Object.entries(schedule || {});
   const lunchEntry = entries.find(([, slot]) => slot?.isLunch);
@@ -422,7 +453,7 @@ function buildWeeklyContract(baseSchedule, lunchWave) {
   return { rows: normalizedRows, lunchByDay };
 }
 
-export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onLaunchGame, onBack, onExit, onSaveGame, styles, resumeData = null }) {
+export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onLaunchGame, onBack, onExit, onSaveGame, onStateChange = null, styles, resumeData = null }) {
   const [selectedDept, setSelectedDept] = useState(null);
   const [confirmedDept, setConfirmedDept] = useState(false);
   const [currentTokens, setCurrentTokens] = useState([]);
@@ -473,28 +504,74 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
   };
 
   useEffect(() => {
-    if (!resumeData?.selectedDept || !resumeData?.contractSchedule) return;
+    if (!resumeData?.selectedDept) return;
 
-    const restoredSchedule = createEmptySchedule();
-    PERIOD_KEYS.forEach((key) => {
-      if (resumeData.contractSchedule[key]) restoredSchedule[key] = resumeData.contractSchedule[key];
-    });
+    if (resumeData.contractSchedule) {
+      const restoredSchedule = createEmptySchedule();
+      PERIOD_KEYS.forEach((key) => {
+        if (resumeData.contractSchedule[key]) restoredSchedule[key] = resumeData.contractSchedule[key];
+      });
 
-    const restoredWave = resumeData.randomLunchWave || 'Wave 1';
-    const rebuiltContract = buildWeeklyContract(restoredSchedule, restoredWave);
+      const restoredWave = resumeData.randomLunchWave || 'Wave 1';
+      const rebuiltContract = buildWeeklyContract(restoredSchedule, restoredWave);
+
+      setSelectedDept(resumeData.selectedDept);
+      setConfirmedDept(true);
+      setReviewMode(true);
+      setRandomLunchWave(restoredWave);
+      setSchedule(restoredSchedule);
+      setStorageSlots(createEmptyStorage());
+      setWeeklyRows(rebuiltContract.rows);
+      setLunchByDay(rebuiltContract.lunchByDay);
+      setBalanceReport(buildContractBalanceReport(restoredSchedule));
+      setCurrentTokens([]);
+      setShuffleCount(0);
+      return;
+    }
 
     setSelectedDept(resumeData.selectedDept);
-    setConfirmedDept(true);
-    setReviewMode(true);
-    setRandomLunchWave(restoredWave);
-    setSchedule(restoredSchedule);
-    setStorageSlots(createEmptyStorage());
-    setWeeklyRows(rebuiltContract.rows);
-    setLunchByDay(rebuiltContract.lunchByDay);
-    setBalanceReport(buildContractBalanceReport(restoredSchedule));
-    setCurrentTokens([]);
-    setShuffleCount(0);
+    setConfirmedDept(Boolean(resumeData.confirmedDept));
+    setReviewMode(Boolean(resumeData.reviewMode));
+    setRandomLunchWave(resumeData.randomLunchWave || '');
+    setLunchByDay(resumeData.lunchByDay || {});
+    setWeeklyRows(Array.isArray(resumeData.weeklyRows) ? resumeData.weeklyRows : []);
+    setBalanceReport(resumeData.balanceReport || null);
+    setCurrentTokens(Array.isArray(resumeData.currentTokens) ? resumeData.currentTokens : []);
+    setShuffleCount(Number.isFinite(resumeData.shuffleCount) ? resumeData.shuffleCount : 0);
+    setSchedule({ ...createEmptySchedule(), ...(resumeData.schedule || {}) });
+    setStorageSlots(Array.isArray(resumeData.storageSlots) && resumeData.storageSlots.length === 3 ? resumeData.storageSlots : createEmptyStorage());
   }, [resumeData]);
+
+  useEffect(() => {
+    onStateChange?.({
+      selectedDept,
+      confirmedDept,
+      currentTokens,
+      shuffleCount,
+      reviewMode,
+      randomLunchWave,
+      lunchByDay,
+      weeklyRows,
+      balanceReport,
+      schedule,
+      storageSlots,
+      contractSchedule: reviewMode ? schedule : null,
+      scheduleVersion: reviewMode ? 5 : null
+    });
+  }, [
+    selectedDept,
+    confirmedDept,
+    currentTokens,
+    shuffleCount,
+    reviewMode,
+    randomLunchWave,
+    lunchByDay,
+    weeklyRows,
+    balanceReport,
+    schedule,
+    storageSlots,
+    onStateChange
+  ]);
 
   const handleShuffleCatalog = (deptId, isInitialLoad = false) => {
     if (!isInitialLoad && shuffleCount >= 3) {
@@ -503,9 +580,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     }
 
     const basePool = POOL_EXPANSIONS[deptId] || [];
-    const generatedTokens = buildBalancedCatalog(basePool, 4)
-      .map((token) => ({ ...token, sec: token.sec || `#${Math.floor(Math.random() * 900) + 100}` }))
-      .sort(() => Math.random() - 0.5);
+    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 4);
 
     setCurrentTokens(generatedTokens);
     if (!isInitialLoad) {

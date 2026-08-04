@@ -45,10 +45,6 @@ const BELL_TIMELINE = [
 ];
 
 function StudentDashboard({ onExit, initialData = null, onStateChange = null, onSaveGame = null, activeSlotLabel = '', saveMessage = '' }) {
-  useEffect(() => {
-    onStateChange?.(initialData || { step: 'STUDENT_DASHBOARD' });
-  }, [initialData, onStateChange]);
-
   const resolvedGrade = Number(initialData?.grade) || 6;
   const specialistBlockByGrade = { 6: 'block2', 7: 'block4', 8: 'block6' };
   const specialistTargetId = specialistBlockByGrade[resolvedGrade] || 'block2';
@@ -56,6 +52,10 @@ function StudentDashboard({ onExit, initialData = null, onStateChange = null, on
 
   // Generate completely unique, randomized schedules for every individual student
   const studentSchedules = useMemo(() => {
+    if (Array.isArray(initialData?.studentSchedules) && initialData.studentSchedules.length > 0) {
+      return initialData.studentSchedules;
+    }
+
     const roster = ['Alex Mercer', 'Jordan Lee', 'Taylor Smith', 'Morgan Chen', 'Sam Rivera', 'Casey Jordan', 'Avery Brooks', 'Riley Quinn'];
     return roster.map((studentName, idx) => {
       const assignedSpecialist = SPECIALIST_POOL[idx % SPECIALIST_POOL.length];
@@ -80,7 +80,16 @@ function StudentDashboard({ onExit, initialData = null, onStateChange = null, on
         schedule: dailyPath
       };
     });
-  }, [resolvedGrade, gradeSubjects, specialistTargetId]);
+  }, [initialData, resolvedGrade, gradeSubjects, specialistTargetId]);
+
+  useEffect(() => {
+    onStateChange?.({
+      ...(initialData || {}),
+      step: 'STUDENT_DASHBOARD',
+      grade: resolvedGrade,
+      studentSchedules
+    });
+  }, [initialData, onStateChange, resolvedGrade, studentSchedules]);
 
   return (
     <div style={styles.container}>

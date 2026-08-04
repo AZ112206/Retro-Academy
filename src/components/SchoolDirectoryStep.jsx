@@ -97,6 +97,8 @@ const HIGH_LUNCH_WAVE_SPLIT_DETAILS = {
   'Wave 3': '60 min class then 30 min lunch then 30 min class',
   'Wave 4': '90 min class then 30 min lunch'
 };
+const HIGH_STUDENT_LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
+const HIGH_STUDY_HALL_GRADE_MIX = [9, 10, 11, 12];
 const HIGH_DAY_PATTERNS = [
   { day: 'Day 1', sequence: ['A', 'B', 'G', 'D', 'E', 'F'] },
   { day: 'Day 2', sequence: ['B', 'C', 'A', 'E', 'F', 'G'] },
@@ -267,6 +269,33 @@ function resolveGradeNumberFromLabel(gradeLabel) {
   if (!match) return null;
   const parsed = Number(match[0]);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatRosterGradeLabel(gradeLabel) {
+  const numeric = resolveGradeNumberFromLabel(gradeLabel);
+  if (numeric === 0) return 'K';
+  if (Number.isFinite(numeric)) return String(numeric);
+  return String(gradeLabel || '').replace(/\b(th|st|nd|rd)\b/gi, '').trim() || 'N/A';
+}
+
+function resolveSectionStudentGrade(section, student, studentIndex) {
+  if (!Array.isArray(section?.gradeDistribution) || section.gradeDistribution.length === 0) {
+    return section?.gradeLabel || '9th';
+  }
+
+  const gradeSeed = hashString(`${section.key}|${student?.sharedRosterId || student?.id || studentIndex}|grade`);
+  const pickedGrade = section.gradeDistribution[gradeSeed % section.gradeDistribution.length];
+  if (pickedGrade === 0) return 'Kindergarten';
+  return `${pickedGrade}th`;
+}
+
+function resolveSectionStudentLunchWave(section, student, studentIndex) {
+  if (!Array.isArray(section?.lunchWaveDistribution) || section.lunchWaveDistribution.length === 0) {
+    return section?.lunchWave || null;
+  }
+
+  const lunchSeed = hashString(`${section.key}|${student?.sharedRosterId || student?.id || studentIndex}|lunch-wave`);
+  return section.lunchWaveDistribution[lunchSeed % section.lunchWaveDistribution.length] || section.lunchWaveDistribution[0] || null;
 }
 
 function getElementaryLunchConfigByGrade(gradeInput) {
@@ -482,11 +511,9 @@ function buildStudentRosterFromSections(sections) {
     let seededStudents = rosterCache.get(rosterGroup);
     if (!seededStudents) {
       seededStudents = generateRoster(size).map((student, studentIndex) => {
-        const age = deriveStudentAgeFromGrade(section.gradeLabel);
         return {
           ...student,
           sharedRosterId: `${rosterGroup}-${student.id}`,
-          age,
           appearance: buildStudentAvatarAppearance(student, rosterGroup, studentIndex),
           vitals: buildStudentVitals(student),
           personality: buildStudentPersonality(student)
@@ -495,17 +522,23 @@ function buildStudentRosterFromSections(sections) {
       rosterCache.set(rosterGroup, seededStudents);
     }
     acc[section.key] = seededStudents.map((student, studentIndex) => {
+      const resolvedGrade = resolveSectionStudentGrade(section, student, studentIndex);
+      const resolvedAge = deriveStudentAgeFromGrade(resolvedGrade);
+      const resolvedLunchWave = resolveSectionStudentLunchWave(section, student, studentIndex);
+      const displayGrade = formatRosterGradeLabel(resolvedGrade);
       return {
         ...student,
         id: `${section.key}-${student.sharedRosterId || student.id || studentIndex}`,
-        grade: section.gradeLabel,
+        age: resolvedAge,
+        grade: resolvedGrade,
+        displayGrade,
         classGrade: section.courseLevel || 'Standard',
         className: section.courseName,
         sectionCode: section.sectionCode,
         rosterGroup: section.rosterGroup || section.key,
         courseNumber: section.courseNumber,
         blockLabel: section.blockLabel,
-        lunchWave: section.lunchWave || null,
+        lunchWave: resolvedLunchWave,
         teacherLunchWave: section.teacherLunchWave || null,
         sectionTeacherName: section.teacherName || null,
         homeroomTeacherName: section.homeroomTeacherName || section.teacherName || null,
@@ -514,10 +547,10 @@ function buildStudentRosterFromSections(sections) {
         currentGradeNumber: 100,
         homeroom: 'Homeroom & Attendance',
         profile: {
-          age: student.age,
+          age: resolvedAge,
           occupation: 'Student',
           yearsTeaching: 0,
-          birthday: `Grade ${section.gradeLabel} Student`,
+          birthday: `Grade ${resolvedGrade} Student`,
           previousPositions: [{ position: section.courseName, years: 1 }],
           vitals: student.vitals,
           personality: student.personality
@@ -625,7 +658,8 @@ function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
     maxStudents: 24,
     teacherName: playerName,
     homeroomTeacherName: playerName,
-    teacherLunchWave
+    teacherLunchWave,
+    lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
   });
 
   Object.entries(contractSchedule).forEach(([periodLetter, slot]) => {
@@ -647,7 +681,9 @@ function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
         teacherLunchWave,
         maxStudents: 24,
         teacherName: playerName,
-        homeroomTeacherName: playerName
+        homeroomTeacherName: playerName,
+        gradeDistribution: HIGH_STUDY_HALL_GRADE_MIX,
+        lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
       });
       return;
     }
@@ -667,7 +703,8 @@ function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
       teacherLunchWave,
       maxStudents: 24,
       teacherName: playerName,
-      homeroomTeacherName: playerName
+      homeroomTeacherName: playerName,
+      lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
     });
   });
 
@@ -1173,6 +1210,76 @@ function buildTeacherDirectoryForStudents(facultyRoster) {
   return { all: teacherLike, bySubject, highElectives };
 }
 
+function normalizeCatalogEntryKind(entry) {
+  const rawKind = String(entry?.kind || entry?.entryType || '').toLowerCase();
+  if (rawKind === 'class') return 'class';
+  if (rawKind === 'homeroom') return 'homeroom';
+  if (rawKind === 'lunch') return 'lunch';
+  if (rawKind === 'prep' || rawKind === 'studyhall') return 'prep';
+  if (rawKind === 'support') return 'support';
+  return 'class';
+}
+
+function buildTeacherScheduleCatalog(facultyRoster, schoolType) {
+  const staffList = Object.values(facultyRoster || {}).flatMap((members) => (Array.isArray(members) ? members : []));
+  const teacherLike = staffList.filter((member) => isTeacherLikeRole(member?.role));
+  const highCoverageMap = schoolType === 'High' ? buildHighDepartmentCoverageMap(facultyRoster) : {};
+  const highSchedulePreferences = schoolType === 'High' ? buildHighSchedulePreferences(facultyRoster) : {};
+  const byBlockDay = {};
+
+  teacherLike.forEach((staff) => {
+    const lockedSchedule = generateLockedStaffSchedule(staff, schoolType, highCoverageMap, highSchedulePreferences);
+    (lockedSchedule?.rows || []).forEach((row) => {
+      if (!byBlockDay[row.block]) byBlockDay[row.block] = {};
+
+      WEEK_DAYS.forEach((dayName, dayIdx) => {
+        if (!byBlockDay[row.block][dayName]) byBlockDay[row.block][dayName] = [];
+        const entry = row?.entries?.[dayIdx];
+        if (!entry) return;
+
+        byBlockDay[row.block][dayName].push({
+          kind: normalizeCatalogEntryKind(entry),
+          className: entry.name || entry.className || 'Assigned Coverage',
+          classType: entry.level || entry.classType || 'Standard',
+          teacher: staff.name,
+          detail: entry.detail || null,
+          sec: entry.sec || null,
+          role: staff.role,
+          isPlayer: Boolean(staff.isPlayer)
+        });
+      });
+    });
+  });
+
+  return { byBlockDay };
+}
+
+function pickAlignedScheduleEntry(scheduleCatalog, blockName, dayName, seedKey, options = {}) {
+  const entries = scheduleCatalog?.byBlockDay?.[blockName]?.[dayName] || [];
+  if (!entries.length) return null;
+
+  const requestedKinds = Array.isArray(options.kinds)
+    ? options.kinds
+    : options.kind
+    ? [options.kind]
+    : ['class'];
+
+  const kindMatches = entries.filter((entry) => requestedKinds.includes(entry.kind));
+  const pool = kindMatches.length ? kindMatches : entries;
+  const byTeacherAndClass = pool.filter((entry) => {
+    const teacherMatch = options.teacherName ? entry.teacher === options.teacherName : true;
+    const classMatch = options.className ? entry.className === options.className : true;
+    return teacherMatch && classMatch;
+  });
+  const byClass = options.className ? pool.filter((entry) => entry.className === options.className) : [];
+  const byTeacher = options.teacherName ? pool.filter((entry) => entry.teacher === options.teacherName) : [];
+  const finalPool = byTeacherAndClass.length ? byTeacherAndClass : byClass.length ? byClass : byTeacher.length ? byTeacher : pool;
+
+  if (!finalPool.length) return null;
+  const pickIndex = hashString(seedKey) % finalPool.length;
+  return finalPool[pickIndex] || finalPool[0] || null;
+}
+
 function pickTeacherNameForSubject(teacherDirectory, subject, random) {
   const picked = pickTeacherForSubject(teacherDirectory, subject, random);
   return picked?.name || 'Staff Teacher';
@@ -1285,7 +1392,7 @@ function buildTermLabelsBySchool(schoolType) {
   return ['Trimester 1', 'Trimester 2', 'Trimester 3'];
 }
 
-function buildElementaryStudentSchedule(student, teacherDirectory) {
+function buildElementaryStudentSchedule(student, teacherDirectory, scheduleCatalog) {
   const homeroomSeed = `${student?.grade || 'elem'}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
   const random = createSeededRandom(hashString(homeroomSeed));
   const isLowerElem = String(student?.grade || '').toLowerCase().includes('kindergarten')
@@ -1411,10 +1518,34 @@ function buildElementaryStudentSchedule(student, teacherDirectory) {
     }
   }
 
-  return rows;
+  return rows.map((row) => ({
+    ...row,
+    entries: WEEK_DAYS.map((dayName, dayIdx) => {
+      const fallbackEntry = row.entries?.[dayIdx];
+      const aligned = pickAlignedScheduleEntry(scheduleCatalog, row.block, dayName, `${student?.id || student?.name}|${row.block}|${dayName}`, {
+        kind: fallbackEntry?.entryType === 'lunch'
+          ? 'lunch'
+          : fallbackEntry?.entryType === 'homeroom'
+          ? 'homeroom'
+          : fallbackEntry?.entryType === 'support'
+          ? 'support'
+          : 'class',
+        teacherName: row.block === primarySession ? primaryTeacher : fallbackEntry?.teacher,
+        className: fallbackEntry?.className
+      });
+
+      if (!aligned) return fallbackEntry;
+      return {
+        ...fallbackEntry,
+        className: aligned.className || fallbackEntry?.className,
+        classType: aligned.classType || fallbackEntry?.classType,
+        teacher: aligned.teacher || fallbackEntry?.teacher
+      };
+    })
+  }));
 }
 
-function buildMiddleStudentSchedule(student, teacherDirectory) {
+function buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog) {
   const random = createSeededRandom(hashString(`${student?.id || student?.name}|middle`));
   const gradeMatch = String(student?.grade || '').match(/\d+/);
   const gradeNum = gradeMatch ? Number(gradeMatch[0]) : 6;
@@ -1568,10 +1699,36 @@ function buildMiddleStudentSchedule(student, teacherDirectory) {
       time: MIDDLE_BLOCK_TIMES.block6,
       entries: WEEK_DAYS.map(() => ({ ...blockAssignments['Block 6'] }))
     }
-  ];
+  ].map((row) => ({
+    ...row,
+    entries: WEEK_DAYS.map((dayName, dayIdx) => {
+      const fallbackEntry = row.entries?.[dayIdx];
+      const aligned = pickAlignedScheduleEntry(scheduleCatalog, row.block, dayName, `${student?.id || student?.name}|${row.block}|${dayName}`, {
+        kind: fallbackEntry?.entryType === 'lunch'
+          ? 'lunch'
+          : fallbackEntry?.entryType === 'homeroom'
+          ? 'homeroom'
+          : fallbackEntry?.entryType === 'studyhall'
+          ? 'support'
+          : fallbackEntry?.entryType === 'support'
+          ? 'support'
+          : 'class',
+        teacherName: row.block === primaryBlock ? primaryTeacher : fallbackEntry?.teacher,
+        className: fallbackEntry?.className
+      });
+
+      if (!aligned) return fallbackEntry;
+      return {
+        ...fallbackEntry,
+        className: aligned.className || fallbackEntry?.className,
+        classType: aligned.classType || fallbackEntry?.classType,
+        teacher: aligned.teacher || fallbackEntry?.teacher
+      };
+    })
+  }));
 }
 
-function buildHighStudentSchedule(student, teacherDirectory) {
+function buildHighStudentSchedule(student, teacherDirectory, scheduleCatalog) {
   const random = createSeededRandom(hashString(`${student?.id || student?.name}|high`));
   const subjects = ['Mathematics', 'Science', 'History', 'ELA', 'Foreign Language'];
   const periodLetters = [...HIGH_PERIOD_LETTERS];
@@ -1606,7 +1763,7 @@ function buildHighStudentSchedule(student, teacherDirectory) {
   const explicitLunchWave = typeof student?.lunchWave === 'string' && lunchWaves.includes(student.lunchWave)
     ? student.lunchWave
     : null;
-  const studentLunchWave = teacherMatchedLunchWave || explicitLunchWave || lunchWaves[hashString(`${sectionLunchSeed}|high-lunch-wave`) % lunchWaves.length] || 'Wave 1';
+  const studentLunchWave = explicitLunchWave || teacherMatchedLunchWave || lunchWaves[hashString(`${sectionLunchSeed}|high-lunch-wave`) % lunchWaves.length] || 'Wave 1';
   const studentLunchByDay = HIGH_LUNCH_WAVE_DAY_TIMES[studentLunchWave] || HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'];
   const currentQuarter = 'Quarter 1';
   const gymQuarterGradeMap = {
@@ -1732,12 +1889,25 @@ function buildHighStudentSchedule(student, teacherDirectory) {
       time: periodTimes[slotIdx] || 'Assigned by District',
       entries: WEEK_DAYS.map((dayName, dayIdx) => {
         const periodLetter = HIGH_DAY_PATTERNS[dayIdx]?.sequence?.[slotIdx] || HIGH_PERIOD_LETTERS[(dayIdx + slotIdx) % HIGH_PERIOD_LETTERS.length];
-        const baseEntry = assignedByPeriod[periodLetter] || {
+        const fallbackEntry = assignedByPeriod[periodLetter] || {
           entryType: 'class',
           className: 'Core Seminar',
           classType: 'Standard',
           teacher: pickTeacherNameForSubject(teacherDirectory, 'ELA', random)
         };
+        const alignedEntry = pickAlignedScheduleEntry(scheduleCatalog, `Period ${slotIdx + 1}`, dayName, `${student?.id || student?.name}|${dayName}|${slotIdx}`, {
+          kind: fallbackEntry.entryType === 'studyhall' ? 'prep' : fallbackEntry.entryType,
+          teacherName: periodLetter === primaryPeriod ? primaryTeacher : fallbackEntry.teacher,
+          className: fallbackEntry.className
+        });
+        const baseEntry = alignedEntry
+          ? {
+              ...fallbackEntry,
+              className: alignedEntry.className || fallbackEntry.className,
+              classType: alignedEntry.classType || fallbackEntry.classType,
+              teacher: alignedEntry.teacher || fallbackEntry.teacher
+            }
+          : fallbackEntry;
         const isLongBlockSlot = slotIdx === HIGH_LONG_BLOCK_SLOT_INDEX;
         const activeWave = studentLunchWave;
         const lunchLabel = studentLunchByDay?.[dayName] || '11:10 AM - 11:50 AM';
@@ -1819,11 +1989,12 @@ function buildStudentReportCard(scheduleRows, schoolType, teacherDirectory) {
 
 function buildStudentAcademicViews(student, schoolType, facultyRoster) {
   const teacherDirectory = buildTeacherDirectoryForStudents(facultyRoster);
+  const scheduleCatalog = buildTeacherScheduleCatalog(facultyRoster, schoolType);
   const scheduleRows = schoolType === 'High'
-    ? buildHighStudentSchedule(student, teacherDirectory)
+    ? buildHighStudentSchedule(student, teacherDirectory, scheduleCatalog)
     : schoolType === 'Middle'
-    ? buildMiddleStudentSchedule(student, teacherDirectory)
-    : buildElementaryStudentSchedule(student, teacherDirectory);
+    ? buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog)
+    : buildElementaryStudentSchedule(student, teacherDirectory, scheduleCatalog);
 
   const highLunchByDay = schoolType === 'High'
     ? extractHighLunchByDayFromRows(scheduleRows, HIGH_LUNCH_WAVE_DAY_TIMES['Wave 1'])
@@ -1833,11 +2004,36 @@ function buildStudentAcademicViews(student, schoolType, facultyRoster) {
     ? resolveHighLunchWaveFromTime(highLunchByDay?.[WEEK_DAYS[0]] || '')
     : null;
 
+  const lunchReference = schoolType === 'High'
+    ? {
+        label: student?.lunchWave || highLunchWave || 'Wave 1',
+        time: highLunchByDay?.[WEEK_DAYS[0]] || HIGH_LUNCH_WAVE_DAY_TIMES[student?.lunchWave || highLunchWave || 'Wave 1']?.[WEEK_DAYS[0]] || '10:40 AM - 11:10 AM',
+        detail: HIGH_LUNCH_WAVE_SPLIT_DETAILS[student?.lunchWave || highLunchWave || 'Wave 1'] || HIGH_LUNCH_WAVE_SPLIT_DETAILS['Wave 1']
+      }
+    : schoolType === 'Middle'
+    ? (() => {
+        const lunchConfig = getMiddleLunchConfigByGrade(student?.grade);
+        return {
+          label: lunchConfig.label,
+          time: lunchConfig.time,
+          detail: `Grade ${formatRosterGradeLabel(student?.grade)} staggered lunch block`
+        };
+      })()
+    : (() => {
+        const lunchConfig = getElementaryLunchConfigByGrade(student?.grade);
+        return {
+          label: lunchConfig.label,
+          time: lunchConfig.time,
+          detail: `${lunchConfig.pairedWith} | ${lunchConfig.order}`
+        };
+      })();
+
   return {
     scheduleRows,
     reportCard: buildStudentReportCard(scheduleRows, schoolType, teacherDirectory),
     highLunchByDay,
-    highLunchWave
+    highLunchWave,
+    lunchReference
   };
 }
 
@@ -1933,6 +2129,9 @@ function StudentCard({ student, onOpen, schoolType }) {
         <span style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#fff', whiteSpace: 'normal', overflowWrap: 'anywhere', lineHeight: 1.2, width: '100%' }}>
           {student.name}
         </span>
+        <span style={{ fontSize: '0.62rem', color: '#00FFFF', letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+          Grade {student.displayGrade || formatRosterGradeLabel(student.grade)}
+        </span>
         <span style={{ fontSize: '0.62rem', color: '#39FF14', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
           {showClassType ? `${student.className} ${classTypeTag}` : student.className}
         </span>
@@ -1947,16 +2146,16 @@ function StudentCard({ student, onOpen, schoolType }) {
   );
 }
 
-export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange, onProceed, onBack, onSaveGame, styles }) {
-  const [viewMode, setViewMode] = useState('staff');
-  const [activeTab, setActiveTab] = useState('administration');
+export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange, initialData = null, onStateChange = null, onProceed, onBack, onSaveGame, styles }) {
+  const [viewMode, setViewMode] = useState(initialData?.viewMode || 'staff');
+  const [activeTab, setActiveTab] = useState(initialData?.activeTab || 'administration');
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [studentViewMode, setStudentViewMode] = useState('schedule');
+  const [studentViewMode, setStudentViewMode] = useState(initialData?.studentViewMode || 'schedule');
   const [liveProfile, setLiveProfile] = useState(null);
   const [selectedStaffSchedule, setSelectedStaffSchedule] = useState(null);
-  const [showSchedule, setShowSchedule] = useState(false);
-  const [studentActiveTab, setStudentActiveTab] = useState('homeroom');
+  const [showSchedule, setShowSchedule] = useState(Boolean(initialData?.showSchedule));
+  const [studentActiveTab, setStudentActiveTab] = useState(initialData?.studentActiveTab || 'homeroom');
   const tabScrollRef = useRef(null);
   const dragStateRef = useRef({ dragging: false, startX: 0, startScrollLeft: 0 });
   const contentScrollRef = useRef(null);
@@ -1964,8 +2163,9 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
   // Procedurally seed the entire school grid dataset
   const facultyRoster = useMemo(() => {
+    if (initialData?.roster && typeof initialData.roster === 'object') return initialData.roster;
     return generateFacultyRoster(schoolType, playerAvatar, playerDepartment, playerGrade);
-  }, [schoolType, playerAvatar, playerDepartment, playerGrade]);
+  }, [initialData, schoolType, playerAvatar, playerDepartment, playerGrade]);
 
   const highDepartmentCoverage = useMemo(() => {
     if (schoolType !== 'High') return {};
@@ -1978,11 +2178,12 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
   }, [schoolType, facultyRoster]);
 
   const studentRoster = useMemo(() => {
+    if (initialData?.studentRoster && typeof initialData.studentRoster === 'object') return initialData.studentRoster;
     if (schoolType === 'High') return buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange);
     if (schoolType === 'Middle') return buildMiddleStudentRoster(playerDepartment, playerGrade);
     if (schoolType === 'Elementary') return buildElementaryStudentRoster(playerDepartment, playerGrade);
     return {};
-  }, [schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange]);
+  }, [initialData, schoolType, playerAvatar, playerDepartment, playerGrade, highLetterRange]);
 
   const studentTabKeys = useMemo(() => Object.keys(studentRoster), [studentRoster]);
   const selectedStudentAcademic = useMemo(() => {
@@ -2101,9 +2302,51 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
   useEffect(() => {
     if (selectedStudent) {
+      if (initialData?.selectedStudentId) return;
       setStudentViewMode('schedule');
     }
-  }, [selectedStudent]);
+  }, [selectedStudent, initialData]);
+
+  useEffect(() => {
+    const requestedStaffId = initialData?.selectedStaffId;
+    if (!requestedStaffId) return;
+    const rosterEntries = Object.values(facultyRoster || {}).flatMap((members) => (Array.isArray(members) ? members : []));
+    const matched = rosterEntries.find((staff) => (staff?.id || staff?.name) === requestedStaffId);
+    if (matched) setSelectedStaff(matched);
+  }, [initialData, facultyRoster]);
+
+  useEffect(() => {
+    const requestedStudentId = initialData?.selectedStudentId;
+    if (!requestedStudentId) return;
+    const rosterEntries = Object.values(studentRoster || {}).flatMap((members) => (Array.isArray(members) ? members : []));
+    const matched = rosterEntries.find((student) => (student?.id || student?.name) === requestedStudentId);
+    if (matched) setSelectedStudent(matched);
+  }, [initialData, studentRoster]);
+
+  useEffect(() => {
+    onStateChange?.({
+      roster: facultyRoster,
+      studentRoster,
+      viewMode,
+      activeTab,
+      studentActiveTab,
+      studentViewMode,
+      showSchedule,
+      selectedStaffId: selectedStaff?.id || selectedStaff?.name || null,
+      selectedStudentId: selectedStudent?.id || selectedStudent?.name || null
+    });
+  }, [
+    facultyRoster,
+    studentRoster,
+    viewMode,
+    activeTab,
+    studentActiveTab,
+    studentViewMode,
+    showSchedule,
+    selectedStaff,
+    selectedStudent,
+    onStateChange
+  ]);
 
   useEffect(() => {
     const hasOverlayOpen = Boolean(selectedStaff) || Boolean(selectedStudent);
@@ -2704,6 +2947,13 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
             {studentViewMode === 'schedule' && selectedStudentAcademic ? (
               <>
+                {selectedStudentAcademic.lunchReference && (
+                  <div style={{ marginBottom: '12px', padding: '10px 12px', backgroundColor: '#161616', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.78rem', color: '#ddd', textAlign: 'center' }}>
+                    <strong style={{ color: '#39FF14' }}>Lunch Wave:</strong> <span style={{ color: '#ffa500' }}>{selectedStudentAcademic.lunchReference.label}</span> | <strong style={{ color: '#39FF14' }}>Window:</strong> <span style={{ color: '#f5f1dd' }}>{selectedStudentAcademic.lunchReference.time}</span>
+                    <div style={{ marginTop: '4px', color: '#9acb92', fontSize: '0.72rem' }}>{selectedStudentAcademic.lunchReference.detail}</div>
+                  </div>
+                )}
+
                 {schoolType === 'High' ? (
                   <>
                     <div style={{ ...styles.setupBox, maxWidth: '100%', minHeight: 'unset', padding: '20px', justifyContent: 'flex-start', backgroundColor: '#111' }}>
@@ -2829,6 +3079,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                       <div style={{ marginTop: '10px', padding: '8px 10px', backgroundColor: '#1a1a1a', borderRadius: '6px', border: '1px solid #2a2a2a', fontSize: '0.76rem', color: '#8f8f8f', textAlign: 'center' }}>
                         Weekly rotating matrix stays fully covered Day 1-Day 7 with long-block lunch split and class/elective alignment.
                       </div>
+
+                      {renderSchoolLunchReference()}
                     </div>
                   </>
                 ) : (
@@ -2868,6 +3120,8 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                         </tbody>
                       </table>
                     </div>
+
+                    {renderSchoolLunchReference()}
                   </>
                 )}
               </>

@@ -14,15 +14,106 @@ function createEmptySaveSlots() {
   };
 }
 
-function loadSaveSlots() {
-  return createEmptySaveSlots();
+function isValidSlotArray(value) {
+  return Array.isArray(value) && value.length === 4;
 }
 
-function persistSaveSlots() {}
+function normalizeSaveSlots(rawValue) {
+  const fallback = createEmptySaveSlots();
+  if (!rawValue || typeof rawValue !== 'object') return fallback;
 
-function loadActiveSession() { return null; }
+  return {
+    Teacher: isValidSlotArray(rawValue.Teacher) ? rawValue.Teacher : fallback.Teacher,
+    Student: isValidSlotArray(rawValue.Student) ? rawValue.Student : fallback.Student
+  };
+}
 
-function persistActiveSession() {}
+function getDefaultSessionSnapshot(role) {
+  if (role === 'Teacher') {
+    return {
+      step: 'SCHOOL_TYPE',
+      schoolType: null,
+      elementaryGrade: null,
+      middleGrade: null,
+      middleLunchWave: '',
+      highGrade: null,
+      highLetterRange: '',
+      highSchoolDept: null,
+      lunchWave: '',
+      selectedClass: null,
+      highScheduleContract: null,
+      teacherProfile: null,
+      schoolDirectoryData: null
+    };
+  }
+
+  if (role === 'Student') {
+    return {
+      step: 'STUDENT_DASHBOARD'
+    };
+  }
+
+  return null;
+}
+
+function loadSaveSlots() {
+  try {
+    const raw = window.localStorage.getItem(SAVE_STORAGE_KEY);
+    if (!raw) return createEmptySaveSlots();
+    return normalizeSaveSlots(JSON.parse(raw));
+  } catch {
+    return createEmptySaveSlots();
+  }
+}
+
+function persistSaveSlots(saveSlots) {
+  try {
+    window.localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(normalizeSaveSlots(saveSlots)));
+  } catch {
+    // Ignore storage failures; in-memory state remains usable.
+  }
+}
+
+function loadActiveSession(saveSlots) {
+  try {
+    const raw = window.localStorage.getItem(ACTIVE_SESSION_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    const activeSlot = parsed?.activeSlot;
+    if (!activeSlot?.role || !Number.isInteger(activeSlot?.slotIndex)) return null;
+
+    const slotEntry = saveSlots?.[activeSlot.role]?.[activeSlot.slotIndex] || null;
+
+    return {
+      role: activeSlot.role,
+      activeSlot: {
+        role: activeSlot.role,
+        slotIndex: activeSlot.slotIndex,
+        slotName: activeSlot.slotName || slotEntry?.slotName || `Slot ${activeSlot.slotIndex + 1}`
+      },
+      sessionSnapshot: parsed?.sessionSnapshot || slotEntry.saveData || getDefaultSessionSnapshot(activeSlot.role)
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistActiveSession(activeSlot, sessionSnapshot = null) {
+  try {
+    if (!activeSlot) {
+      window.localStorage.removeItem(ACTIVE_SESSION_KEY);
+      return;
+    }
+
+    window.localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({
+      activeSlot,
+      sessionSnapshot
+    }));
+  } catch {
+    // Ignore storage failures; in-memory state remains usable.
+  }
+}
 
 function App() {
   const initialSlots = useMemo(() => loadSaveSlots(), []);
@@ -34,21 +125,16 @@ function App() {
   const [saveMessage, setSaveMessage] = useState('');
   const [showSavePopup, setShowSavePopup] = useState(false);
 
-  useEffect(() => {
-    try {
-      window.localStorage.removeItem(SAVE_STORAGE_KEY);
-      window.localStorage.removeItem(ACTIVE_SESSION_KEY);
-    } catch {
-      // Ignore storage cleanup failures; runtime state remains the source of truth.
-    }
-  }, []);
-
-  const handleStartSlot = ({ role, slotIndex, slotName, saveData = null }) => {
+  const handleStartSlot = ({ role, slotIndex, slotName, saveData = null, restart = false }) => {
+    const fallbackSnapshot = getDefaultSessionSnapshot(role);
+    const resolvedSaveData = restart
+      ? fallbackSnapshot
+      : (saveSlots?.[role]?.[slotIndex]?.saveData || saveData || fallbackSnapshot);
     const nextSlotEntry = {
       slotName,
       role,
       updatedAt: new Date().toISOString(),
-      saveData: saveSlots?.[role]?.[slotIndex]?.saveData || saveData || null
+      saveData: resolvedSaveData
     };
     const nextSlots = {
       ...saveSlots,
@@ -58,10 +144,12 @@ function App() {
 
     const nextActiveSlot = { role, slotIndex, slotName };
     setActiveSlot(nextActiveSlot);
-    setSessionSnapshot(saveData);
+    setSessionSnapshot(resolvedSaveData);
     setCurrentRole(role);
     setSaveMessage('');
-    persistActiveSession(nextActiveSlot);
+
+    persistSaveSlots(nextSlots);
+    persistActiveSession(nextActiveSlot, resolvedSaveData);
   };
 
   const handleExitGame = () => {
@@ -79,6 +167,14 @@ function App() {
     };
     setSaveSlots(nextSlots);
     persistSaveSlots(nextSlots);
+
+    if (activeSlot?.role === role && activeSlot?.slotIndex === slotIndex) {
+      setCurrentRole(null);
+      setActiveSlot(null);
+      setSessionSnapshot(null);
+      setSaveMessage('');
+      persistActiveSession(null);
+    }
   };
 
   const handleSaveGame = () => {
@@ -98,8 +194,9 @@ function App() {
     };
 
     setSaveSlots(nextSlots);
-    persistActiveSession(activeSlot);
-    setSaveMessage('');
+    persistSaveSlots(nextSlots);
+    persistActiveSession(activeSlot, sessionSnapshot);
+    setSaveMessage(`Saved ${activeSlot.slotName}. You will return to this same screen when you load this slot.`);
     setShowSavePopup(true);
     window.setTimeout(() => setShowSavePopup(false), 3000);
   };
@@ -107,6 +204,37 @@ function App() {
   useEffect(() => {
     persistSaveSlots(saveSlots);
   }, [saveSlots]);
+
+  useEffect(() => {
+    if (!activeSlot || !currentRole) return;
+    persistActiveSession(activeSlot, sessionSnapshot);
+  }, [activeSlot, currentRole, sessionSnapshot]);
+
+  useEffect(() => {
+    if (!activeSlot || !currentRole || !sessionSnapshot) return;
+
+    setSaveSlots((prevSlots) => {
+      const roleSlots = prevSlots?.[activeSlot.role] || [];
+      const currentEntry = roleSlots[activeSlot.slotIndex];
+      if (!currentEntry) return prevSlots;
+      if (currentEntry.saveData === sessionSnapshot && currentEntry.slotName === activeSlot.slotName) {
+        return prevSlots;
+      }
+
+      return {
+        ...prevSlots,
+        [activeSlot.role]: roleSlots.map((entry, index) => {
+          if (index !== activeSlot.slotIndex) return entry;
+          return {
+            slotName: activeSlot.slotName,
+            role: activeSlot.role,
+            updatedAt: entry?.updatedAt || new Date().toISOString(),
+            saveData: sessionSnapshot
+          };
+        })
+      };
+    });
+  }, [activeSlot, currentRole, sessionSnapshot]);
 
   const currentSlotLabel = useMemo(() => activeSlot?.slotName || '', [activeSlot]);
 
@@ -152,7 +280,10 @@ function App() {
       {showSavePopup && (
         <div style={savePopupStyles.modalOverlay}>
           <div style={savePopupStyles.modalBox}>
-            <h3 style={savePopupStyles.modalHeading}>GAME SAVED!</h3>
+            <h3 style={savePopupStyles.modalHeading}>SAVE COMPLETE</h3>
+            <p style={savePopupStyles.modalText}>
+              {saveMessage || 'Your game was saved successfully.'}
+            </p>
           </div>
         </div>
       )}
@@ -185,6 +316,12 @@ const savePopupStyles = {
     margin: 0,
     color: '#39FF14',
     letterSpacing: '1px'
+  },
+  modalText: {
+    margin: '10px 0 0',
+    color: '#f5f1dd',
+    fontSize: '0.9rem',
+    lineHeight: 1.5
   }
 };
 
