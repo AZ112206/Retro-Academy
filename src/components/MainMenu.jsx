@@ -232,7 +232,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '100%',
+    minHeight: 'calc(100vh - 48px)',
     width: '100%',
     backgroundColor: '#121212',
     color: '#39FF14', // Retro green neon
@@ -248,7 +248,7 @@ const styles = {
     backgroundColor: '#1a1a1a',
     width: '100%',
     maxWidth: '1100px',
-    minHeight: '720px',
+    minHeight: 'calc(100vh - 88px)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',

@@ -505,73 +505,12 @@ export default function TeacherAvatarCustomizer({ initialData = null, onStateCha
     setDirection(initialData.direction || 'Front');
   }, [initialData]);
 
-  useEffect(() => {
-    onStateChange?.({
-      gender,
-      race,
-      title,
-      firstName,
-      lastName,
-      skinTone,
-      hairStyle,
-      hairColor,
-      hairTieColor,
-      faceShape,
-      eyeShape,
-      eyeColor,
-      browStyle,
-      noseShape,
-      noseColor,
-      mouthStyle,
-      lipColor,
-      topColor,
-      bottomColor,
-      shoeColor,
-      age,
-      birthday,
-      yearsTeaching: workExperienceYears,
-      direction,
-      badgeName,
-      rosterName
-    });
-  }, [
-    gender,
-    race,
-    title,
-    firstName,
-    lastName,
-    skinTone,
-    hairStyle,
-    hairColor,
-    hairTieColor,
-    faceShape,
-    eyeShape,
-    eyeColor,
-    browStyle,
-    noseShape,
-    noseColor,
-    mouthStyle,
-    lipColor,
-    topColor,
-    bottomColor,
-    shoeColor,
-    age,
-    birthday,
-    workExperienceYears,
-    direction,
-    badgeName,
-    rosterName,
-    onStateChange
-  ]);
-
-  // FIXED: Flips first names pool parameters immediately when gender value shifts
+  // Keep title aligned with gender without re-randomizing the chosen name on every toggle.
   useEffect(() => {
     if (gender === 'Male') {
       setTitle('Mr.');
-      setFirstName(MALE_FIRST_NAMES[Math.floor(Math.random() * MALE_FIRST_NAMES.length)]);
     } else {
       setTitle('Ms.');
-      setFirstName(FEMALE_FIRST_NAMES[Math.floor(Math.random() * FEMALE_FIRST_NAMES.length)]);
     }
   }, [gender]);
 

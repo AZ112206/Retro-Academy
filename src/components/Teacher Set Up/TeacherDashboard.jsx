@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import SchoolTypeStep from './1. SchoolTypeStep.jsx';
 import GradeConfigStep from './2. GradeConfigStep.jsx';
 import ElementarySchoolScheduleStep from './3a. ElementarySchoolScheduleStep.jsx';
@@ -22,7 +22,7 @@ const retroStyles = {
     color: '#fff',
     width: '100%',
     maxWidth: '1100px',
-    minHeight: '720px',
+    minHeight: 'calc(100vh - 48px)',
     margin: '0 auto',
     boxSizing: 'border-box',
     display: 'flex',
@@ -113,7 +113,9 @@ const retroStyles = {
     maxWidth: '760px',
     margin: '30px auto 0',
     justifyContent: 'center',
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    position: 'relative',
+    zIndex: 2
   }
 };
 
@@ -148,6 +150,22 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   const [teacherProfile, setTeacherProfile] = useState(initialData?.teacherProfile || null);
   const [schoolDirectoryData, setSchoolDirectoryData] = useState(initialData?.schoolDirectoryData || null);
   const [worldLoadIndex, setWorldLoadIndex] = useState(0);
+  const lastEmittedStateRef = useRef('');
+
+  const resetSchoolBranchState = () => {
+    setElementaryGrade(null);
+    setMiddleGrade(null);
+    setMiddleLunchWave('');
+    setHighGrade(null);
+    setHighLetterRange('');
+    setHighSchoolDept(null);
+    setLunchWave('');
+    setSelectedClass(null);
+    setHighScheduleContract(null);
+    setAvatarDraft(null);
+    setTeacherProfile(null);
+    setSchoolDirectoryData(null);
+  };
 
   useEffect(() => {
     if (!initialData) return;
@@ -165,9 +183,29 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     setAvatarDraft(initialData.avatarDraft || null);
     setTeacherProfile(initialData.teacherProfile || null);
     setSchoolDirectoryData(initialData.schoolDirectoryData || null);
-  }, [initialData]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally mount-only; initialData is resume data, not a live sync source
 
   useEffect(() => {
+    const nextStateSnapshot = JSON.stringify({
+      step,
+      schoolType,
+      elementaryGrade,
+      middleGrade,
+      middleLunchWave,
+      highGrade,
+      highLetterRange,
+      highSchoolDept,
+      lunchWave,
+      selectedClass,
+      highScheduleContract,
+      avatarDraft,
+      teacherProfile,
+      schoolDirectoryData
+    });
+
+    if (lastEmittedStateRef.current === nextStateSnapshot) return;
+    lastEmittedStateRef.current = nextStateSnapshot;
+
     onStateChange?.({
       step,
       schoolType,
@@ -227,9 +265,8 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
   const stateSetters = { setElementaryGrade, setMiddleGrade, setMiddleLunchWave, setHighGrade, setHighLetterRange };
 
   const handleSelectSchoolType = (type) => {
+    resetSchoolBranchState();
     setSchoolType(type);
-    setSelectedClass(null);
-    setHighScheduleContract(null);
     setStep('GRADE_CONFIG');
   };
 

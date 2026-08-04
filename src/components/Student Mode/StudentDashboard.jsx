@@ -145,7 +145,7 @@ export default StudentDashboard;
 const styles = {
   container: {
     width: '100%',
-    minHeight: '100%',
+    minHeight: 'calc(100vh - 48px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -154,7 +154,7 @@ const styles = {
   panel: {
     width: '100%',
     maxWidth: '1150px',
-    minHeight: '720px',
+    minHeight: 'calc(100vh - 88px)',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',

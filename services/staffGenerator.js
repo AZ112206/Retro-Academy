@@ -37,8 +37,40 @@ const HIGH_DEPARTMENT_COURSES = {
 };
 const BIRTH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+let activeRandom = Math.random;
+
+function hashString(value) {
+  let hash = 2166136261;
+  const text = String(value);
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function createSeededRandom(seedValue) {
+  let state = hashString(seedValue) || 1;
+  return () => {
+    state = (state + 0x6D2B79F5) | 0;
+    let value = Math.imul(state ^ (state >>> 15), 1 | state);
+    value ^= value + Math.imul(value ^ (value >>> 7), 61 | value);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function withSeed(seedValue, callback) {
+  const previousRandom = activeRandom;
+  activeRandom = createSeededRandom(seedValue);
+  try {
+    return callback();
+  } finally {
+    activeRandom = previousRandom;
+  }
+}
+
+const pick = (arr) => arr[Math.floor(activeRandom() * arr.length)];
+const randomInt = (min, max) => Math.floor(activeRandom() * (max - min + 1)) + min;
 
 const ROLE_PATHS = {
   principal: ['Assistant Principal', 'Dean', 'Department Head', 'Lead Teacher'],
@@ -75,7 +107,7 @@ function buildWorkExperience(role, yearsTeaching) {
   const path = ROLE_PATHS[category] || ROLE_PATHS.teacher;
   const count = yearsTeaching >= 10 ? randomInt(2, 3) : randomInt(1, 2);
 
-  const shuffled = [...path].sort(() => Math.random() - 0.5).slice(0, count);
+  const shuffled = [...path].sort(() => activeRandom() - 0.5).slice(0, count);
   return shuffled.map((position) => ({
     position,
     years: randomInt(1, Math.max(1, Math.min(6, yearsTeaching)))
@@ -88,7 +120,7 @@ function getToneGroupFromSkinTone(skinTone) {
 }
 
 function buildIdentity(overrides = {}) {
-  const gender = overrides.gender || (Math.random() > 0.5 ? 'Male' : 'Female');
+  const gender = overrides.gender || (activeRandom() > 0.5 ? 'Male' : 'Female');
   const skinTone = overrides.skinTone || pick(SKIN_TONES);
   const toneGroup = getToneGroupFromSkinTone(skinTone);
   const firstName = overrides.firstName || pick(gender === 'Male' ? MALE_FIRST_NAMES : FEMALE_FIRST_NAMES);
@@ -148,7 +180,7 @@ function makeStaff(role, overrides = {}) {
   const generatedProfile = buildProfileSnapshot(role);
 
   return {
-    id: `${role.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Math.random().toString(36).slice(2, 10)}`,
+    id: `${role.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Math.floor(activeRandom() * 1e8).toString(36)}`,
     firstName: identity.firstName,
     lastName: identity.lastName,
     name: `${identity.firstName} ${identity.lastName}`,
@@ -223,7 +255,7 @@ function buildPlayerStaffCard(playerAvatar, fallbackRole) {
 }
 
 function buildElementarySpecialists() {
-  const peGender = Math.random() > 0.5 ? 'Male' : 'Female';
+  const peGender = activeRandom() > 0.5 ? 'Male' : 'Female';
   return [
     makeStaff('Specialist - Librarian Teacher'),
     makeGenderedStaff('Specialist - PE Teacher', peGender),
@@ -467,21 +499,25 @@ function buildHighRoster(playerAvatar, playerDepartment) {
 }
 
 export function generateFacultyRoster(schoolType, playerAvatar, playerDepartment, playerGrade) {
-  if (schoolType === 'Elementary') {
-    return buildElementaryRoster(playerAvatar, playerGrade, playerDepartment);
-  }
+  const seed = [schoolType || 'Unknown', getSelectionId(playerDepartment) || 'none', playerGrade ?? 'all'].join('|');
 
-  if (schoolType === 'Middle') {
-    return buildMiddleRoster(playerAvatar, playerGrade, playerDepartment);
-  }
+  return withSeed(seed, () => {
+    if (schoolType === 'Elementary') {
+      return buildElementaryRoster(playerAvatar, playerGrade, playerDepartment);
+    }
 
-  if (schoolType === 'High') {
-    return buildHighRoster(playerAvatar, playerDepartment);
-  }
+    if (schoolType === 'Middle') {
+      return buildMiddleRoster(playerAvatar, playerGrade, playerDepartment);
+    }
 
-  return {
-    administration: [makeStaff('Principal')],
-    counselors: [makeStaff('Counselor')],
-    assigned: [buildPlayerStaffCard(playerAvatar, 'Assigned Teacher')]
-  };
+    if (schoolType === 'High') {
+      return buildHighRoster(playerAvatar, playerDepartment);
+    }
+
+    return {
+      administration: [makeStaff('Principal')],
+      counselors: [makeStaff('Counselor')],
+      assigned: [buildPlayerStaffCard(playerAvatar, 'Assigned Teacher')]
+    };
+  });
 }
