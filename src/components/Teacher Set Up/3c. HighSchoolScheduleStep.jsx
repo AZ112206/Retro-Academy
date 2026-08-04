@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import RetroIcon, { RetroArrow, RetroClose } from '../RetroIcon';
 
 const DEPARTMENTS = [
@@ -22,27 +22,33 @@ const POOL_EXPANSIONS = {
     { name: 'Earth Science', grade: '9th' },
     { name: 'Biology', grade: '10th' },
     { name: 'Chemistry', grade: '11th' },
-    { name: 'Physics', grade: '12th' }
+    { name: 'Physics', grade: '12th' },
+    { name: 'Environmental Science', grade: '11th' },
+    { name: 'Anatomy & Physiology', grade: '12th' }
   ],
   history: [
     { name: 'World History', grade: '9th' },
     { name: 'Modern World History', grade: '10th' },
     { name: 'US History', grade: '11th' },
-    { name: 'Civics & Econ', grade: '12th' }
+    { name: 'Civics & Econ', grade: '12th' },
+    { name: 'Government & Politics', grade: '12th' },
+    { name: 'Psychology & Sociology', grade: '11th' }
   ],
   english: [
     { name: 'English I', grade: '9th' },
     { name: 'English II', grade: '10th' },
     { name: 'English III', grade: '11th' },
     { name: 'English IV', grade: '12th' },
-    { name: 'Creative Writing', grade: '12th' }
+    { name: 'Creative Writing', grade: '12th' },
+    { name: 'Journalism', grade: '11th' }
   ],
   language: [
     { name: 'Spanish I', grade: '9th' },
     { name: 'French I', grade: '9th' },
     { name: 'Spanish II', grade: '10th' },
     { name: 'French II', grade: '10th' },
-    { name: 'Conversational Fluency', grade: '11th' }
+    { name: 'Conversational Fluency', grade: '11th' },
+    { name: 'AP Language Seminar', grade: '12th' }
   ]
 };
 
@@ -53,6 +59,7 @@ const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 const LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 const CLASS_LEVELS = ['Standard', 'Honors', 'Advanced'];
 const PREP_TOKEN_LABEL = 'Teacher Prep / Study Hall';
+const MAX_CLASS_REPEATS_BY_NAME = 1;
 const TARGET_MORNING_CLASS_COUNT = 2;
 const TARGET_AFTERNOON_CLASS_COUNT = 3;
 const LONG_BLOCK_SLOT_INDEX = 3;
@@ -190,9 +197,7 @@ function buildDayPeriodSequence(offset) {
 }
 
 function getTokenSignature(itemData) {
-  const name = String(itemData?.name || '').trim();
-  const level = String(itemData?.level || 'Standard').trim();
-  return `${name}|${level}`;
+  return String(itemData?.name || '').trim().toLowerCase();
 }
 
 function buildBalancedCatalog(basePool, totalCount = 8) {
@@ -311,7 +316,7 @@ function buildContractBalanceReport(baseSchedule) {
   const isLunchAssigned = lunchCount === 0 || lunchCount === 1;
   const isMorningAfternoonBalanced = morningAfternoonSplit.classBeforeLunch >= TARGET_MORNING_CLASS_COUNT && morningAfternoonSplit.classAfterLunch >= TARGET_AFTERNOON_CLASS_COUNT;
   const isClassDistributionBalanced = classValues.length <= 1 ? true : (classMax - classMin) <= 2;
-  const isClassLimitOkay = classValues.every((count) => count <= 3);
+  const isClassLimitOkay = classValues.every((count) => count <= MAX_CLASS_REPEATS_BY_NAME);
 
   return {
     classCounts,
@@ -351,7 +356,7 @@ function pickLeastUsedBalancedToken(candidates, signatureCounts) {
     })
     .sort((a, b) => a.count - b.count);
 
-  const preferred = ranked.find((row) => row.count < 3);
+  const preferred = ranked.find((row) => row.count < MAX_CLASS_REPEATS_BY_NAME);
   return preferred || ranked[0];
 }
 
@@ -468,6 +473,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
   const [schedule, setSchedule] = useState(createEmptySchedule());
   const [storageSlots, setStorageSlots] = useState(createEmptyStorage());
+  const initializedFromResumeRef = useRef(false);
 
   const countClassAssignments = () => Object.values(schedule).filter((slot) => slot && !slot.isPrep && !slot.isLunch).length;
 
@@ -505,6 +511,8 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
   useEffect(() => {
     if (!resumeData?.selectedDept) return;
+    if (initializedFromResumeRef.current) return;
+    initializedFromResumeRef.current = true;
 
     if (resumeData.contractSchedule) {
       const restoredSchedule = createEmptySchedule();
@@ -580,7 +588,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     }
 
     const basePool = POOL_EXPANSIONS[deptId] || [];
-    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 4);
+    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 6);
 
     setCurrentTokens(generatedTokens);
     if (!isInitialLoad) {
@@ -646,7 +654,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
       return count + 1;
     }, 0);
 
-    if (currentCount >= 3) return false;
+    if (currentCount >= MAX_CLASS_REPEATS_BY_NAME) return false;
     if (countClassAssignments() >= 7) return false;
     return true;
   };
@@ -703,7 +711,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
       const targetItem = schedule[targetPeriod];
 
       if (!canPlaceTokenInSchedule(payload, targetPeriod)) {
-        showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
+        showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or repeat the same class name.');
         return;
       }
 
@@ -767,7 +775,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
         const targetItem = getStorageItem(nextStorage, targetSlotIndex);
 
         if (payload && !canPlaceTokenInSchedule(payload, 'backup')) {
-          showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep/lunch rule, or exceed 3 sections of the same class+level.');
+          showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or repeat the same class name.');
           return prevStorage;
         }
 
@@ -870,8 +878,8 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     ];
 
     const uniqueSignatures = Array.from(new Set(classPool.map((slot) => getTokenSignature(slot))));
-    if (uniqueSignatures.length > 0 && uniqueSignatures.length < 2) {
-      showWarning('At least 2 different class tokens are required to keep each class+level at 3 sections max.');
+    if (uniqueSignatures.length < 6) {
+      showWarning('At least 6 unique class names are required to build a full six-block teaching contract.');
       return;
     }
 
@@ -904,13 +912,14 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     };
 
     // Auto-fill remaining empty periods while honoring class signature max of 3.
+    // Auto-fill remaining empty periods while enforcing one section per class name.
     orderedPeriodKeys.forEach((key, idx) => {
       if (!normalizedSchedule[key]) {
         const balancedPick = pickLeastUsedBalancedToken(classPool, classSignatureCounts);
         const nextToken = balancedPick?.token || fallbackClass;
         const signature = getTokenSignature(nextToken);
 
-        if ((classSignatureCounts[signature] || 0) >= 3) {
+        if ((classSignatureCounts[signature] || 0) >= MAX_CLASS_REPEATS_BY_NAME) {
           return;
         }
 
@@ -929,14 +938,14 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
     const hasUnfilledPeriods = orderedPeriodKeys.some((key) => !normalizedSchedule[key]);
     if (hasUnfilledPeriods) {
-      showWarning('Unable to auto-balance schedule without breaking the 3-section class limit. Add more class variety, then retry Review Contract.');
+      showWarning('Unable to auto-balance schedule without repeating class names. Add more class variety, then retry Review Contract.');
       return;
     }
 
     const finalCounts = buildClassSignatureCounts(normalizedSchedule);
-    const hasOverLimitClass = Object.values(finalCounts).some((count) => count > 3);
+    const hasOverLimitClass = Object.values(finalCounts).some((count) => count > MAX_CLASS_REPEATS_BY_NAME);
     if (hasOverLimitClass) {
-      showWarning('More than 3 sections of the same class and level were detected. Remove extras before continuing.');
+      showWarning('Duplicate class names were detected. Each class name may appear only once before continuing.');
       return;
     }
 
@@ -1020,7 +1029,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', fontWeight: 'bold', textAlign: 'center' }}>
-          <span style={{ color: '#fff', fontSize: compact ? '0.85rem' : '0.9rem' }}>{item.name} {item.sec || ''}</span>
+          <span style={{ color: '#fff', fontSize: compact ? '0.78rem' : '0.82rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.25 }}>{item.name} {item.sec || ''}</span>
           {!item.isPrep && !item.isLunch && (
             <span style={{ color: '#888', fontSize: compact ? '0.75rem' : '0.8rem' }}>{item.grade}</span>
           )}
@@ -1222,7 +1231,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
                       rowSpan={cellRowSpan}
                       style={{ padding: '8px 7px', borderRight: '1px solid #222', verticalAlign: 'middle' }}
                     >
-                      <div style={{ fontWeight: 'bold', fontSize: '0.8rem', color: entry.isPrep ? '#ff9f43' : '#fff' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.74rem', color: entry.isPrep ? '#ff9f43' : '#fff', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>
                         {entry.name}
                       </div>
 
@@ -1233,7 +1242,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
                       )}
 
                       {!entry.isDoubleContinuation && (
-                        <div style={{ marginTop: '4px', fontSize: '0.66rem', color: '#b6d9b1' }}>
+                        <div style={{ marginTop: '4px', fontSize: '0.62rem', color: '#b6d9b1', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>
                           {entry.detail}
                         </div>
                       )}
@@ -1334,7 +1343,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14', minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK CLASSES (4 OPTIONS)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK CLASSES ({currentTokens.length || 6} OPTIONS)</h3>
           
           <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div
@@ -1367,7 +1376,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Static Homeroom Header Slot */}
           <div style={{ minHeight: '40px', backgroundColor: '#001a1a', border: '1px dashed #00FFFF', borderRadius: '6px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#00FFFF', fontWeight: 'bold' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED DAILY BLOCK</span>
+            <span style={{ fontSize: '0.74rem', color: '#00FFFF', fontWeight: 'bold', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.2, textAlign: 'center' }}>HOMEROOM (7:35 AM - 7:50 AM) - FIXED DAILY BLOCK</span>
           </div>
 
           {PERIOD_LETTERS.map((letter) => {
@@ -1391,7 +1400,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
                   justifyContent: 'center'
                 }}
               >
-                <span style={{ fontSize: '0.75rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#888', position: 'absolute', top: '5px', left: '50%', transform: 'translateX(-50%)', fontWeight: 'bold', width: '100%', textAlign: 'center', padding: '0 10px', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.15 }}>
                   PERIOD {letter} ({letter === 'C' ? 'LUNCH SPLIT' : 'CLASS BLOCK'})
                 </span>
 
@@ -1404,7 +1413,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
                     })}
                   </div>
                 ) : (
-                  <div style={{ textAlign: 'center', color: '#555', fontStyle: 'italic', fontSize: '0.85rem', marginTop: '10px' }}>
+                  <div style={{ textAlign: 'center', color: '#555', fontStyle: 'italic', fontSize: '0.76rem', marginTop: '10px' }}>
                     Drop token card asset here...
                   </div>
                 )}
@@ -1441,7 +1450,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill the six class periods around the auto lunch split. Use exactly one prep block and keep the class roster balanced with no more than 3 sections of any class and level combination.
+            Fill the six class periods around the auto lunch split. Use exactly one prep block and do not repeat any class name.
           </div>
         </div>
       </div>

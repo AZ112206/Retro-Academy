@@ -178,7 +178,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
             {autoScheduleRows.map(({ id, block, entry }) => (
               <tr key={id} style={{ borderBottom: '1px solid #222' }}>
                 <td style={{ padding: '8px', borderRight: '1px solid #222', textAlign: 'left', minWidth: '140px', verticalAlign: 'top' }}>
-                  <div style={{ fontWeight: 'bold', color: entry.isHomeroom ? '#00FFFF' : '#fff' }}>{block.label}</div>
+                  <div style={{ fontWeight: 'bold', color: entry.isHomeroom ? '#00FFFF' : '#fff', fontSize: '0.76rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.25 }}>{block.label}</div>
                   <div style={{ fontSize: '0.65rem', color: '#aaa' }}>{block.time}</div>
                 </td>
                 {WEEK_DAYS.map(day => {
@@ -190,7 +190,7 @@ export default function MiddleSchoolScheduleStep({ middleGrade, middleLunchWave,
 
                   return (
                     <td key={`${id}-${day}`} style={{ padding: '8px', borderRight: '1px solid #222', color: scheduleColor, verticalAlign: 'top' }}>
-                      <div style={{ fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.35 }}>{entry.name}</div>
+                      <div style={{ fontSize: '0.74rem', fontWeight: entry.isLunch || entry.isPrep || entry.isHomeroom ? 'bold' : 'normal', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>{entry.name}</div>
                       {entry.sec && <div style={{ fontSize: '0.65rem', color: '#39FF14' }}>{entry.sec}</div>}
                     </td>
                   );

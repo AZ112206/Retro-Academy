@@ -295,8 +295,27 @@ function resolveSectionStudentLunchWave(section, student, studentIndex) {
     return section?.lunchWave || null;
   }
 
+  const normalizedWaves = Array.from(new Set(
+    section.lunchWaveDistribution
+      .map((wave) => String(wave || '').trim())
+      .filter((wave) => HIGH_STUDENT_LUNCH_WAVES.includes(wave))
+  ));
+
+  if (normalizedWaves.length === 0) {
+    return section?.lunchWave || null;
+  }
+
+  if (section?.lunchAssignmentMode === 'teacher-rotation') {
+    const teacherWave = String(section?.teacherLunchWave || '').trim();
+    const teacherWaveIndex = normalizedWaves.indexOf(teacherWave);
+    const sectionOffset = hashString(`${section?.key || section?.sectionCode || 'high'}|${section?.teacherName || section?.homeroomTeacherName || 'teacher'}|lunch-order`) % normalizedWaves.length;
+    const baseIndex = teacherWaveIndex >= 0 ? teacherWaveIndex : sectionOffset;
+    const rotatedIndex = (baseIndex + sectionOffset + studentIndex) % normalizedWaves.length;
+    return normalizedWaves[rotatedIndex] || normalizedWaves[0] || null;
+  }
+
   const lunchSeed = hashString(`${section.key}|${student?.sharedRosterId || student?.id || studentIndex}|lunch-wave`);
-  return section.lunchWaveDistribution[lunchSeed % section.lunchWaveDistribution.length] || section.lunchWaveDistribution[0] || null;
+  return normalizedWaves[lunchSeed % normalizedWaves.length] || normalizedWaves[0] || null;
 }
 
 function getElementaryLunchConfigByGrade(gradeInput) {
@@ -607,44 +626,137 @@ function buildElementaryStudentRoster(playerDepartment, playerGrade) {
 }
 
 function buildMiddleStudentRoster(playerDepartment, playerGrade, playerAvatar) {
-  const gradeLabel = `${playerGrade || 6}th`;
-  const courseName = playerDepartment?.name || 'Middle Core Instruction';
-  const sectionPrefix = `M${playerGrade || 6}`;
   const resolvedGrade = Number(playerGrade) || 6;
+  const gradeLabel = `${resolvedGrade}th`;
+  const courseName = playerDepartment?.name || 'Middle Core Instruction';
+  const sectionPrefix = `M${resolvedGrade}`;
   const gradeConfig = MIDDLE_SPECIALIST_ROTATION[resolvedGrade] || MIDDLE_SPECIALIST_ROTATION[6];
   const specialistBlockNumber = String(gradeConfig.specialistBlock || '').match(/\d+/)?.[0] || '2';
   const playerTeacherName = playerAvatar?.name || playerAvatar?.rosterName || (playerAvatar?.firstName && playerAvatar?.lastName ? `${playerAvatar.firstName} ${playerAvatar.lastName}` : null);
   const coreBlockNumbers = ['1', '2', '3', '4', '5', '6'].filter((blockNumber) => blockNumber !== specialistBlockNumber);
-  const sections = [
-    {
-      key: 'homeroom',
-      label: `Homeroom | HR-${sectionPrefix} | Period HR`,
-      sectionCode: `HR-${sectionPrefix}`,
-      gradeLabel,
-      courseName: 'Homeroom & Attendance',
-      courseLevel: 'Standard',
-      courseNumber: `HR-${sectionPrefix}`,
-      blockLabel: 'HR',
-      maxStudents: 24,
-      teacherName: playerTeacherName,
-      homeroomTeacherName: playerTeacherName
-    },
-    ...coreBlockNumbers.map((blockLabel, index) => ({
-      key: `block-${blockLabel}`,
-      label: `${courseName} | Sec ${sectionPrefix}${index + 1} | Period ${blockLabel}`,
-      sectionCode: `Sec ${sectionPrefix}${index + 1}`,
-      gradeLabel,
-      courseName,
-      courseLevel: 'Standard',
-      courseNumber: `Sec ${sectionPrefix}${index + 1}`,
-      blockLabel,
-      maxStudents: 24,
-      teacherName: playerTeacherName,
-      homeroomTeacherName: playerTeacherName
-    }))
-  ];
 
-  return buildStudentRosterFromSections(sections);
+  // --- 5 homeroom student pools (one per teacher's class section) ---
+  const NUM_HOMEROOMS = 5;
+  const HOMEROOM_SIZE = 24;
+  const SPECIALIST_COURSES = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech', 'Library Media'];
+
+  // Generate one rich base pool per homeroom group
+  const homeroomPools = Array.from({ length: NUM_HOMEROOMS }, (_, hrIdx) => {
+    const hrGroupKey = `${sectionPrefix}-hr${hrIdx + 1}`;
+    return generateRoster(HOMEROOM_SIZE).map((student, studentIndex) => ({
+      ...student,
+      sharedRosterId: `${hrGroupKey}-${student.id}`,
+      appearance: buildStudentAvatarAppearance(student, hrGroupKey, studentIndex),
+      vitals: buildStudentVitals(student),
+      personality: buildStudentPersonality(student),
+      hrIndex: hrIdx,
+      hrGroupKey
+    }));
+  });
+
+  const result = {};
+
+  // --- Homeroom section: show the player's own homeroom (HR-1 pool) ---
+  const homeroomSectionCode = `HR-${sectionPrefix}`;
+  result['homeroom'] = homeroomPools[0].map((student) => {
+    const resolvedAge = deriveStudentAgeFromGrade(gradeLabel);
+    return {
+      ...student,
+      id: `homeroom-${student.sharedRosterId}`,
+      age: resolvedAge,
+      grade: gradeLabel,
+      displayGrade: formatRosterGradeLabel(gradeLabel),
+      classGrade: 'Standard',
+      className: 'Homeroom & Attendance',
+      sectionCode: homeroomSectionCode,
+      rosterGroup: 'homeroom',
+      courseNumber: homeroomSectionCode,
+      blockLabel: 'HR',
+      lunchWave: null,
+      teacherLunchWave: null,
+      sectionTeacherName: playerTeacherName,
+      homeroomTeacherName: playerTeacherName,
+      rosterLabel: `Homeroom | ${homeroomSectionCode} | Period HR`,
+      currentGradeLetter: 'A+',
+      currentGradeNumber: 100,
+      homeroom: 'Homeroom & Attendance',
+      profile: {
+        age: resolvedAge,
+        occupation: 'Student',
+        yearsTeaching: 0,
+        birthday: `Grade ${gradeLabel} Student`,
+        previousPositions: [{ position: 'Homeroom & Attendance', years: 1 }],
+        vitals: student.vitals,
+        personality: student.personality
+      }
+    };
+  });
+
+  // --- Core class sections: mix students from all 5 homerooms ---
+  // Each section takes a different slice from each homeroom pool so sections have different students
+  const studentsPerHR = Math.ceil(HOMEROOM_SIZE / coreBlockNumbers.length); // e.g. ceil(24/5)=5
+
+  coreBlockNumbers.forEach((blockLabel, sectionIdx) => {
+    const sectionCode = `Sec ${sectionPrefix}${sectionIdx + 1}`;
+    const sectionKey = `block-${blockLabel}`;
+    const rosterLabel = `${courseName} | ${sectionCode} | Period ${blockLabel}`;
+
+    // Each section has its own cyclic specialist rotation order
+    const specialistRotation = SPECIALIST_COURSES.map((_, idx) =>
+      SPECIALIST_COURSES[(sectionIdx + idx) % SPECIALIST_COURSES.length]
+    );
+
+    // Pull a different slice from each homeroom pool for each section
+    const mixed = [];
+    homeroomPools.forEach((hrPool) => {
+      const start = (sectionIdx * studentsPerHR) % HOMEROOM_SIZE;
+      // Wrap around if slice would exceed pool length
+      const sliceA = hrPool.slice(start, start + studentsPerHR);
+      const overflow = (start + studentsPerHR) - HOMEROOM_SIZE;
+      const sliceB = overflow > 0 ? hrPool.slice(0, overflow) : [];
+      mixed.push(...sliceA, ...sliceB);
+    });
+
+    // Trim to HOMEROOM_SIZE students (5 homerooms × 5 each = 25 → trim to 24)
+    const finalStudents = mixed.slice(0, HOMEROOM_SIZE);
+
+    result[sectionKey] = finalStudents.map((student, idx) => {
+      const resolvedAge = deriveStudentAgeFromGrade(gradeLabel);
+      return {
+        ...student,
+        id: `${sectionKey}-${student.sharedRosterId}`,
+        age: resolvedAge,
+        grade: gradeLabel,
+        displayGrade: formatRosterGradeLabel(gradeLabel),
+        classGrade: 'Standard',
+        className: courseName,
+        sectionCode,
+        rosterGroup: sectionKey,
+        courseNumber: sectionCode,
+        blockLabel,
+        lunchWave: null,
+        teacherLunchWave: null,
+        sectionTeacherName: playerTeacherName,
+        homeroomTeacherName: playerTeacherName,
+        rosterLabel,
+        currentGradeLetter: 'A+',
+        currentGradeNumber: 100,
+        homeroom: 'Homeroom & Attendance',
+        specialistRotation,
+        profile: {
+          age: resolvedAge,
+          occupation: 'Student',
+          yearsTeaching: 0,
+          birthday: `Grade ${gradeLabel} Student`,
+          previousPositions: [{ position: courseName, years: 1 }],
+          vitals: student.vitals,
+          personality: student.personality
+        }
+      };
+    });
+  });
+
+  return result;
 }
 
 function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
@@ -670,51 +782,57 @@ function buildHighStudentRoster(playerAvatar, playerGrade, highLetterRange) {
     teacherName: playerName,
     homeroomTeacherName: playerName,
     teacherLunchWave,
+    lunchAssignmentMode: 'teacher-rotation',
     lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
   });
 
-  Object.entries(contractSchedule).forEach(([periodLetter, slot]) => {
+  Object.entries(contractSchedule).forEach(([periodKey, slot]) => {
     if (!slot) return;
+    // Extract just the letter (e.g. 'periodA' → 'A') so section codes display correctly
+    const letterPart = String(periodKey || '').replace(/^period/i, '').trim().toUpperCase();
+    if (!letterPart) return;
     if (slot.isPrep) {
-      const studyHallKey = `${periodLetter}|studyhall`;
+      const studyHallKey = `${letterPart}|studyhall`;
       if (seenSections.has(studyHallKey)) return;
       seenSections.add(studyHallKey);
       sections.push({
         key: studyHallKey,
-        label: `Study Hall | SH-${String(periodLetter || '').toUpperCase()} | ${formatPeriodLabel(periodLetter)}`,
-        sectionCode: `SH-${String(periodLetter || '').toUpperCase()}`,
+        label: `Study Hall | SH-${letterPart} | Period ${letterPart}`,
+        sectionCode: `SH-${letterPart}`,
         gradeLabel,
         courseName: 'Study Hall',
         courseLevel: 'Support',
-        courseNumber: `SH-${String(periodLetter || '').toUpperCase()}`,
-        blockLabel: String(periodLetter || '').toUpperCase(),
+        courseNumber: `SH-${letterPart}`,
+        blockLabel: letterPart,
         lunchWave: teacherLunchWave,
         teacherLunchWave,
         maxStudents: 24,
         teacherName: playerName,
         homeroomTeacherName: playerName,
+        lunchAssignmentMode: 'teacher-rotation',
         gradeDistribution: HIGH_STUDY_HALL_GRADE_MIX,
         lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
       });
       return;
     }
-    const sectionKey = `${periodLetter}|${slot.name}|${slot.sec || ''}`;
+    const sectionKey = `${letterPart}|${slot.name}|${slot.sec || ''}`;
     if (seenSections.has(sectionKey)) return;
     seenSections.add(sectionKey);
     sections.push({
       key: sectionKey,
-      label: `${slot.name} | ${slot.sec || 'Sec #000'} | ${formatPeriodLabel(periodLetter)}`,
+      label: `${slot.name} | ${slot.sec || 'Sec #000'} | Period ${letterPart}`,
       sectionCode: slot.sec || 'Sec #000',
       gradeLabel: slot.grade || gradeLabel,
       courseName: slot.name,
       courseLevel: slot.level || 'Standard',
       courseNumber: slot.sec || 'Sec #000',
-      blockLabel: String(periodLetter || '').toUpperCase(),
+      blockLabel: letterPart,
       lunchWave: teacherLunchWave,
       teacherLunchWave,
       maxStudents: 24,
       teacherName: playerName,
       homeroomTeacherName: playerName,
+      lunchAssignmentMode: 'teacher-rotation',
       lunchWaveDistribution: HIGH_STUDENT_LUNCH_WAVES
     });
   });
@@ -1557,15 +1675,29 @@ function buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog) 
   const corePool = Object.values(MIDDLE_CLASS_OPTIONS[gradeNum] || MIDDLE_CLASS_OPTIONS[6]);
   const homeroomSeed = `${gradeNum}|${student?.rosterGroup || student?.sectionCode || student?.rosterLabel || 'HR'}`;
   const homeroomTeacher = pickTeacherNameFromList(teacherDirectory?.all, `${homeroomSeed}|homeroom`, 'Grade Team');
-  const specialistPool = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech'];
-  const specialistCourse = specialistPool[hashString(`${homeroomSeed}|specialist`) % specialistPool.length];
-  const specialistTeacher = specialistCourse === 'Physical Education'
-    ? pickGymTeacherPair(teacherDirectory, `${homeroomSeed}|middle-gym-team`)
-    : pickTeacherNameForSubject(
-      teacherDirectory,
-      specialistCourse,
-      createSeededRandom(hashString(`${homeroomSeed}|specialist-teacher`))
-    );
+
+  // Per-section specialist rotation: use student.specialistRotation if set (from buildMiddleStudentRoster),
+  // otherwise fall back to a single seeded specialist for the whole section
+  const DEFAULT_SPECIALIST_POOL = ['Visual Art', 'Music', 'Physical Education', 'Computer Tech'];
+  const sectionSpecialistRotation = Array.isArray(student?.specialistRotation) && student.specialistRotation.length > 0
+    ? student.specialistRotation
+    : DEFAULT_SPECIALIST_POOL;
+
+  // Build a per-day specialist entry (called when constructing specialist block rows)
+  const buildSpecialistDayEntry = (dayIdx) => {
+    const course = sectionSpecialistRotation[dayIdx % sectionSpecialistRotation.length];
+    const teacher = course === 'Physical Education'
+      ? pickGymTeacherPair(teacherDirectory, `${homeroomSeed}|middle-gym-${dayIdx}`)
+      : pickTeacherNameForSubject(
+          teacherDirectory,
+          course,
+          createSeededRandom(hashString(`${homeroomSeed}|specialist-${dayIdx}`))
+        );
+    return { entryType: 'class', className: course, classType: 'Specialist', teacher, sec: 'Spec-101' };
+  };
+
+  // Pre-compute per-day specialist entries for the specialist block
+  const specialistDayEntries = middleDays.map((_, dayIdx) => buildSpecialistDayEntry(dayIdx));
   const studyHallTeacher = pickDifferentTeacherName(teacherDirectory?.all, homeroomTeacher, `${student?.id || student?.name}|studyhall`, 'Guidance Team');
 
   const coreCourseOrder = [...corePool].sort((a, b) => {
@@ -1603,13 +1735,8 @@ function buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog) 
 
   coreBlocks.forEach((blockName) => {
     if (blockName === specialistBlock) {
-      blockAssignments[blockName] = {
-        entryType: 'class',
-        className: 'Specialist Rotation (Art/Music/PE/Tech)',
-        classType: 'Specialist',
-        teacher: specialistTeacher,
-        sec: 'Spec-101'
-      };
+      // Specialist block uses per-day entries stored in specialistDayEntries
+      blockAssignments[blockName] = null; // placeholder; rows built per-day below
       return;
     }
 
@@ -1663,33 +1790,33 @@ function buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog) 
     {
       block: specialistBlock === 'Block 1' ? 'Block 1 / Specialist' : 'Block 1',
       time: MIDDLE_BLOCK_TIMES.block1,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 1'] }))
+      entries: specialistBlock === 'Block 1' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 1'] }))
     },
     {
       block: specialistBlock === 'Block 2' ? 'Block 2 / Specialist' : 'Block 2',
       time: MIDDLE_BLOCK_TIMES.block2,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 2'] }))
+      entries: specialistBlock === 'Block 2' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 2'] }))
     },
     {
       block: specialistBlock === 'Block 3' ? 'Block 3 / Specialist' : 'Block 3',
       time: MIDDLE_BLOCK_TIMES.block3,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 3'] }))
+      entries: specialistBlock === 'Block 3' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 3'] }))
     },
     ...middleMiddayRows,
     {
       block: specialistBlock === 'Block 4' ? 'Block 4 / Specialist' : 'Block 4',
       time: MIDDLE_BLOCK_TIMES.block4,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 4'] }))
+      entries: specialistBlock === 'Block 4' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 4'] }))
     },
     {
       block: specialistBlock === 'Block 5' ? 'Block 5 / Specialist' : 'Block 5',
       time: MIDDLE_BLOCK_TIMES.block5,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 5'] }))
+      entries: specialistBlock === 'Block 5' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 5'] }))
     },
     {
       block: specialistBlock === 'Block 6' ? 'Block 6 / Specialist' : 'Block 6',
       time: MIDDLE_BLOCK_TIMES.block6,
-      entries: middleDays.map(() => ({ ...blockAssignments['Block 6'] }))
+      entries: specialistBlock === 'Block 6' ? specialistDayEntries : middleDays.map(() => ({ ...blockAssignments['Block 6'] }))
     }
   ].map((row) => ({
     ...row,
@@ -1710,9 +1837,11 @@ function buildMiddleStudentSchedule(student, teacherDirectory, scheduleCatalog) 
       });
 
       if (!aligned) return fallbackEntry;
+      const isSpecialistRow = row.block === specialistBlock || row.block === `${specialistBlock} / Specialist`;
+      const hasPerDayRotation = isSpecialistRow && Array.isArray(student?.specialistRotation) && student.specialistRotation.length > 0;
       return {
         ...fallbackEntry,
-        className: aligned.className || fallbackEntry?.className,
+        className: hasPerDayRotation ? fallbackEntry?.className : (aligned.className || fallbackEntry?.className),
         classType: aligned.classType || fallbackEntry?.classType,
         teacher: aligned.teacher || fallbackEntry?.teacher,
         sec: aligned.sec || fallbackEntry?.sec || null
@@ -3027,7 +3156,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
 
                                   return (
                                     <td key={`${row.block}-${entryIdx}`} style={{ padding: '12px 10px', borderRight: '1px solid #222', verticalAlign: 'middle' }}>
-                                      <div style={{ fontWeight: 'bold', color: normalized.kind === 'prep' ? '#ff9f43' : normalized.kind === 'homeroom' ? '#00FFFF' : '#fff', fontSize: '0.85rem' }}>
+                                      <div style={{ fontWeight: 'bold', color: normalized.kind === 'prep' ? '#ff9f43' : normalized.kind === 'homeroom' ? '#00FFFF' : '#fff', fontSize: '0.78rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>
                                         {normalized.name}
                                       </div>
 
@@ -3044,7 +3173,7 @@ export default function SchoolDirectoryStep({ schoolType, playerAvatar, playerDe
                                       )}
 
                                       {showDetail && (
-                                        <div style={{ fontSize: '0.7rem', marginTop: '4px', color: '#b6d9b1' }}>
+                                        <div style={{ fontSize: '0.66rem', marginTop: '4px', color: '#b6d9b1', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>
                                           {normalized.detail}
                                         </div>
                                       )}

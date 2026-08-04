@@ -103,10 +103,10 @@ export default function ElementarySchoolScheduleStep({ elementaryGrade, selected
               return (
                 <tr key={idx} style={{ borderBottom: '1px solid #222', backgroundColor: row.isSpecial ? '#1b1b1b' : 'transparent' }}>
                   <td style={{ padding: '10px 8px', borderRight: '1px solid #222', width: '35%', textAlign: 'left' }}>
-                    <div style={{ fontWeight: 'bold', color: row.label === 'Homeroom' ? '#00FFFF' : '#fff' }}>{row.label}</div>
+                    <div style={{ fontWeight: 'bold', color: row.label === 'Homeroom' ? '#00FFFF' : '#fff', fontSize: '0.78rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.25 }}>{row.label}</div>
                     <div style={{ fontSize: '0.7rem', color: '#aaa' }}>{row.time}</div>
                   </td>
-                  <td style={{ padding: '10px 8px', color: cellColor, textAlign: 'left' }}>
+                  <td style={{ padding: '10px 8px', color: cellColor, textAlign: 'left', fontSize: '0.78rem', whiteSpace: 'normal', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.3 }}>
                     {row.display}
                   </td>
                 </tr>
