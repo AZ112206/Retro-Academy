@@ -22,33 +22,27 @@ const POOL_EXPANSIONS = {
     { name: 'Earth Science', grade: '9th' },
     { name: 'Biology', grade: '10th' },
     { name: 'Chemistry', grade: '11th' },
-    { name: 'Physics', grade: '12th' },
-    { name: 'Environmental Science', grade: '11th' },
-    { name: 'Anatomy & Physiology', grade: '12th' }
+    { name: 'Physics', grade: '12th' }
   ],
   history: [
     { name: 'World History', grade: '9th' },
     { name: 'Modern World History', grade: '10th' },
     { name: 'US History', grade: '11th' },
-    { name: 'Civics & Econ', grade: '12th' },
-    { name: 'Government & Politics', grade: '12th' },
-    { name: 'Psychology & Sociology', grade: '11th' }
+    { name: 'Civics & Econ', grade: '12th' }
   ],
   english: [
     { name: 'English I', grade: '9th' },
     { name: 'English II', grade: '10th' },
     { name: 'English III', grade: '11th' },
     { name: 'English IV', grade: '12th' },
-    { name: 'Creative Writing', grade: '12th' },
-    { name: 'Journalism', grade: '11th' }
+    { name: 'Creative Writing', grade: '12th' }
   ],
   language: [
     { name: 'Spanish I', grade: '9th' },
     { name: 'French I', grade: '9th' },
     { name: 'Spanish II', grade: '10th' },
     { name: 'French II', grade: '10th' },
-    { name: 'Conversational Fluency', grade: '11th' },
-    { name: 'AP Language Seminar', grade: '12th' }
+    { name: 'Conversational Fluency', grade: '11th' }
   ]
 };
 
@@ -59,7 +53,7 @@ const PERIOD_KEYS = PERIOD_LETTERS.map((letter) => `period${letter}`);
 const LUNCH_WAVES = ['Wave 1', 'Wave 2', 'Wave 3', 'Wave 4'];
 const CLASS_LEVELS = ['Standard', 'Honors', 'Advanced'];
 const PREP_TOKEN_LABEL = 'Teacher Prep / Study Hall';
-const MAX_CLASS_REPEATS_BY_NAME = 1;
+const MAX_CLASS_REPEATS_BY_NAME = 3;
 const TARGET_MORNING_CLASS_COUNT = 2;
 const TARGET_AFTERNOON_CLASS_COUNT = 3;
 const LONG_BLOCK_SLOT_INDEX = 3;
@@ -197,7 +191,9 @@ function buildDayPeriodSequence(offset) {
 }
 
 function getTokenSignature(itemData) {
-  return String(itemData?.name || '').trim().toLowerCase();
+  const name = String(itemData?.name || '').trim().toLowerCase();
+  const level = String(itemData?.level || 'Standard').trim().toLowerCase();
+  return `${name}|${level}`;
 }
 
 function buildBalancedCatalog(basePool, totalCount = 8) {
@@ -247,7 +243,7 @@ function buildUniqueDepartmentCatalog(basePool, totalCount = 4) {
   return uniqueChoices.map((course, idx) => ({
     name: course.name,
     grade: course.grade,
-    level: CLASS_LEVELS[idx % CLASS_LEVELS.length] || 'Standard',
+    level: CLASS_LEVELS[Math.floor(Math.random() * CLASS_LEVELS.length)] || 'Standard',
     sec: `#${100 + Math.floor(Math.random() * 900)}`
   }));
 }
@@ -588,7 +584,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     }
 
     const basePool = POOL_EXPANSIONS[deptId] || [];
-    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 6);
+    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 4);
 
     setCurrentTokens(generatedTokens);
     if (!isInitialLoad) {
@@ -597,17 +593,18 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
   };
 
   const handleSelectDept = (deptId) => {
-    if (selectedDept !== deptId) {
-      setCurrentTokens([]);
-      setShuffleCount(0);
-      setReviewMode(false);
-      setRandomLunchWave('');
-      setLunchByDay({});
-      setWeeklyRows([]);
-      setBalanceReport(null);
-      setSchedule(createEmptySchedule());
-      setStorageSlots(createEmptyStorage());
-    }
+    const basePool = POOL_EXPANSIONS[deptId] || [];
+    const generatedTokens = buildUniqueDepartmentCatalog(basePool, 4);
+
+    setCurrentTokens(generatedTokens);
+    setShuffleCount(0);
+    setReviewMode(false);
+    setRandomLunchWave('');
+    setLunchByDay({});
+    setWeeklyRows([]);
+    setBalanceReport(null);
+    setSchedule(createEmptySchedule());
+    setStorageSlots(createEmptyStorage());
     setSelectedDept(deptId);
   };
 
@@ -616,7 +613,9 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     setShuffleCount(0);
     setSchedule(createEmptySchedule());
     setStorageSlots(createEmptyStorage());
-    handleShuffleCatalog(selectedDept, true);
+    if (!currentTokens.length) {
+      handleShuffleCatalog(selectedDept, true);
+    }
     setConfirmedDept(true);
   };
 
@@ -711,7 +710,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
       const targetItem = schedule[targetPeriod];
 
       if (!canPlaceTokenInSchedule(payload, targetPeriod)) {
-        showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or repeat the same class name.');
+        showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or exceed 3 sections of the same class and level.');
         return;
       }
 
@@ -775,7 +774,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
         const targetItem = getStorageItem(nextStorage, targetSlotIndex);
 
         if (payload && !canPlaceTokenInSchedule(payload, 'backup')) {
-          showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or repeat the same class name.');
+          showWarning('Administrative Block: That placement would exceed the six-class limit, break the one prep rule, or exceed 3 sections of the same class and level.');
           return prevStorage;
         }
 
@@ -850,12 +849,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
       return;
     }
 
-    if (assignedClassCount === 7 && !hasPrepToken) {
-      showWarning('7 classes were selected with no Study Hall/Prep period. Add one prep/study hall block before reviewing the contract.');
-      return;
-    }
-
-    if (!allowNoPrep && !hasPrepToken && assignedClassCount < 7) {
+    if (!allowNoPrep && !hasPrepToken) {
       showConfirmWarning(
         'No Study Hall/Prep block was selected. You can proceed and auto-balance will insert one prep block, but this may reduce teacher grading/planning time. Continue?',
         'allow-no-prep'
@@ -878,8 +872,8 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
     ];
 
     const uniqueSignatures = Array.from(new Set(classPool.map((slot) => getTokenSignature(slot))));
-    if (uniqueSignatures.length < 6) {
-      showWarning('At least 6 unique class names are required to build a full six-block teaching contract.');
+    if (uniqueSignatures.length > 0 && uniqueSignatures.length < 2) {
+      showWarning('At least 2 different class tokens are required to keep each class and level at 3 sections max.');
       return;
     }
 
@@ -911,8 +905,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
       wave: null
     };
 
-    // Auto-fill remaining empty periods while honoring class signature max of 3.
-    // Auto-fill remaining empty periods while enforcing one section per class name.
+    // Auto-fill remaining empty periods while honoring class+level signature max of 3.
     orderedPeriodKeys.forEach((key, idx) => {
       if (!normalizedSchedule[key]) {
         const balancedPick = pickLeastUsedBalancedToken(classPool, classSignatureCounts);
@@ -938,14 +931,14 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
     const hasUnfilledPeriods = orderedPeriodKeys.some((key) => !normalizedSchedule[key]);
     if (hasUnfilledPeriods) {
-      showWarning('Unable to auto-balance schedule without repeating class names. Add more class variety, then retry Review Contract.');
+      showWarning('Unable to auto-balance schedule without breaking the 3-section class+level limit. Add more class variety, then retry Review Contract.');
       return;
     }
 
     const finalCounts = buildClassSignatureCounts(normalizedSchedule);
     const hasOverLimitClass = Object.values(finalCounts).some((count) => count > MAX_CLASS_REPEATS_BY_NAME);
     if (hasOverLimitClass) {
-      showWarning('Duplicate class names were detected. Each class name may appear only once before continuing.');
+      showWarning('More than 3 sections of the same class and level were detected. Remove extras before continuing.');
       return;
     }
 
@@ -991,13 +984,13 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
           <p style={{ margin: 0, color: '#f5f1dd', fontSize: '0.9rem', lineHeight: 1.6 }}>{warningModal.message}</p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '18px' }}>
             {warningModal.type === 'confirm' && (
-              <button style={{ ...styles.backButton, minWidth: '120px' }} onClick={closeWarningModal}>CANCEL</button>
+              <button style={{ ...styles.backButton, minWidth: '120px' }} onClick={closeWarningModal}>NO</button>
             )}
             <button
               style={warningModal.type === 'confirm' ? { ...styles.actionButton, minWidth: '120px', padding: '10px 14px' } : { ...styles.actionButton, minWidth: '120px', padding: '10px 14px' }}
               onClick={warningModal.type === 'confirm' ? handleWarningConfirm : closeWarningModal}
             >
-              {warningModal.type === 'confirm' ? 'CONTINUE' : 'OK'}
+              {warningModal.type === 'confirm' ? 'YES' : 'OK'}
             </button>
           </div>
         </div>
@@ -1343,7 +1336,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', textAlign: 'center' }}>
         <div style={{ backgroundColor: '#222', padding: '15px', borderRadius: '6px', border: '1px solid #39FF14', minHeight: '700px', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK CLASSES ({currentTokens.length || 6} OPTIONS)</h3>
+          <h3 style={{ fontSize: '1.1rem', color: '#39FF14', margin: '0 0 15px 0', display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroIcon kind="tokens" /> PICK CLASSES ({currentTokens.length || 4} OPTIONS)</h3>
           
           <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div
@@ -1450,7 +1443,7 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
           </div>
 
           <div style={{ marginTop: '4px', fontSize: '0.72rem', color: '#9ccf91', backgroundColor: '#131313', border: '1px solid #2a2a2a', borderRadius: '4px', padding: '8px' }}>
-            Fill the six class periods around the auto lunch split. Use exactly one prep block and do not repeat any class name.
+            Fill the six class periods around the auto lunch split. Use exactly one prep block and keep the class roster balanced with no more than 3 sections of any class and level combination.
           </div>
         </div>
       </div>
@@ -1459,9 +1452,17 @@ export default function HighSchoolScheduleStep({ highGrade, highLetterRange, onL
         <button
           style={{ ...styles.backButton, flex: '1 1 180px' }}
           onClick={() => {
+            setSelectedDept(null);
             setConfirmedDept(false);
+            setCurrentTokens([]);
+            setShuffleCount(0);
             setReviewMode(false);
+            setRandomLunchWave('');
+            setLunchByDay({});
+            setWeeklyRows([]);
             setBalanceReport(null);
+            setSchedule(createEmptySchedule());
+            setStorageSlots(createEmptyStorage());
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}><RetroArrow direction="left" /> BACK</span>
