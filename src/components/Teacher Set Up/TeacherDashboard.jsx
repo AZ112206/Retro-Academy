@@ -7,6 +7,7 @@ import HighSchoolScheduleStep from './3c. HighSchoolScheduleStep.jsx';
 import ClassSelectionStep from './4. ClassSelectionStep.jsx';
 import TeacherAvatarCustomizer from './TeacherAvatarCustomizer.jsx';
 import SchoolDirectoryStep from '../SchoolDirectoryStep.jsx';
+import ElementarySchoolMap from '../Game World/ElementarySchoolMap.jsx';
 import RetroIcon, { RetroArrow } from '../RetroIcon';
 
 // Global Retro Styles Shared Matrix
@@ -465,6 +466,24 @@ export default function TeacherDashboard({ onExit, initialData = null, onStateCh
     const clampedLoadIndex = Math.min(worldLoadIndex, WORLD_MAP_LOADING_STEPS.length - 1);
     const activeLoadStep = WORLD_MAP_LOADING_STEPS[clampedLoadIndex] || WORLD_MAP_LOADING_STEPS[0];
     const loadProgress = Math.round(((clampedLoadIndex + 1) / WORLD_MAP_LOADING_STEPS.length) * 100);
+    const isLoadComplete = clampedLoadIndex >= WORLD_MAP_LOADING_STEPS.length - 1;
+
+    if (schoolType === 'Elementary' && isLoadComplete) {
+      return (
+        <ElementarySchoolMap
+          facultyRoster={schoolDirectoryData?.roster || {}}
+          playerGrade={elementaryGrade}
+          playerDepartment={selectedClass || highSchoolDept || null}
+          playerAvatar={teacherProfile}
+          onBack={() => setStep('SCHOOL_DIRECTORY')}
+          onExit={onExit}
+          onSaveGame={onSaveGame}
+          styles={retroStyles}
+          activeSlotLabel={activeSlotLabel}
+          saveMessage={saveMessage}
+        />
+      );
+    }
 
     return (
       <div style={{ ...retroStyles.setupBox, maxWidth: '920px', minHeight: '680px', justifyContent: 'center', gap: '18px' }}>

@@ -2,13 +2,50 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SCHOOL_ZONES } from './worldData';
 import { assignRoomsToStaff } from './roomAssignment';
 
-export default function ElementarySchoolMap({ facultyRoster, playerGrade, playerDepartment }) {
+function buildPlayerPalette(playerAvatar) {
+  return {
+    skinTone: playerAvatar?.skinTone || '#D9AA8D',
+    hairColor: playerAvatar?.hairColor || '#20140F',
+    topColor: playerAvatar?.topColor || '#1F3A5F',
+    bottomColor: playerAvatar?.bottomColor || '#3C3C3C',
+    shoeColor: playerAvatar?.shoeColor || '#111111'
+  };
+}
+
+function PlayerSprite({ palette }) {
+  return (
+    <div style={{ position: 'relative', width: '22px', height: '30px', imageRendering: 'pixelated' }}>
+      <div style={{ position: 'absolute', left: '6px', top: '0px', width: '10px', height: '6px', backgroundColor: palette.hairColor, border: '1px solid #0a0a0a' }} />
+      <div style={{ position: 'absolute', left: '7px', top: '5px', width: '8px', height: '8px', backgroundColor: palette.skinTone, border: '1px solid #0a0a0a' }} />
+      <div style={{ position: 'absolute', left: '5px', top: '13px', width: '12px', height: '10px', backgroundColor: palette.topColor, border: '1px solid #0a0a0a' }} />
+      <div style={{ position: 'absolute', left: '6px', top: '23px', width: '4px', height: '5px', backgroundColor: palette.bottomColor, border: '1px solid #0a0a0a' }} />
+      <div style={{ position: 'absolute', left: '12px', top: '23px', width: '4px', height: '5px', backgroundColor: palette.bottomColor, border: '1px solid #0a0a0a' }} />
+      <div style={{ position: 'absolute', left: '5px', top: '28px', width: '5px', height: '2px', backgroundColor: palette.shoeColor }} />
+      <div style={{ position: 'absolute', left: '12px', top: '28px', width: '5px', height: '2px', backgroundColor: palette.shoeColor }} />
+    </div>
+  );
+}
+
+export default function ElementarySchoolMap({
+  facultyRoster,
+  playerGrade,
+  playerDepartment,
+  playerAvatar,
+  onBack,
+  onExit,
+  onSaveGame,
+  styles,
+  activeSlotLabel,
+  saveMessage
+}) {
   const canvasRef = useRef(null);
   const [currentRoomInfo, setCurrentRoomInfo] = useState(null);
   
   // Player grid position
   const [playerPosition, setPlayerPosition] = useState({ x: 10, y: 10 });
   const assignmentsRef = useRef({});
+  const playerPalette = buildPlayerPalette(playerAvatar);
+  const rosterName = playerAvatar?.rosterName || playerAvatar?.name || 'Teacher';
 
   useEffect(() => {
     if (facultyRoster) {
@@ -94,19 +131,16 @@ export default function ElementarySchoolMap({ facultyRoster, playerGrade, player
       const rw = zone.bounds.width * 12;
       const rh = zone.bounds.height * 15;
 
-      ctx.fillStyle = '#2d3748';
-      ctx.strokeStyle = '#4a5568';
+      ctx.fillStyle = '#171f17';
+      ctx.strokeStyle = '#39FF14';
       ctx.lineWidth = 2;
       ctx.fillRect(rx, ry, rw, rh);
       ctx.strokeRect(rx, ry, rw, rh);
 
-      ctx.fillStyle = '#cbd5e0';
+      ctx.fillStyle = '#f5f1dd';
       ctx.font = '10px monospace';
       ctx.fillText(zone.name.split(' ')[0], rx + 6, ry + 16);
     });
-
-    ctx.fillStyle = '#f6e05e';
-    ctx.fillRect(playerPosition.x * 12, playerPosition.y * 15, 10, 10);
 
     const activeRoom = checkCurrentRoom(playerPosition.x, playerPosition.y);
     setCurrentRoomInfo(activeRoom);
@@ -114,34 +148,64 @@ export default function ElementarySchoolMap({ facultyRoster, playerGrade, player
   }, [playerPosition]);
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-900 min-h-screen text-white relative">
-      <div className="mb-2 text-xl font-bold tracking-wider text-yellow-400">
-        RETRO ACADEMY - ELEMENTARY CAMPUS
+    <div style={{ ...styles.setupBox, maxWidth: '980px', minHeight: '700px', justifyContent: 'flex-start', gap: '16px' }}>
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <h2 style={{ ...styles.heading, marginBottom: 0 }}>RETRO ACADEMY - ELEMENTARY CAMPUS</h2>
+        <p style={{ ...styles.subtitle, marginBottom: 0 }}>Use WASD to move your teacher avatar through campus rooms.</p>
       </div>
-      
-      <div className="border-4 border-gray-700 rounded-lg overflow-hidden shadow-2xl bg-black relative">
+
+      <div style={{ width: '100%', maxWidth: '860px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', alignItems: 'stretch' }}>
+        <div style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '10px 12px', color: '#ccc', fontSize: '0.78rem' }}>
+          <strong style={{ color: '#39FF14' }}>ACTIVE TEACHER:</strong> {rosterName}
+          {activeSlotLabel ? <span style={{ marginLeft: '10px', color: '#9acb92' }}>SAVE SLOT: {activeSlotLabel}</span> : null}
+          {saveMessage ? <div style={{ marginTop: '6px', color: '#00FFFF' }}>{saveMessage}</div> : null}
+        </div>
+        <div style={{ backgroundColor: '#141414', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '10px 12px', color: '#ccc', fontSize: '0.78rem' }}>
+          <strong style={{ color: '#39FF14' }}>POSITION:</strong> X{playerPosition.x} / Y{playerPosition.y}
+        </div>
+      </div>
+
+      <div style={{ border: '2px solid #39FF14', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 0 20px rgba(57,255,20,0.16)', backgroundColor: '#0b0b0b', position: 'relative' }}>
         <canvas
           ref={canvasRef}
           width={800}
           height={600}
-          className="block w-full max-w-[800px] h-auto"
+          style={{ display: 'block', width: '100%', maxWidth: '800px', height: 'auto' }}
         />
+
+        <div
+          style={{
+            position: 'absolute',
+            left: `${Math.max(0, Math.min(58, playerPosition.x)) * 12 - 5}px`,
+            top: `${Math.max(0, Math.min(33, playerPosition.y)) * 15 - 18}px`,
+            pointerEvents: 'none',
+            zIndex: 4
+          }}
+        >
+          <PlayerSprite palette={playerPalette} />
+        </div>
         
         {currentRoomInfo && (
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-900 border-2 border-yellow-500/80 px-6 py-2.5 rounded shadow-lg text-center pointer-events-none min-w-[300px]">
-            <div className="text-xs uppercase tracking-widest text-yellow-400 font-mono font-bold">
+          <div style={{ position: 'absolute', bottom: '12px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#101010', border: '1px solid #ff9f43', padding: '10px 14px', borderRadius: '6px', textAlign: 'center', pointerEvents: 'none', minWidth: '320px', boxShadow: '0 0 12px rgba(255,159,67,0.25)' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#ff9f43', fontFamily: 'monospace', fontWeight: 'bold' }}>
               {currentRoomInfo.roomNumber} : {currentRoomInfo.roomName}
             </div>
-            <div className="text-xs font-mono text-gray-200 mt-1">
-              Teacher: <span className="text-green-400">{currentRoomInfo.occupant}</span>
+            <div style={{ fontSize: '0.74rem', fontFamily: 'monospace', color: '#d7d7d7', marginTop: '4px' }}>
+              Teacher: <span style={{ color: '#39FF14' }}>{currentRoomInfo.occupant}</span>
             </div>
           </div>
         )}
       </div>
 
-      <p className="mt-3 text-sm text-gray-400">
-        Use <span className="text-yellow-400 font-bold">W A S D</span> keys to explore the campus rooms.
+      <p style={{ marginTop: '4px', fontSize: '0.82rem', color: '#9acb92' }}>
+        Use <strong style={{ color: '#39FF14' }}>W A S D</strong> keys to explore the campus rooms.
       </p>
+
+      <div style={styles.footerActions}>
+        <button style={{ ...styles.backButton, flex: '1 1 180px' }} onClick={onBack}>BACK TO DIRECTORY</button>
+        <button style={{ ...styles.exitButton, flex: '1 1 180px' }} onClick={onExit}>RETURN TO MAIN MENU</button>
+        <button style={{ ...styles.saveButton, flex: '2 1 240px' }} onClick={onSaveGame}>SAVE GAME</button>
+      </div>
     </div>
   );
 }
