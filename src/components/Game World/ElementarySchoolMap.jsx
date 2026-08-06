@@ -10,10 +10,10 @@ const PAL = {
   wall:    '#1b1b1b',
   window:  '#aed4ea',
   floors: {
-    1: ['#d3c693', '#cfc28f'], // room
-    2: ['#ddd2a2', '#d9ce9e'], // hall
-    3: ['#c9b981', '#c5b57d'], // cafeteria
-    4: ['#bfae74', '#bbaa70'], // utility
+    1: ['#d9d1a7', '#d9d1a7'], // room
+    2: ['#d9d1a7', '#d9d1a7'], // hall
+    3: ['#d9d1a7', '#d9d1a7'], // cafeteria
+    4: ['#d9d1a7', '#d9d1a7'], // utility
     5: ['#e9f0f5', '#e9f0f5'], // enclosed courtyard
   },
 };
@@ -48,12 +48,10 @@ function buildWorld() {
   const drawDoorSet = new Set();
   DOORS.forEach(d => {
     for (let i = 0; i < (d.len || 1); i++) {
-      doorSet.add(d.dir === 'S' ? `${d.x + i},${d.y},S` : `${d.x},${d.y + i},E`);
+      const key = d.dir === 'S' ? `${d.x + i},${d.y},S` : `${d.x},${d.y + i},E`;
+      doorSet.add(key);
+      drawDoorSet.add(key);
     }
-
-    // Render narrower, center-biased openings so blueprint door notches stay subtle.
-    const mid = Math.floor(((d.len || 1) - 1) / 2);
-    drawDoorSet.add(d.dir === 'S' ? `${d.x + mid},${d.y},S` : `${d.x},${d.y + mid},E`);
   });
 
   return { idMap, typeMap, doorSet, drawDoorSet, roomById };
