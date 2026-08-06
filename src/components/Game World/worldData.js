@@ -27,12 +27,12 @@ export const ROOMS = [
   { x: 35, y: 12, w: 18, h: 22, type: 'room', label: 'Media Center' },
 
   // ===== COURTYARD (large white square) =====
-  { x: 53, y: 12, w: 17, h: 16, type: 'courtyard' },
+  { x: 53, y: 12, w: 20, h: 16, type: 'courtyard' },
 
   // ===== NURSE & MUSIC (below courtyard, above corridor, y=28-34) =====
   { x: 53, y: 28, w: 6, h: 6, type: 'room', label: 'Nurse Suite' },
   { x: 55, y: 29, w: 3, h: 3, type: 'utility', restroom: 'nurse-ensuite', label: 'Nurse WC' },
-  { x: 59, y: 28, w: 11, h: 6, type: 'room', label: 'Music Room' },
+  { x: 59, y: 28, w: 14, h: 6, type: 'room', label: 'Music Room' },
 
   // ===== LEFT WING: EXACTLY 5 ROWS, walls at y=38/49/60/71 =====
   { x: 0, y: 19, w: 11, h: 15, type: 'room', wing: 'left-outer', label: 'Science Lab 1' },
@@ -55,10 +55,6 @@ export const ROOMS = [
   { x: 73, y: 48, w: 11, h: 10, type: 'room', wing: 'right', label: 'Computer Lab' },
   { x: 73, y: 58, w: 11, h: 12, type: 'room', wing: 'right', label: 'ESL Room' },
   { x: 73, y: 70, w: 11, h: 16, type: 'room', wing: 'right', label: 'Resource Room' },
-
-  // ===== L-SHAPED RESTROOMS: simpler 2-room interlock at junction =====
-  { x: 63, y: 28, w: 7, h: 6, type: 'room', restroom: 'boys', label: 'Boys Restroom' },
-  { x: 63, y: 34, w: 10, h: 4, type: 'room', restroom: 'girls', label: 'Girls Restroom' },
 
   // ===== ADMIN ROW: 2 tiny WCs + 6 offices below corridor =====
   { x: 23, y: 38, w: 3, h: 6, type: 'room', restroom: 'boys', label: 'Boys WC' },
@@ -128,10 +124,6 @@ export const DOORS = [
   { x: 69, y: 42, dir: 'E', len: 2 },
   { x: 69, y: 45, dir: 'E', len: 2 },
   { x: 69, y: 49, dir: 'E', len: 2 },
-
-  // L-shaped restrooms -> corridor area
-  { x: 66, y: 27, dir: 'S', len: 2 },
-  { x: 66, y: 33, dir: 'S', len: 2 },
 
   // Right wing -> right hallway
   { x: 77, y: 9, dir: 'S', len: 2 },
