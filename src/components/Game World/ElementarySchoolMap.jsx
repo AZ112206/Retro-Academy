@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GRID, HALLS, ROOMS, DOORS } from './worldData';
 
 const GW = GRID.w;
@@ -173,10 +173,11 @@ function drawMap(ctx, W, H, world, pos, pal) {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function ElementarySchoolMap({
-  playerAvatar, onBack, onExit, onSaveGame,
-  // accepted but unused – prevent React prop warnings from TeacherDashboard
-  facultyRoster, playerGrade, playerDepartment, styles, activeSlotLabel, saveMessage,
+  playerAvatar,
+  onBack,
+  ...unusedProps
 }) {
+  void unusedProps;
   const canvasRef = useRef(null);
   const [pos, setPos]  = useState({ x: 38, y: 31 }); // start in main corridor
   const [vp,  setVp]   = useState({ w: window.innerWidth, h: window.innerHeight });
