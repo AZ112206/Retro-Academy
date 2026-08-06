@@ -1,211 +1,255 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SCHOOL_ZONES } from './worldData';
-import { assignRoomsToStaff } from './roomAssignment';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GRID, HALLS, ROOMS, DOORS } from './worldData';
 
-const GRID_WIDTH = 60;
-const GRID_HEIGHT = 36;
+const GW = GRID.w;
+const GH = GRID.h;
 
-function buildPlayerPalette(playerAvatar) {
-  return {
-    skinTone: playerAvatar?.skinTone || '#D8AE8B',
-    hairColor: playerAvatar?.hairColor || '#20140F',
-    topColor: playerAvatar?.topColor || '#1F3A5F',
-    bottomColor: playerAvatar?.bottomColor || '#3C3C3C',
-    shoeColor: playerAvatar?.shoeColor || '#111111'
-  };
-}
+// ─── Retro palette ───────────────────────────────────────────────────────────
+const PAL = {
+  outdoor: '#e3ebf1',
+  wall:    '#1b1b1b',
+  window:  '#aed4ea',
+  floors: {
+    1: ['#d3c693', '#cfc28f'], // room
+    2: ['#ddd2a2', '#d9ce9e'], // hall
+    3: ['#c9b981', '#c5b57d'], // cafeteria
+    4: ['#bfae74', '#bbaa70'], // utility
+    5: ['#e9f0f5', '#e9f0f5'], // enclosed courtyard
+  },
+};
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
+const TYPE_CODE = { room: 1, hall: 2, cafeteria: 3, utility: 4, courtyard: 5 };
 
-export default function ElementarySchoolMap({ facultyRoster, playerGrade, playerDepartment, playerAvatar }) {
-  const canvasRef = useRef(null);
-  const [playerPosition, setPlayerPosition] = useState({ x: 30, y: 31 });
-  const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
-  const assignmentsRef = useRef({});
-  const playerPalette = useMemo(() => buildPlayerPalette(playerAvatar), [playerAvatar]);
+// ─── Build cell maps: room ids, floor types, door-edge set ───────────────────
+function buildWorld() {
+  const idMap = new Int16Array(GW * GH).fill(-1);
+  const typeMap = new Uint8Array(GW * GH);
+  const roomById = [{ type: 'hall', wing: null }];
 
-  useEffect(() => {
-    if (facultyRoster) {
-      const { assignments } = assignRoomsToStaff(facultyRoster, playerGrade, playerDepartment);
-      assignmentsRef.current = assignments;
-    }
-  }, [facultyRoster, playerGrade, playerDepartment]);
-
-  // WASD controls
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      setPlayerPosition((prev) => {
-        let { x, y } = prev;
-        const speed = 1;
-        switch (e.key.toLowerCase()) {
-          case 'w': y = clamp(y - speed, 0, GRID_HEIGHT - 1); break;
-          case 's': y = clamp(y + speed, 0, GRID_HEIGHT - 1); break;
-          case 'a': x = clamp(x - speed, 0, GRID_WIDTH - 1); break;
-          case 'd': x = clamp(x + speed, 0, GRID_WIDTH - 1); break;
-          default: return prev;
+  const stamp = (r, id, type) => {
+    const t = TYPE_CODE[type] || 1;
+    for (let gy = r.y; gy < r.y + r.h; gy++) {
+      for (let gx = r.x; gx < r.x + r.w; gx++) {
+        if (gx >= 0 && gx < GW && gy >= 0 && gy < GH) {
+          idMap[gy * GW + gx] = id;
+          typeMap[gy * GW + gx] = t;
         }
-        return { x, y };
+      }
+    }
+  };
+
+  HALLS.forEach(hall => stamp(hall, 0, 'hall'));
+  ROOMS.forEach((room, i) => {
+    stamp(room, i + 1, room.type);
+    roomById[i + 1] = room;
+  });
+
+  const doorSet = new Set();
+  const drawDoorSet = new Set();
+  DOORS.forEach(d => {
+    for (let i = 0; i < (d.len || 1); i++) {
+      doorSet.add(d.dir === 'S' ? `${d.x + i},${d.y},S` : `${d.x},${d.y + i},E`);
+    }
+
+    // Render narrower, center-biased openings so blueprint door notches stay subtle.
+    const mid = Math.floor(((d.len || 1) - 1) / 2);
+    drawDoorSet.add(d.dir === 'S' ? `${d.x + mid},${d.y},S` : `${d.x},${d.y + mid},E`);
+  });
+
+  return { idMap, typeMap, doorSet, drawDoorSet, roomById };
+}
+
+// ─── Main draw function ──────────────────────────────────────────────────────
+function drawMap(ctx, W, H, world, pos, pal) {
+  const { idMap, typeMap, drawDoorSet, roomById } = world;
+  const tile = Math.max(6, Math.floor(Math.min(W / GW, H / GH)));
+  const ox = Math.floor((W - GW * tile) / 2);
+  const oy = Math.floor((H - GH * tile) / 2);
+  const wt  = Math.max(2, Math.round(tile * 0.3));  // interior wall thickness
+  const wtE = Math.max(3, Math.round(tile * 0.45)); // exterior wall thickness
+
+  const idAt = (x, y) => (x < 0 || y < 0 || x >= GW || y >= GH) ? -1 : idMap[y * GW + x];
+
+  // 1. outdoor / courtyard background
+  ctx.fillStyle = PAL.outdoor;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. floors (subtle checker per space type)
+  for (let gy = 0; gy < GH; gy++) {
+    for (let gx = 0; gx < GW; gx++) {
+      const id = idMap[gy * GW + gx];
+      if (id < 0) continue;
+      const pair = PAL.floors[typeMap[gy * GW + gx]];
+      ctx.fillStyle = pair[0];
+      ctx.fillRect(ox + gx * tile, oy + gy * tile, tile, tile);
+    }
+  }
+
+  // 3. walls: exterior (thick) + interior partitions, skipping doorway openings
+  ctx.fillStyle = PAL.wall;
+  for (let gy = 0; gy < GH; gy++) {
+    for (let gx = 0; gx < GW; gx++) {
+      const id = idAt(gx, gy);
+      if (id < 0) continue;
+      const px = ox + gx * tile;
+      const py = oy + gy * tile;
+      const nN = idAt(gx, gy - 1), nS = idAt(gx, gy + 1);
+      const nW = idAt(gx - 1, gy), nE = idAt(gx + 1, gy);
+
+      if (nN !== id) {
+        if (nN < 0) ctx.fillRect(px, py, tile, wtE);
+        else if (!drawDoorSet.has(`${gx},${gy - 1},S`)) ctx.fillRect(px, py, tile, wt);
+      }
+      if (nS !== id) {
+        if (nS < 0) ctx.fillRect(px, py + tile - wtE, tile, wtE);
+        else if (!drawDoorSet.has(`${gx},${gy},S`)) ctx.fillRect(px, py + tile - wt, tile, wt);
+      }
+      if (nW !== id) {
+        if (nW < 0) ctx.fillRect(px, py, wtE, tile);
+        else if (!drawDoorSet.has(`${gx - 1},${gy},E`)) ctx.fillRect(px, py, wt, tile);
+      }
+      if (nE !== id) {
+        if (nE < 0) ctx.fillRect(px + tile - wtE, py, wtE, tile);
+        else if (!drawDoorSet.has(`${gx},${gy},E`)) ctx.fillRect(px + tile - wt, py, wt, tile);
+      }
+    }
+  }
+
+  // 4. windows – side-specific for wings, same cadence used across center/north areas
+  ctx.fillStyle = PAL.window;
+  const ww = Math.max(3, Math.round(tile * 0.6));
+  const wOff = Math.floor((tile - ww) / 2);
+  for (let gy = 0; gy < GH; gy++) {
+    for (let gx = 0; gx < GW; gx++) {
+      const id = idAt(gx, gy);
+      if (id <= 0) continue;
+      const room = roomById[id];
+      const wing = room?.wing || null;
+
+      const cadenceH = gx % 3 === 1;
+      const cadenceV = gy % 3 === 1;
+
+      const allowWest = wing === 'left-outer' ? cadenceV : (!wing && cadenceV);
+      const allowEast = (wing === 'left-inner' || wing === 'right') ? cadenceV : (!wing && cadenceV);
+      const allowNorth = !wing && cadenceH;
+      const allowSouth = !wing && cadenceH;
+
+      const px = ox + gx * tile;
+      const py = oy + gy * tile;
+
+      if (allowNorth && idAt(gx, gy - 1) < 0) ctx.fillRect(px + wOff, py, ww, wtE);
+      if (allowSouth && idAt(gx, gy + 1) < 0) ctx.fillRect(px + wOff, py + tile - wtE, ww, wtE);
+      if (allowWest && idAt(gx - 1, gy) < 0) ctx.fillRect(px, py + wOff, wtE, ww);
+      if (allowEast && idAt(gx + 1, gy) < 0) ctx.fillRect(px + tile - wtE, py + wOff, wtE, ww);
+    }
+  }
+
+  // 5. player sprite
+  const spx = ox + pos.x * tile;
+  const spy = oy + pos.y * tile;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.fillRect(spx + 2, spy + tile - 2, tile - 4, 2);
+
+  const hw = Math.max(3, Math.floor(tile * 0.54));
+  const hx = spx + Math.floor((tile - hw) / 2);
+
+  ctx.fillStyle = pal.hairColor;
+  ctx.fillRect(hx, spy + Math.floor(tile * 0.07), hw, Math.max(2, Math.floor(tile * 0.2)));
+  ctx.fillStyle = pal.skinTone;
+  ctx.fillRect(hx, spy + Math.floor(tile * 0.2), hw, Math.max(2, Math.floor(tile * 0.22)));
+  const bw = Math.max(4, Math.floor(tile * 0.64));
+  const bx = spx + Math.floor((tile - bw) / 2);
+  ctx.fillStyle = pal.topColor;
+  ctx.fillRect(bx, spy + Math.floor(tile * 0.43), bw, Math.max(3, Math.floor(tile * 0.3)));
+  const lw  = Math.max(2, Math.floor(bw * 0.42));
+  const ly  = spy + Math.floor(tile * 0.72);
+  const lhh = Math.max(2, Math.floor(tile * 0.2));
+  ctx.fillStyle = pal.bottomColor;
+  ctx.fillRect(bx,           ly, lw, lhh);
+  ctx.fillRect(bx + bw - lw, ly, lw, lhh);
+  ctx.fillStyle = pal.shoeColor;
+  ctx.fillRect(bx - 1,           ly + lhh - 1, lw + 2, Math.max(1, Math.floor(tile * 0.07)));
+  ctx.fillRect(bx + bw - lw - 1, ly + lhh - 1, lw + 2, Math.max(1, Math.floor(tile * 0.07)));
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+export default function ElementarySchoolMap({
+  playerAvatar, onBack, onExit, onSaveGame,
+  // accepted but unused – prevent React prop warnings from TeacherDashboard
+  facultyRoster, playerGrade, playerDepartment, styles, activeSlotLabel, saveMessage,
+}) {
+  const canvasRef = useRef(null);
+  const [pos, setPos]  = useState({ x: 38, y: 31 }); // start in main corridor
+  const [vp,  setVp]   = useState({ w: window.innerWidth, h: window.innerHeight });
+
+  const palette = useMemo(() => ({
+    skinTone:    playerAvatar?.skinTone    || '#D8AE8B',
+    hairColor:   playerAvatar?.hairColor   || '#20140F',
+    topColor:    playerAvatar?.topColor    || '#1F3A5F',
+    bottomColor: playerAvatar?.bottomColor || '#3C3C3C',
+    shoeColor:   playerAvatar?.shoeColor   || '#111111',
+  }), [playerAvatar]);
+
+  const world = useMemo(() => buildWorld(), []);
+
+  // Movement between cells: same space is free; different spaces need a doorway.
+  const canMove = useCallback((fx, fy, tx, ty) => {
+    if (tx < 0 || ty < 0 || tx >= GW || ty >= GH) return false;
+    const a = world.idMap[fy * GW + fx];
+    const b = world.idMap[ty * GW + tx];
+    if (b < 0) return false;
+    if (a === b) return true;
+    const key = tx > fx ? `${fx},${fy},E`
+              : tx < fx ? `${tx},${ty},E`
+              : ty > fy ? `${fx},${fy},S`
+              : `${tx},${ty},S`;
+    return world.doorSet.has(key);
+  }, [world]);
+
+  // WASD movement + ESC to exit
+  useEffect(() => {
+    const onKey = e => {
+      const k = e.key.toLowerCase();
+      if (k === 'escape') { onBack?.(); return; }
+      if (!['w', 'a', 's', 'd'].includes(k)) return;
+      e.preventDefault();
+      setPos(p => {
+        const nx = p.x + (k === 'a' ? -1 : k === 'd' ? 1 : 0);
+        const ny = p.y + (k === 'w' ? -1 : k === 's' ? 1 : 0);
+        return canMove(p.x, p.y, nx, ny) ? { x: nx, y: ny } : p;
       });
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [canMove, onBack]);
 
+  // Viewport resize
   useEffect(() => {
-    const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    const onResize = () => setVp({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const drawRetroWorld = (ctx, width, height) => {
-    const tile = Math.max(10, Math.floor(Math.min(width / GRID_WIDTH, height / GRID_HEIGHT)));
-    const worldW = tile * GRID_WIDTH;
-    const worldH = tile * GRID_HEIGHT;
-    const offsetX = Math.floor((width - worldW) / 2);
-    const offsetY = Math.floor((height - worldH) / 2);
-
-    // Night asphalt base
-    ctx.fillStyle = '#070a07';
-    ctx.fillRect(0, 0, width, height);
-
-    // Vignette-like border
-    ctx.strokeStyle = '#1a241a';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2, 2, width - 4, height - 4);
-
-    // World backdrop
-    ctx.fillStyle = '#0f1710';
-    ctx.fillRect(offsetX, offsetY, worldW, worldH);
-
-    // Checker grass texture
-    for (let y = 0; y < GRID_HEIGHT; y += 1) {
-      for (let x = 0; x < GRID_WIDTH; x += 1) {
-        const px = offsetX + x * tile;
-        const py = offsetY + y * tile;
-        ctx.fillStyle = (x + y) % 2 === 0 ? '#122114' : '#102013';
-        ctx.fillRect(px, py, tile, tile);
-      }
-    }
-
-    // Buildings from zone data
-    Object.values(SCHOOL_ZONES).forEach((zone) => {
-      const { x, y, width: zw, height: zh } = zone.bounds;
-      const rx = offsetX + x * tile;
-      const ry = offsetY + y * tile;
-      const rw = zw * tile;
-      const rh = zh * tile;
-
-      ctx.fillStyle = '#1b2620';
-      ctx.fillRect(rx, ry, rw, rh);
-
-      // Roof edge
-      ctx.fillStyle = '#253528';
-      ctx.fillRect(rx, ry, rw, Math.max(2, Math.floor(tile * 0.45)));
-
-      // Wall outline
-      ctx.strokeStyle = '#39FF14';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, rh - 1);
-
-      // Window strips
-      const winW = Math.max(3, Math.floor(tile * 0.5));
-      const winH = Math.max(2, Math.floor(tile * 0.35));
-      for (let wx = rx + tile; wx < rx + rw - tile; wx += tile * 2) {
-        const topY = ry + Math.max(2, Math.floor(tile * 0.8));
-        const botY = ry + rh - Math.max(3, Math.floor(tile * 1.1));
-        ctx.fillStyle = '#1f4550';
-        ctx.fillRect(wx, topY, winW, winH);
-        ctx.fillRect(wx, botY, winW, winH);
-      }
-    });
-
-    // Main corridors
-    const hallX = offsetX + 20 * tile;
-    const hallY = offsetY + 16 * tile;
-    const hallW = 20 * tile;
-    const hallH = 11 * tile;
-    ctx.fillStyle = '#202a22';
-    ctx.fillRect(hallX, hallY, hallW, hallH);
-    ctx.strokeStyle = '#3f5a45';
-    ctx.strokeRect(hallX + 0.5, hallY + 0.5, hallW - 1, hallH - 1);
-
-    // Safety vestibule and entrance walkway
-    const entX = offsetX + 22 * tile;
-    const entY = offsetY + 28 * tile;
-    const entW = 16 * tile;
-    const entH = 6 * tile;
-    ctx.fillStyle = '#1f2c21';
-    ctx.fillRect(entX, entY, entW, entH);
-    for (let i = 0; i < 12; i += 1) {
-      ctx.fillStyle = i % 2 === 0 ? '#2d3f31' : '#213226';
-      ctx.fillRect(entX + i * Math.floor(entW / 12), entY + entH, Math.floor(entW / 12), Math.max(2, Math.floor(tile * 0.35)));
-    }
-
-    // Parking strip on far south
-    const lotY = offsetY + worldH - Math.max(3, Math.floor(tile * 2.8));
-    ctx.fillStyle = '#0c100d';
-    ctx.fillRect(offsetX, lotY, worldW, Math.max(3, Math.floor(tile * 2.8)));
-    for (let lx = offsetX + tile; lx < offsetX + worldW - tile; lx += tile * 2) {
-      ctx.fillStyle = '#8b985f';
-      ctx.fillRect(lx, lotY + 2, Math.max(2, Math.floor(tile * 0.5)), 1);
-    }
-
-    // Trees and detail props
-    const treeSpots = [
-      [3, 30], [8, 31], [14, 30], [46, 31], [52, 30], [57, 31], [6, 6], [53, 6]
-    ];
-    treeSpots.forEach(([gx, gy]) => {
-      const tx = offsetX + gx * tile;
-      const ty = offsetY + gy * tile;
-      ctx.fillStyle = '#3f2a1c';
-      ctx.fillRect(tx + Math.floor(tile * 0.42), ty + Math.floor(tile * 0.55), Math.max(1, Math.floor(tile * 0.18)), Math.max(2, Math.floor(tile * 0.35)));
-      ctx.fillStyle = '#2f8f3d';
-      ctx.fillRect(tx + Math.floor(tile * 0.2), ty + Math.floor(tile * 0.15), Math.max(4, Math.floor(tile * 0.6)), Math.max(4, Math.floor(tile * 0.45)));
-    });
-
-    // Player sprite from avatar palette
-    const px = offsetX + playerPosition.x * tile;
-    const py = offsetY + playerPosition.y * tile;
-    const headW = Math.max(3, Math.floor(tile * 0.42));
-    const headH = Math.max(3, Math.floor(tile * 0.34));
-    const bodyW = Math.max(4, Math.floor(tile * 0.56));
-    const bodyH = Math.max(4, Math.floor(tile * 0.44));
-
-    ctx.fillStyle = playerPalette.hairColor;
-    ctx.fillRect(px + Math.floor(tile * 0.28), py + Math.floor(tile * 0.06), headW, Math.max(2, Math.floor(headH * 0.6)));
-    ctx.fillStyle = playerPalette.skinTone;
-    ctx.fillRect(px + Math.floor(tile * 0.28), py + Math.floor(tile * 0.22), headW, headH);
-    ctx.fillStyle = playerPalette.topColor;
-    ctx.fillRect(px + Math.floor(tile * 0.2), py + Math.floor(tile * 0.52), bodyW, bodyH);
-    ctx.fillStyle = playerPalette.bottomColor;
-    ctx.fillRect(px + Math.floor(tile * 0.24), py + Math.floor(tile * 0.78), Math.max(2, Math.floor(bodyW * 0.36)), Math.max(2, Math.floor(tile * 0.18)));
-    ctx.fillRect(px + Math.floor(tile * 0.52), py + Math.floor(tile * 0.78), Math.max(2, Math.floor(bodyW * 0.36)), Math.max(2, Math.floor(tile * 0.18)));
-    ctx.fillStyle = playerPalette.shoeColor;
-    ctx.fillRect(px + Math.floor(tile * 0.2), py + Math.floor(tile * 0.92), Math.max(2, Math.floor(tile * 0.25)), Math.max(1, Math.floor(tile * 0.06)));
-    ctx.fillRect(px + Math.floor(tile * 0.54), py + Math.floor(tile * 0.92), Math.max(2, Math.floor(tile * 0.25)), Math.max(1, Math.floor(tile * 0.06)));
-  };
-
+  // Render
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-
+    const { w, h } = vp;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(viewport.width * dpr);
-    canvas.height = Math.floor(viewport.height * dpr);
-    canvas.style.width = `${viewport.width}px`;
-    canvas.style.height = `${viewport.height}px`;
+    canvas.width  = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    drawRetroWorld(ctx, viewport.width, viewport.height);
-  }, [playerPosition, playerPalette, viewport]);
+    drawMap(ctx, w, h, world, pos, palette);
+  }, [pos, palette, vp, world]);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: '#050705', overflow: 'hidden' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100vw', height: '100vh', imageRendering: 'pixelated' }} />
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: PAL.outdoor }}>
+      <canvas ref={canvasRef} style={{ display: 'block', imageRendering: 'pixelated' }} />
     </div>
   );
 }
